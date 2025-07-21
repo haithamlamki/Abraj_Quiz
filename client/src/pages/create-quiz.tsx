@@ -28,6 +28,22 @@ export default function CreateQuiz() {
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading } = useAuth();
 
+  // All hooks must be called before any conditional returns
+  const [quiz, setQuiz] = useState<QuizForm>({
+    title: "",
+    description: "",
+    questions: [
+      {
+        question: "",
+        answers: ["", "", "", ""],
+        correctAnswer: 0,
+        timeLimit: 30
+      }
+    ]
+  });
+
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
   // Redirect to login if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -56,21 +72,6 @@ export default function CreateQuiz() {
   if (!isAuthenticated) {
     return null;
   }
-
-  const [quiz, setQuiz] = useState<QuizForm>({
-    title: "",
-    description: "",
-    questions: [
-      {
-        question: "",
-        answers: ["", "", "", ""],
-        correctAnswer: 0,
-        timeLimit: 30
-      }
-    ]
-  });
-
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
 
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: QuizForm) => {

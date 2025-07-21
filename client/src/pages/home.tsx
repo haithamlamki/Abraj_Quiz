@@ -19,6 +19,7 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
       {/* Hero Section */}
       <section className="relative overflow-hidden py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             
             {/* Left Content */}
@@ -178,9 +179,9 @@ export default function Home() {
             <div>
               <h4 className="font-bold text-lg mb-4">Platform</h4>
               <ul className="space-y-2 text-sm text-gray-400">
-                <li><Link href="/create"><a className="hover:text-white transition-colors">Create</a></Link></li>
-                <li><Link href="/join"><a className="hover:text-white transition-colors">Play</a></Link></li>
-                <li><Link href="/"><a className="hover:text-white transition-colors">Discover</a></Link></li>
+                <li><Link href="/create" className="hover:text-white transition-colors">Create</Link></li>
+                <li><Link href="/join" className="hover:text-white transition-colors">Play</Link></li>
+                <li><Link href="/" className="hover:text-white transition-colors">Discover</Link></li>
               </ul>
             </div>
             
