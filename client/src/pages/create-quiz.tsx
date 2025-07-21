@@ -37,7 +37,7 @@ export default function CreateQuiz() {
         question: "",
         answers: ["", "", "", ""],
         correctAnswer: 0,
-        timeLimit: 10
+        timeLimit: 30
       }
     ]
   });
@@ -108,7 +108,7 @@ export default function CreateQuiz() {
         question: "",
         answers: ["", "", "", ""],
         correctAnswer: 0,
-        timeLimit: 10
+        timeLimit: 30
       }]
     }));
     setCurrentQuestionIndex(quiz.questions.length);

@@ -100,13 +100,6 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-**Default Time Limit Update (January 21, 2025)**
-- ✓ Changed default question time limit from 30 seconds to 10 seconds
-- ✓ Updated schema default in shared/schema.ts
-- ✓ Updated create quiz page default values
-- ✓ Updated edit quiz page default values and validation
-- ✓ Updated play game fallback time limit
-
 **Quiz History Feature (January 21, 2025)**
 - ✓ Added comprehensive authentication system with login/signup functionality
 - ✓ Implemented password hashing with bcrypt for secure user authentication

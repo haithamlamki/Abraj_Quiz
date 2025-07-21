@@ -24,7 +24,7 @@ const editQuizFormSchema = insertQuizSchema.extend({
     question: z.string().min(1, "Question is required"),
     answers: z.array(z.string().min(1, "Answer cannot be empty")).length(4, "Each question must have exactly 4 answers"),
     correctAnswer: z.number().min(0).max(3, "Correct answer must be between 0 and 3"),
-    timeLimit: z.number().min(5).max(120, "Time limit must be between 5 and 120 seconds").default(10)
+    timeLimit: z.number().min(10).max(120, "Time limit must be between 10 and 120 seconds")
   })).min(1, "At least one question is required")
 });
 
@@ -136,7 +136,7 @@ export default function EditQuiz() {
       question: "",
       answers: ["", "", "", ""],
       correctAnswer: 0,
-      timeLimit: 10
+      timeLimit: 30
     });
   };
 
