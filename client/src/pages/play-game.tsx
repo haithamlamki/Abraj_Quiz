@@ -23,6 +23,7 @@ export default function PlayGame() {
   const [hasAnswered, setHasAnswered] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
+  const [playerScore, setPlayerScore] = useState(0);
 
   const { data: game, isLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
@@ -51,6 +52,7 @@ export default function PlayGame() {
     onSuccess: (data) => {
       // Store the result but don't show it until timer expires
       setLastResult(data);
+      setPlayerScore(prev => prev + (data.pointsEarned || 0));
     },
     onError: () => {
       toast({
