@@ -100,6 +100,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**Scoring System Fix (January 21, 2025)**
+- ✓ Fixed duplicate scoring issue where points were added multiple times
+- ✓ Added server-side duplicate answer prevention for same question
+- ✓ Removed frontend score tracking to rely only on server-side scoring
+- ✓ Score now displays correctly from game state without accumulating incorrectly
+
+**Application Startup Fix (January 21, 2025)**
+- ✓ Fixed TypeScript errors in database schema (missing createdBy field)
+- ✓ Resolved type mismatches in storage layer
+- ✓ Fixed database connection issues preventing app startup
+- ✓ Server now starts successfully and connects to PostgreSQL database
+
 **Quiz History Feature (January 21, 2025)**
 - ✓ Added comprehensive authentication system with login/signup functionality
 - ✓ Implemented password hashing with bcrypt for secure user authentication

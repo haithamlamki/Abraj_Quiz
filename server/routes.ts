@@ -338,6 +338,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Game not found" });
       }
 
+      // Check if player already answered this question
+      const existingResponses = await storage.getPlayerResponses(game.id, playerName);
+      const alreadyAnswered = existingResponses.some(response => response.questionIndex === questionIndex);
+      
+      if (alreadyAnswered) {
+        return res.status(400).json({ message: "Answer already submitted for this question" });
+      }
+
       const quiz = await storage.getQuiz(game.quizId);
       if (!quiz) {
         return res.status(404).json({ message: "Quiz not found" });
