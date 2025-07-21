@@ -115,7 +115,7 @@ export default function PlayGame() {
     if (hasAnswered || timeLeft === 0) return;
     
     const responseTime = quiz ? 
-      ((quiz.questions as Question[])[game?.currentQuestion || 0]?.timeLimit || 30) * 1000 - (timeLeft || 0) * 1000 
+      ((quiz.questions as Question[])[game?.currentQuestion || 0]?.timeLimit || 10) * 1000 - (timeLeft || 0) * 1000 
       : 0;
     
     setSelectedAnswer(answerIndex);
