@@ -67,7 +67,7 @@ export default function GameResults() {
     const playerRank = sortedPlayers.findIndex((p: any) => p.name === playerName) + 1;
     
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 py-8">
+      <div className="min-h-screen py-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <div className="abraj-green text-white w-24 h-24 rounded-full flex items-center justify-center font-bold text-3xl mx-auto mb-4 animate-bounce-gentle">
@@ -164,7 +164,7 @@ export default function GameResults() {
 
   // Host view
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-8">
+    <div className="min-h-screen py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="font-bold text-4xl text-gray-800 mb-4">Game Results</h1>
@@ -180,10 +180,49 @@ export default function GameResults() {
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Final Leaderboard */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-2 space-y-6">
             <Card className="shadow-xl">
               <CardContent className="p-8">
                 <Leaderboard players={players} showPodium={true} title="Final Results" />
+              </CardContent>
+            </Card>
+            
+            {/* All Players List */}
+            <Card className="shadow-xl">
+              <CardHeader>
+                <CardTitle className="text-center">All Players & Points</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="space-y-3">
+                  {sortedPlayers.map((player, index) => (
+                    <div key={player.name} className="flex items-center justify-between bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border">
+                      <div className="flex items-center space-x-4">
+                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                          index === 0 ? 'bg-yellow-400 text-yellow-900' :
+                          index === 1 ? 'bg-gray-300 text-gray-700' :
+                          index === 2 ? 'bg-orange-400 text-orange-900' :
+                          'bg-blue-500 text-white'
+                        }`}>
+                          {index === 0 ? <Trophy className="w-5 h-5" /> : index + 1}
+                        </div>
+                        <div>
+                          <p className="font-medium text-gray-900">{player.name}</p>
+                          <p className="text-sm text-gray-500">Rank #{index + 1}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-lg text-gray-900">{(player.score || 0).toLocaleString()}</p>
+                        <p className="text-sm text-gray-500">points</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {players.length === 0 && (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No players joined this quiz.</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
