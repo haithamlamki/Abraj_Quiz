@@ -4,6 +4,7 @@ import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Clock, Users, Play, Settings, Share2, Copy, QrCode } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -273,9 +274,41 @@ export default function HostQuizSetup() {
                           QR Code
                         </h4>
                         <div className="flex justify-center mb-3">
-                          <img src={qrCodeUrl} alt="QR Code to join game" className="w-32 h-32" />
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <button className="hover:scale-105 transition-transform cursor-pointer">
+                                <img src={qrCodeUrl} alt="QR Code to join game" className="w-32 h-32 rounded border hover:border-abraj-primary" />
+                              </button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md">
+                              <DialogHeader>
+                                <DialogTitle className="text-center flex items-center gap-2 justify-center">
+                                  <QrCode className="w-5 h-5" />
+                                  Game QR Code
+                                </DialogTitle>
+                              </DialogHeader>
+                              <div className="flex flex-col items-center space-y-4 p-4">
+                                <div className="bg-white p-6 rounded-lg border">
+                                  <img src={qrCodeUrl} alt="QR Code to join game" className="w-64 h-64" />
+                                </div>
+                                <div className="text-center">
+                                  <p className="font-bold text-2xl text-abraj-primary mb-2">{createdGame.gamePin}</p>
+                                  <p className="text-sm text-gray-600">Scan to join the game</p>
+                                  <p className="text-xs text-gray-500 mt-2">Or visit: {window.location.origin}/join/{createdGame.gamePin}</p>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  onClick={() => copyToClipboard(`${window.location.origin}/join/${createdGame.gamePin}`, "Join link")}
+                                  className="w-full"
+                                >
+                                  <Copy className="w-4 h-4 mr-2" />
+                                  Copy Join Link
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
                         </div>
-                        <p className="text-xs text-gray-500">Players can scan this QR code to join</p>
+                        <p className="text-xs text-gray-500">Click to view larger • Players can scan this QR code to join</p>
                       </div>
                     )}
 
