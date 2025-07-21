@@ -47,7 +47,7 @@ export default function Navigation() {
                       : 'text-gray-700 hover:text-abraj-primary'
                   }`}>
                     <BookOpen className="w-8 h-8" />
-                    <span>My Quizzes</span>
+                    <span>My Quizes</span>
                   </span>
                 </Link>
               )}
