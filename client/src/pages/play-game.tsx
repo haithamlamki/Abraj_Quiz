@@ -102,6 +102,12 @@ export default function PlayGame() {
   useEffect(() => {
     if (timeLeft === 0 && lastResult && hasAnswered) {
       setShowResult(true);
+      // Play sound based on result
+      if (lastResult.isCorrect) {
+        playCorrectSound();
+      } else {
+        playWrongSound();
+      }
     }
   }, [timeLeft, lastResult, hasAnswered]);
 
@@ -147,6 +153,49 @@ export default function PlayGame() {
       
       oscillator.start(audioContext.currentTime);
       oscillator.stop(audioContext.currentTime + 0.1);
+    }
+  };
+
+  const playCorrectSound = () => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Play a happy chord progression
+      const frequencies = [523, 659, 784]; // C, E, G
+      frequencies.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime + index * 0.1);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.1 + 0.6);
+        
+        oscillator.start(audioContext.currentTime + index * 0.1);
+        oscillator.stop(audioContext.currentTime + index * 0.1 + 0.6);
+      });
+    }
+  };
+
+  const playWrongSound = () => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 200;
+      oscillator.type = 'sawtooth';
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.4);
     }
   };
 
@@ -244,46 +293,52 @@ export default function PlayGame() {
   if (showResult && lastResult) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
-        <Card className="w-full max-w-md mx-4">
+        <Card className="w-full max-w-md mx-4 animate-in slide-in-from-bottom-4 duration-500">
           <CardContent className="pt-6 text-center space-y-6">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${
-              lastResult.isCorrect ? 'abraj-green' : 'abraj-red'
-            } text-white`}>
+              lastResult.isCorrect ? 'abraj-green animate-bounce' : 'abraj-red animate-pulse'
+            } text-white transform transition-all duration-500 ${
+              lastResult.isCorrect ? 'scale-110' : 'scale-100'
+            }`}>
               {lastResult.isCorrect ? <Check className="w-10 h-10" /> : <X className="w-10 h-10" />}
             </div>
             
-            <div>
-              <h3 className="font-bold text-2xl text-gray-800 mb-2">
+            <div className="animate-in fade-in-50 duration-700 delay-200">
+              <h3 className={`font-bold text-2xl mb-2 ${
+                lastResult.isCorrect ? 'text-green-600' : 'text-red-600'
+              }`}>
                 {lastResult.isCorrect ? "Correct!" : "Incorrect"}
               </h3>
               {lastResult.isCorrect && (
-                <p className="text-gray-600">+{lastResult.pointsEarned} points</p>
+                <p className="text-green-600 font-semibold animate-in zoom-in-50 duration-500 delay-300">
+                  +{lastResult.pointsEarned} points
+                </p>
               )}
               {!lastResult.isCorrect && currentQuestion && (
-                <p className="text-gray-600">
+                <p className="text-gray-600 animate-in slide-in-from-bottom-2 duration-500 delay-300">
                   Correct answer: {String.fromCharCode(65 + lastResult.correctAnswer)} - {currentQuestion.answers[lastResult.correctAnswer]}
                 </p>
               )}
             </div>
             
-            <div className="bg-gradient-to-r from-abraj-primary to-abraj-secondary rounded-xl p-4 text-white text-center">
+            <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 text-white text-center animate-in zoom-in-75 duration-500 delay-400 shadow-lg">
               <p className="text-sm opacity-90">Your Score</p>
               <p className="font-bold text-2xl">{(currentPlayer?.score || 0).toLocaleString()}</p>
             </div>
             
-            <div className="text-center">
+            <div className="text-center animate-in slide-in-from-bottom-3 duration-500 delay-500">
               <p className="text-gray-600 text-sm mb-2">Current Rank</p>
               <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl mx-auto ${
-                currentRank === 1 ? 'abraj-green' :
+                currentRank === 1 ? 'abraj-green animate-pulse' :
                 currentRank === 2 ? 'bg-gray-400' :
                 currentRank === 3 ? 'bg-orange-500' :
                 'abraj-primary'
-              } text-white`}>
+              } text-white shadow-lg transform transition-all duration-300 hover:scale-110`}>
                 {currentRank === 1 ? <Trophy className="w-6 h-6" /> : currentRank}
               </div>
             </div>
             
-            <p className="text-sm text-gray-500">Waiting for next question...</p>
+            <p className="text-sm text-gray-500 animate-pulse">Waiting for next question...</p>
           </CardContent>
         </Card>
       </div>
