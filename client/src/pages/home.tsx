@@ -176,7 +176,7 @@ export default function Home() {
         </div>
       </section>
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-4">
+      <footer className="py-4 bg-[#11182700] text-[#0f0000]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-sm text-gray-400">
             <p>© 2025 Abraj Quiz. All rights reserved. Built for educational purposes.</p>
