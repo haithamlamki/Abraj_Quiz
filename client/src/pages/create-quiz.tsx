@@ -330,10 +330,6 @@ export default function CreateQuiz() {
                       <option value={30}>30 seconds</option>
                       <option value={60}>60 seconds</option>
                     </select>
-                    <Button onClick={addQuestion} size="sm" className="abraj-primary pl-[7px] pr-[7px] ml-[56px] mr-[56px]">
-                      <Plus className="w-4 h-4 mr-1" />
-                      Add Question
-                    </Button>
                   </div>
 
                   <div className="flex space-x-3">
@@ -352,6 +348,13 @@ export default function CreateQuiz() {
                       Next
                     </Button>
                   </div>
+                </div>
+
+                <div className="flex justify-center mt-4">
+                  <Button onClick={addQuestion} size="sm" className="abraj-primary">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Question
+                  </Button>
                 </div>
               </CardContent>
             </Card>
