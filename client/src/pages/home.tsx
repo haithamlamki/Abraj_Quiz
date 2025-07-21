@@ -131,8 +131,8 @@ export default function Home() {
             {/* Show Recent Quizzes for authenticated users, Create Quiz for others */}
             {isAuthenticated && userQuizzes && userQuizzes.length > 0 ? (
               <div className="mb-12">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="font-bold text-2xl text-gray-800">Your Recent Quizes</h3>
+                <div className="text-center mb-6">
+                  <h3 className="font-bold text-2xl text-gray-800 mb-4">Your Recent Quizes</h3>
                   <Link href="/create">
                     <Button className="abraj-primary hover:abraj-secondary text-white font-medium">
                       Create New Quiz
