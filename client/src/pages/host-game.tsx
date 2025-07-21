@@ -162,7 +162,7 @@ export default function HostGame() {
           <div className="text-center mb-8">
             <h1 className="font-bold text-4xl text-gray-800 mb-4">Game Lobby</h1>
             <div className="flex justify-center items-center space-x-4 mb-6">
-              <Badge variant="secondary" className="text-lg px-4 py-2">
+              <Badge variant="secondary" className="inline-flex items-center rounded-full border font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 text-lg px-4 py-2 bg-[#019ebd] text-[#ffffff]">
                 PIN: {game.gamePin}
               </Badge>
               <Badge className="text-lg px-4 py-2 bg-[#019ebd] text-[#ffffff]">
@@ -263,128 +263,193 @@ export default function HostGame() {
     );
   }
 
+  // Sound effects
+  const playCountdownSound = () => {
+    if (typeof Audio !== 'undefined') {
+      // Create countdown beep sound
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
+    }
+  };
+
+  const playCorrectSound = () => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 523; // C note
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    }
+  };
+
+  const playWrongSound = () => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 200; // Low buzz
+      oscillator.type = 'sawtooth';
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    }
+  };
+
   if (game.status === "active") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8">
-            <h1 className="font-bold text-4xl mb-4">Question {(game.currentQuestion || 0) + 1} of {questions.length}</h1>
-            <div className="flex justify-center items-center space-x-4">
-              <Badge variant="secondary" className="text-lg px-4 py-2">
-                PIN: {game.gamePin}
-              </Badge>
-              {timeLeft !== null && timeLeft > 0 && (
-                <div className="abraj-red text-white px-4 py-2 rounded-full font-bold text-lg animate-pulse">
-                  <Clock className="inline w-5 h-5 mr-2" />
-                  {timeLeft}s
+      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4">
+        <div className="max-w-md mx-auto">
+          {/* Header */}
+          <div className="text-center mb-6">
+            <Badge variant="secondary" className="mb-2 bg-[#019ebd] text-[#ffffff]">
+              Question {(game.currentQuestion || 0) + 1} of {questions.length}
+            </Badge>
+            
+            {timeLeft !== null && timeLeft > 0 && !showResults && (
+              <div 
+                className="abraj-red text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 animate-pulse hover:scale-110 transition-transform cursor-pointer"
+                onClick={() => playCountdownSound()}
+              >
+                {timeLeft}
+              </div>
+            )}
+            
+            <p className="text-gray-600 text-sm">
+              {showResults ? "Results displayed!" : timeLeft === 0 ? "Time's up!" : "seconds left"}
+            </p>
+          </div>
+
+          {/* Question */}
+          <Card className="mb-6 hover:scale-105 transition-transform duration-200">
+            <CardContent className="p-4 text-center">
+              <h2 className="font-bold text-lg text-gray-800">{currentQuestion?.question}</h2>
+            </CardContent>
+          </Card>
+
+          {/* Answer Options - Vertical Layout like Player Page */}
+          <div className="space-y-4">
+            {currentQuestion?.answers.map((answer, index) => {
+              const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
+              const percentage = showResults && questionResults ? questionResults.answerPercentages[index] || 0 : 0;
+              const count = showResults && questionResults ? questionResults.answerCounts[index] || 0 : 0;
+              const isCorrect = index === currentQuestion.correctAnswer;
+              
+              return (
+                <div
+                  key={index}
+                  className={`w-full ${colors[index]} text-white p-6 rounded-xl font-bold text-lg transition-all transform hover:scale-105 cursor-pointer active:scale-95 relative overflow-hidden ${
+                    showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce' : ''
+                  }`}
+                  onClick={() => {
+                    if (showResults) {
+                      if (isCorrect) {
+                        playCorrectSound();
+                      } else {
+                        playWrongSound();
+                      }
+                    }
+                  }}
+                  onMouseEnter={() => {
+                    if (showResults && isCorrect) {
+                      playCorrectSound();
+                    }
+                  }}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span>{String.fromCharCode(65 + index)}</span>
+                    <span className="flex-1 text-center">{answer}</span>
+                  </div>
+                  
+                  {showResults && questionResults && (
+                    <>
+                      <div className="mt-3 bg-white/20 rounded-full h-2">
+                        <div 
+                          className="bg-white rounded-full h-2 transition-all duration-1000"
+                          style={{ width: `${percentage}%` }}
+                        ></div>
+                      </div>
+                      <div className="mt-2 text-sm opacity-90 text-center">
+                        {percentage}% ({count} players)
+                      </div>
+                    </>
+                  )}
                 </div>
-              )}
+              );
+            })}
+          </div>
+
+          {/* Game Controls */}
+          {showResults && (
+            <div className="mt-6 text-center">
+              <Button
+                onClick={() => {
+                  nextQuestionMutation.mutate();
+                  playCountdownSound();
+                }}
+                disabled={nextQuestionMutation.isPending}
+                className="w-full abraj-primary hover:abraj-secondary text-white px-8 py-3 font-bold hover:scale-105 active:scale-95 transition-transform"
+              >
+                <SkipForward className="w-5 h-5 mr-2" />
+                {(game.currentQuestion || 0) + 1 >= questions.length ? "Finish Game" : "Next Question"}
+              </Button>
+            </div>
+          )}
+
+          {/* Game Info - Matching Player Page Style */}
+          <div className="mt-6">
+            <div className="bg-white rounded-lg p-4 shadow hover:scale-105 transition-transform">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-600">PIN:</span>
+                <span className="font-bold text-[#019ebd]">{game.gamePin}</span>
+              </div>
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-gray-600">Players:</span>
+                <span className="font-bold">{players.length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-gray-600">Progress:</span>
+                <span className="font-bold">{(game.currentQuestion || 0) + 1}/{questions.length}</span>
+              </div>
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-                <CardContent className="p-8">
-                  <div className="bg-white rounded-xl p-6 text-gray-800 mb-6">
-                    <h2 className="font-bold text-2xl mb-4">{currentQuestion.question}</h2>
-                  </div>
-
-                  {showResults && questionResults ? (
-                    <div className="grid grid-cols-2 gap-4">
-                      {currentQuestion.answers.map((answer, index) => {
-                        const percentage = questionResults.answerPercentages[index] || 0;
-                        const count = questionResults.answerCounts[index] || 0;
-                        const isCorrect = index === currentQuestion.correctAnswer;
-                        
-                        return (
-                          <div
-                            key={index}
-                            className={`${
-                              index === 0 ? 'abraj-red' :
-                              index === 1 ? 'abraj-blue' :
-                              index === 2 ? 'abraj-green' : 'abraj-yellow'
-                            } rounded-xl p-4 relative overflow-hidden ${isCorrect ? 'ring-4 ring-yellow-400' : ''}`}
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="font-bold text-lg">{String.fromCharCode(65 + index)}. {answer}</span>
-                            </div>
-                            <div className="bg-white/20 rounded-full h-2 mb-2">
-                              <div 
-                                className="bg-white rounded-full h-2 transition-all duration-1000"
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                            <span className="text-sm opacity-90">{percentage}% ({count} players)</span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      {currentQuestion.answers.map((answer, index) => (
-                        <div
-                          key={index}
-                          className={`${
-                            index === 0 ? 'abraj-red' :
-                            index === 1 ? 'abraj-blue' :
-                            index === 2 ? 'abraj-green' : 'abraj-yellow'
-                          } rounded-xl p-4`}
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-bold text-lg">{String.fromCharCode(65 + index)}</span>
-                          </div>
-                          <p className="mt-2">{answer}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {showResults && (
-                    <div className="mt-6 text-center">
-                      <Button
-                        onClick={() => nextQuestionMutation.mutate()}
-                        disabled={nextQuestionMutation.isPending}
-                        className="abraj-primary hover:abraj-secondary text-white px-8 py-3 font-bold"
-                      >
-                        <SkipForward className="w-5 h-5 mr-2" />
-                        {(game.currentQuestion || 0) + 1 >= questions.length ? "Finish Game" : "Next Question"}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
-
-            <div className="space-y-6">
-              <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-                <CardHeader>
-                  <CardTitle className="text-white">Game Info</CardTitle>
-                </CardHeader>
-                <CardContent className="text-white">
-                  <div className="space-y-3">
-                    <div className="flex justify-between">
-                      <span className="opacity-90">Players:</span>
-                      <span className="font-bold">{players.length}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="opacity-90">Game PIN:</span>
-                      <span className="font-bold text-abraj-blue">{game.gamePin}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="opacity-90">Questions:</span>
-                      <span className="font-bold">{(game.currentQuestion || 0) + 1}/{questions.length}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card className="bg-white/10 backdrop-blur-lg border-white/20">
-                <CardContent className="p-6">
-                  <Leaderboard players={players} />
-                </CardContent>
-              </Card>
-            </div>
+          {/* Leaderboard Preview */}
+          <div className="mt-6">
+            <Card className="hover:scale-105 transition-transform">
+              <CardHeader>
+                <CardTitle className="text-center">Top Players</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Leaderboard players={players.slice(0, 3)} />
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

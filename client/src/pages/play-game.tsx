@@ -111,8 +111,49 @@ export default function PlayGame() {
     }
   }, [game?.status, pin, playerName, setLocation]);
 
+  // Sound effects
+  const playClickSound = () => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 600;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
+    }
+  };
+
+  const playCountdownSound = () => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.1);
+    }
+  };
+
   const handleAnswerSelect = (answerIndex: number) => {
     if (hasAnswered || timeLeft === 0) return;
+    
+    playClickSound();
     
     const responseTime = quiz ? 
       ((quiz.questions as Question[])[game?.currentQuestion || 0]?.timeLimit || 10) * 1000 - (timeLeft || 0) * 1000 
@@ -259,7 +300,10 @@ export default function PlayGame() {
           </Badge>
           
           {timeLeft !== null && timeLeft > 0 && !hasAnswered && (
-            <div className="abraj-red text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 animate-pulse">
+            <div 
+              className="abraj-red text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 animate-pulse hover:scale-110 transition-transform cursor-pointer"
+              onClick={() => playCountdownSound()}
+            >
               {timeLeft}
             </div>
           )}
