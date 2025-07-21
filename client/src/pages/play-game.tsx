@@ -63,8 +63,7 @@ export default function PlayGame() {
   const [showResult, setShowResult] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
   const [playerScore, setPlayerScore] = useState(0);
-  const [gameStartCountdown, setGameStartCountdown] = useState<number | null>(null);
-  const [isGameStarting, setIsGameStarting] = useState(false);
+
 
   const { data: game, isLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
@@ -111,30 +110,8 @@ export default function PlayGame() {
     }
   }, [playerName, pin, setLocation]);
 
-  // Watch for game status changes to start countdown when game begins
-  useEffect(() => {
-    if (game?.status === "active" && !isGameStarting && quiz) {
-      setIsGameStarting(true);
-      setGameStartCountdown(3);
-    }
-  }, [game?.status, isGameStarting, quiz]);
-
-  // Game start countdown effect
-  useEffect(() => {
-    if (gameStartCountdown === null || !isGameStarting) return;
-
-    if (gameStartCountdown > 0) {
-      playCountdownSound(gameStartCountdown);
-      const timer = setTimeout(() => {
-        setGameStartCountdown(prev => prev! - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      // Countdown finished
-      setIsGameStarting(false);
-      setGameStartCountdown(null);
-    }
-  }, [gameStartCountdown, isGameStarting]);
+  // No automatic countdown for players - they see the game directly when it starts
+  // The countdown is only for the host when starting the game
 
   useEffect(() => {
     if (game?.status === "active" && quiz) {
@@ -304,25 +281,7 @@ export default function PlayGame() {
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .findIndex(p => p.name === playerName) + 1;
 
-  // Countdown overlay component
-  const CountdownOverlay = () => {
-    if (!isGameStarting || gameStartCountdown === null) return null;
-    
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-        <div className="text-center">
-          <div className={`w-32 h-32 rounded-full flex items-center justify-center font-bold text-6xl mx-auto mb-6 ${
-            gameStartCountdown === 3 ? 'bg-red-500 animate-pulse' :
-            gameStartCountdown === 2 ? 'bg-yellow-500 animate-bounce' :
-            'bg-green-500 animate-ping'
-          } text-white shadow-2xl`}>
-            {gameStartCountdown}
-          </div>
-          <h2 className="text-white text-2xl font-bold">Game Starting...</h2>
-        </div>
-      </div>
-    );
-  };
+
 
   if (game.status === "waiting") {
     return (
@@ -420,7 +379,6 @@ export default function PlayGame() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4">
-      <CountdownOverlay />
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-6">

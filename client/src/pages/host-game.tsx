@@ -167,7 +167,7 @@ export default function HostGame() {
       setGameStartCountdown(null);
       startGameMutation.mutate();
     }
-  }, [gameStartCountdown, isStartingGame]);
+  }, [gameStartCountdown, isStartingGame, startGameMutation]);
 
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return;
@@ -487,7 +487,7 @@ export default function HostGame() {
               <Button
                 onClick={() => {
                   nextQuestionMutation.mutate();
-                  playCountdownSound();
+                  playCountdownSound(3);
                 }}
                 disabled={nextQuestionMutation.isPending}
                 className="w-full abraj-primary hover:abraj-secondary text-white px-8 py-3 font-bold hover:scale-105 active:scale-95 transition-transform"
