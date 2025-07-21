@@ -234,23 +234,7 @@ export default function HostQuizSetup() {
               <CardContent className="space-y-6">
                 {!createdGame ? (
                   <div className="text-center space-y-4">
-                    <div className="bg-abraj-primary/10 rounded-lg p-6">
-                      <h3 className="font-semibold text-lg text-gray-800 mb-2">How it works:</h3>
-                      <ol className="text-left text-gray-600 space-y-2">
-                        <li className="flex items-start gap-2">
-                          <span className="bg-abraj-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
-                          <span>Click "Create Game" to generate a unique game PIN</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="bg-abraj-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
-                          <span>Share the PIN or QR code with players so they can join</span>
-                        </li>
-                        <li className="flex items-start gap-2">
-                          <span className="bg-abraj-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>
-                          <span>Start the game when all players have joined</span>
-                        </li>
-                      </ol>
-                    </div>
+                    
 
                     <Button
                       onClick={() => createGameMutation.mutate()}
