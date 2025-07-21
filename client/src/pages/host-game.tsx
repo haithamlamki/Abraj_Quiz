@@ -20,6 +20,48 @@ export default function HostGame() {
   const [showResults, setShowResults] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
   const [showQRCode, setShowQRCode] = useState(false);
+  const [gameStartCountdown, setGameStartCountdown] = useState<number | null>(null);
+  const [isStartingGame, setIsStartingGame] = useState(false);
+
+  // Sound effects for countdown
+  const playCountdownSound = (count: number) => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      // Different frequencies for countdown vs warning
+      oscillator.frequency.value = count === 0 ? 880 : 440; // Higher pitch for final beep
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    }
+  };
+
+  const playUrgentCountdownSound = () => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800; // Urgent high pitch
+      oscillator.type = 'square';
+      gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    }
+  };
 
   const copyToClipboard = async (text: string, label: string) => {
     try {
@@ -109,6 +151,24 @@ export default function HostGame() {
     }
   }, [game, qrCodeUrl]);
 
+  // Game start countdown effect
+  useEffect(() => {
+    if (gameStartCountdown === null || !isStartingGame) return;
+
+    if (gameStartCountdown > 0) {
+      playCountdownSound(gameStartCountdown);
+      const timer = setTimeout(() => {
+        setGameStartCountdown(prev => prev! - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Countdown finished, start the game
+      setIsStartingGame(false);
+      setGameStartCountdown(null);
+      startGameMutation.mutate();
+    }
+  }, [gameStartCountdown, isStartingGame]);
+
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return;
 
@@ -117,6 +177,10 @@ export default function HostGame() {
         if (prev === null || prev <= 1) {
           setShowResults(true);
           return 0;
+        }
+        // Play urgent sound for last 3 seconds
+        if (prev <= 3) {
+          playUrgentCountdownSound();
         }
         return prev - 1;
       });
@@ -155,9 +219,30 @@ export default function HostGame() {
   const currentQuestion = questions[game.currentQuestion || 0];
   const players = (game.players as any[]) || [];
 
+  // Countdown overlay component
+  const CountdownOverlay = () => {
+    if (!isStartingGame || gameStartCountdown === null) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className={`w-32 h-32 rounded-full flex items-center justify-center font-bold text-6xl mx-auto mb-6 ${
+            gameStartCountdown === 3 ? 'bg-red-500 animate-pulse' :
+            gameStartCountdown === 2 ? 'bg-yellow-500 animate-bounce' :
+            'bg-green-500 animate-ping'
+          } text-white shadow-2xl`}>
+            {gameStartCountdown}
+          </div>
+          <h2 className="text-white text-2xl font-bold">Game Starting...</h2>
+        </div>
+      </div>
+    );
+  };
+
   if (game.status === "waiting") {
     return (
       <div className="min-h-screen py-8">
+        <CountdownOverlay />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
             <h1 className="font-bold text-4xl text-gray-800 mb-4">Game Lobby</h1>
@@ -247,12 +332,16 @@ export default function HostGame() {
                   </div>
                   
                   <Button
-                    onClick={() => startGameMutation.mutate()}
-                    disabled={players.length === 0 || startGameMutation.isPending}
+                    onClick={() => {
+                      if (players.length === 0) return;
+                      setIsStartingGame(true);
+                      setGameStartCountdown(3);
+                    }}
+                    disabled={players.length === 0 || startGameMutation.isPending || isStartingGame}
                     className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3"
                   >
                     <Play className="w-5 h-5 mr-2" />
-                    Start Game
+                    {isStartingGame ? `Starting in ${gameStartCountdown}...` : 'Start Game'}
                   </Button>
                 </div>
               </CardContent>
@@ -263,26 +352,7 @@ export default function HostGame() {
     );
   }
 
-  // Sound effects
-  const playCountdownSound = () => {
-    if (typeof Audio !== 'undefined') {
-      // Create countdown beep sound
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.1);
-    }
-  };
+
 
   const playCorrectSound = () => {
     if (typeof Audio !== 'undefined') {
@@ -312,15 +382,17 @@ export default function HostGame() {
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
-      oscillator.frequency.value = 200; // Low buzz
+      oscillator.frequency.value = 200; // Low note
       oscillator.type = 'sawtooth';
       gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
       
       oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.3);
+      oscillator.stop(audioContext.currentTime + 0.8);
     }
   };
+
+
 
   if (game.status === "active") {
     return (
@@ -334,8 +406,12 @@ export default function HostGame() {
             
             {timeLeft !== null && timeLeft > 0 && !showResults && (
               <div 
-                className="abraj-red text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 animate-pulse hover:scale-110 transition-transform cursor-pointer"
-                onClick={() => playCountdownSound()}
+                className={`text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 hover:scale-110 transition-transform cursor-pointer ${
+                  timeLeft <= 3 ? 'bg-red-600 animate-ping shadow-lg shadow-red-500/50' : 
+                  timeLeft <= 5 ? 'bg-orange-500 animate-bounce' : 
+                  'abraj-red animate-pulse'
+                }`}
+                onClick={() => playCountdownSound(timeLeft)}
               >
                 {timeLeft}
               </div>

@@ -13,6 +13,45 @@ export default function PlayGame() {
   const { pin } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+
+  // Sound effects for countdown
+  const playCountdownSound = (count: number) => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = count === 0 ? 880 : 440;
+      oscillator.type = 'sine';
+      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.5);
+    }
+  };
+
+  const playUrgentCountdownSound = () => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'square';
+      gainNode.gain.setValueAtTime(0.4, audioContext.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3);
+      
+      oscillator.start(audioContext.currentTime);
+      oscillator.stop(audioContext.currentTime + 0.3);
+    }
+  };
   
   // Get player name from URL params
   const urlParams = new URLSearchParams(window.location.search);
@@ -24,6 +63,33 @@ export default function PlayGame() {
   const [showResult, setShowResult] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
   const [playerScore, setPlayerScore] = useState(0);
+  const [gameStartCountdown, setGameStartCountdown] = useState<number | null>(null);
+  const [isGameStarting, setIsGameStarting] = useState(false);
+
+  // Watch for game status changes to start countdown when game begins
+  useEffect(() => {
+    if (game?.status === "active" && !isGameStarting && quiz) {
+      setIsGameStarting(true);
+      setGameStartCountdown(3);
+    }
+  }, [game?.status, isGameStarting, quiz]);
+
+  // Game start countdown effect
+  useEffect(() => {
+    if (gameStartCountdown === null || !isGameStarting) return;
+
+    if (gameStartCountdown > 0) {
+      playCountdownSound(gameStartCountdown);
+      const timer = setTimeout(() => {
+        setGameStartCountdown(prev => prev! - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Countdown finished
+      setIsGameStarting(false);
+      setGameStartCountdown(null);
+    }
+  }, [gameStartCountdown, isGameStarting]);
 
   const { data: game, isLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
@@ -91,6 +157,10 @@ export default function PlayGame() {
         if (prev === null || prev <= 1) {
           return 0;
         }
+        // Play urgent sound for last 3 seconds
+        if (prev <= 3) {
+          playUrgentCountdownSound();
+        }
         return prev - 1;
       });
     }, 1000);
@@ -137,24 +207,7 @@ export default function PlayGame() {
     }
   };
 
-  const playCountdownSound = () => {
-    if (typeof Audio !== 'undefined') {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = 800;
-      oscillator.type = 'sine';
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.1);
-    }
-  };
+
 
   const playCorrectSound = () => {
     if (typeof Audio !== 'undefined') {
@@ -250,6 +303,26 @@ export default function PlayGame() {
   const currentRank = players
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .findIndex(p => p.name === playerName) + 1;
+
+  // Countdown overlay component
+  const CountdownOverlay = () => {
+    if (!isGameStarting || gameStartCountdown === null) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
+        <div className="text-center">
+          <div className={`w-32 h-32 rounded-full flex items-center justify-center font-bold text-6xl mx-auto mb-6 ${
+            gameStartCountdown === 3 ? 'bg-red-500 animate-pulse' :
+            gameStartCountdown === 2 ? 'bg-yellow-500 animate-bounce' :
+            'bg-green-500 animate-ping'
+          } text-white shadow-2xl`}>
+            {gameStartCountdown}
+          </div>
+          <h2 className="text-white text-2xl font-bold">Game Starting...</h2>
+        </div>
+      </div>
+    );
+  };
 
   if (game.status === "waiting") {
     return (
@@ -347,6 +420,7 @@ export default function PlayGame() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4">
+      <CountdownOverlay />
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
@@ -356,8 +430,12 @@ export default function PlayGame() {
           
           {timeLeft !== null && timeLeft > 0 && !hasAnswered && (
             <div 
-              className="abraj-red text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 animate-pulse hover:scale-110 transition-transform cursor-pointer"
-              onClick={() => playCountdownSound()}
+              className={`text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 hover:scale-110 transition-transform cursor-pointer ${
+                timeLeft <= 3 ? 'bg-red-600 animate-ping shadow-lg shadow-red-500/50' : 
+                timeLeft <= 5 ? 'bg-orange-500 animate-bounce' : 
+                'abraj-red animate-pulse'
+              }`}
+              onClick={() => playCountdownSound(timeLeft)}
             >
               {timeLeft}
             </div>
