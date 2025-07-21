@@ -1,10 +1,127 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertQuizSchema, insertGameSchema, insertGameResponseSchema, quizQuestionsSchema } from "@shared/schema";
+import { insertQuizSchema, insertGameSchema, insertGameResponseSchema, quizQuestionsSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
+import session from "express-session";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Session configuration
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'abraj-quiz-secret-dev',
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: false, // Set to true in production with HTTPS
+      httpOnly: true,
+      maxAge: 24 * 60 * 60 * 1000 // 24 hours
+    }
+  }));
+
+  // Authentication middleware
+  const requireAuth = (req: any, res: any, next: any) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+    next();
+  };
+
+  // Authentication routes
+  app.post("/api/register", async (req, res) => {
+    try {
+      const validation = insertUserSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid user data", errors: validation.error.errors });
+      }
+
+      const { username, password } = validation.data;
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByUsername(username);
+      if (existingUser) {
+        return res.status(400).json({ message: "Username already exists" });
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create user
+      const user = await storage.createUser({
+        username,
+        password: hashedPassword
+      });
+
+      // Set session
+      (req as any).session.userId = user.id;
+      (req as any).session.username = user.username;
+
+      res.status(201).json({ 
+        id: user.id, 
+        username: user.username,
+        message: "User registered successfully" 
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Failed to register user" });
+    }
+  });
+
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+
+      if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required" });
+      }
+
+      // Find user
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+
+      // Check password
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ message: "Invalid username or password" });
+      }
+
+      // Set session
+      (req as any).session.userId = user.id;
+      (req as any).session.username = user.username;
+
+      res.json({ 
+        id: user.id, 
+        username: user.username,
+        message: "Login successful" 
+      });
+    } catch (error) {
+      console.error("Login error:", error);
+      res.status(500).json({ message: "Failed to login" });
+    }
+  });
+
+  app.post("/api/logout", (req, res) => {
+    (req as any).session.destroy((err: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Failed to logout" });
+      }
+      res.json({ message: "Logout successful" });
+    });
+  });
+
+  app.get("/api/me", (req, res) => {
+    if (!(req as any).session.userId) {
+      return res.status(401).json({ message: "Not authenticated" });
+    }
+
+    res.json({
+      id: (req as any).session.userId,
+      username: (req as any).session.username
+    });
+  });
+
   // Quiz routes
   app.get("/api/quizzes", async (req, res) => {
     try {
@@ -28,7 +145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/quizzes", async (req, res) => {
+  app.post("/api/quizzes", requireAuth, async (req, res) => {
     try {
       const validation = insertQuizSchema.safeParse(req.body);
       if (!validation.success) {
@@ -41,7 +158,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid questions format", errors: questionsValidation.error.errors });
       }
 
-      const quiz = await storage.createQuiz(validation.data);
+      const quiz = await storage.createQuiz({
+        ...validation.data,
+        createdBy: (req as any).session.userId
+      });
       res.status(201).json(quiz);
     } catch (error) {
       res.status(500).json({ message: "Failed to create quiz" });
@@ -49,7 +169,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Game routes
-  app.post("/api/games", async (req, res) => {
+  app.post("/api/games", requireAuth, async (req, res) => {
     try {
       const { quizId, hostId } = req.body;
       
@@ -73,7 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const gameData = {
         quizId,
-        hostId: hostId || 1, // Default to demo user
+        hostId: (req as any).session.userId,
         gamePin,
         status: "waiting" as const
       };
@@ -260,6 +380,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Game not found" });
       }
 
+      const quiz = await storage.getQuiz(game.quizId);
       const responses = await storage.getGameResponses(game.id);
       const players = (game.players as any[]) || [];
       

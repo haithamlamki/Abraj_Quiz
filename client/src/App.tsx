@@ -10,12 +10,16 @@ import HostGame from "@/pages/host-game";
 import JoinGame from "@/pages/join-game";
 import PlayGame from "@/pages/play-game";
 import GameResults from "@/pages/game-results";
+import Login from "@/pages/login";
+import Signup from "@/pages/signup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
+      <Route path="/login" component={Login} />
+      <Route path="/signup" component={Signup} />
       <Route path="/create" component={CreateQuiz} />
       <Route path="/host/:pin" component={HostGame} />
       <Route path="/join/:pin?" component={JoinGame} />

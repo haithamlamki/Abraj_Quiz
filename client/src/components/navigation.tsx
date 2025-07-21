@@ -1,9 +1,13 @@
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 import abrajLogo from "@assets/ABRJ.OM - Copy_1753085299475.png";
 
 export default function Navigation() {
   const [location] = useLocation();
+  const { user, isAuthenticated, logout, isLoggingOut } = useAuth();
+  const { toast } = useToast();
 
   return (
     <nav className="bg-white shadow-lg border-b-4 border-abraj-primary sticky top-0 z-50">
@@ -55,15 +59,43 @@ export default function Navigation() {
           </div>
           
           <div className="flex items-center space-x-3">
-            <Button className="abraj-primary hover:abraj-secondary text-white font-medium">
-              Sign up
-            </Button>
-            <Button 
-              variant="outline" 
-              className="text-abraj-primary border-abraj-primary hover:abraj-primary hover:text-white font-medium"
-            >
-              Log in
-            </Button>
+            {isAuthenticated ? (
+              <>
+                <span className="text-sm text-gray-600 hidden sm:block">
+                  Welcome, <span className="font-medium text-abraj-primary">{user?.username}</span>
+                </span>
+                <Button 
+                  variant="outline" 
+                  className="text-abraj-primary border-abraj-primary hover:abraj-primary hover:text-white font-medium"
+                  onClick={() => {
+                    logout();
+                    toast({
+                      title: "Logged out",
+                      description: "You have been successfully logged out.",
+                    });
+                  }}
+                  disabled={isLoggingOut}
+                >
+                  {isLoggingOut ? "Logging out..." : "Log out"}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link href="/signup">
+                  <Button className="abraj-primary hover:abraj-secondary text-white font-medium">
+                    Sign up
+                  </Button>
+                </Link>
+                <Link href="/login">
+                  <Button 
+                    variant="outline" 
+                    className="text-abraj-primary border-abraj-primary hover:abraj-primary hover:text-white font-medium"
+                  >
+                    Log in
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>

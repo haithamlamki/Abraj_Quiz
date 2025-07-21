@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Trash2, Triangle, Diamond, Circle, Square } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { Question } from "@shared/schema";
 
 interface QuizForm {
@@ -25,6 +26,36 @@ export default function CreateQuiz() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to create quizzes.",
+        variant: "destructive",
+      });
+      setLocation("/login");
+    }
+  }, [isAuthenticated, isLoading, setLocation, toast]);
+
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Don't render the form if not authenticated
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const [quiz, setQuiz] = useState<QuizForm>({
     title: "",
@@ -47,7 +78,6 @@ export default function CreateQuiz() {
         title: quizData.title,
         description: quizData.description,
         questions: quizData.questions,
-        createdBy: 1, // Default to demo user
         isPublic: true
       });
       return response.json();
