@@ -46,7 +46,7 @@ export default function Home() {
               </p>
               
               {/* Game PIN Entry */}
-              <Card className="mt-8 shadow-xl border border-gray-100 max-w-lg mx-auto">
+              <Card className="mt-8 card-3d max-w-lg mx-auto">
                 <CardContent className="p-8">
                   <h3 className="font-bold text-2xl text-gray-800 mb-4">Join a game</h3>
                   <div className="space-y-4">
@@ -56,7 +56,7 @@ export default function Home() {
                         placeholder="Game PIN"
                         value={gamePin}
                         onChange={(e) => setGamePin(e.target.value)}
-                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-medium text-center focus:border-abraj-primary"
+                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d"
                         onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                       />
                     </div>
@@ -66,7 +66,7 @@ export default function Home() {
                         placeholder={isAuthenticated && user ? user.username : "Player name"}
                         value={playerName}
                         onChange={(e) => setPlayerName(e.target.value)}
-                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-medium text-center focus:border-abraj-primary"
+                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d"
                         maxLength={20}
                         onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                       />
@@ -107,8 +107,8 @@ export default function Home() {
           
           <div className="max-w-5xl mx-auto">
             {/* Quick Create Preview - Centered */}
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 shadow-xl max-w-md mx-auto mb-12">
-              <div className="bg-white rounded-xl p-6 shadow-lg">
+            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 card-3d max-w-md mx-auto mb-12">
+              <div className="bg-white rounded-xl p-6 card-3d">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold text-xl text-gray-800">Create New Quiz</h3>
                   <div className="abraj-blue text-white px-3 py-1 rounded-full text-sm font-medium">
@@ -117,8 +117,8 @@ export default function Home() {
                 </div>
                 
                 <div className="space-y-4">
-                  <Input placeholder="Quiz Title" className="w-full" />
-                  <Input placeholder="Description" className="w-full" />
+                  <Input placeholder="Quiz Title" className="w-full input-3d" />
+                  <Input placeholder="Description" className="w-full input-3d" />
                   
                   <div className="grid grid-cols-2 gap-3">
                     <div className="abraj-red text-white p-4 rounded-lg text-center font-bold">
@@ -147,25 +147,25 @@ export default function Home() {
             {/* Features Grid - Horizontal */}
             <div className="max-w-6xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-abraj-primary to-teal-600 p-6 rounded-xl text-center text-[#029ebd]">
+                <div className="bg-gradient-to-br from-abraj-primary to-teal-600 text-white p-6 rounded-xl text-center card-3d">
                   <Clock className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Time Limits</h4>
                   <p className="text-sm opacity-90">Set custom timers</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-green to-green-600 p-6 rounded-xl text-center text-[#019ebd]">
+                <div className="bg-gradient-to-br from-abraj-green to-green-600 text-white p-6 rounded-xl text-center card-3d">
                   <Image className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Rich Media</h4>
                   <p className="text-sm opacity-90">Add images & videos</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-blue to-blue-600 p-6 rounded-xl text-center text-[#019ebd]">
+                <div className="bg-gradient-to-br from-abraj-blue to-blue-600 text-white p-6 rounded-xl text-center card-3d">
                   <Users className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Team Mode</h4>
                   <p className="text-sm opacity-90">Collaborative play</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-red to-red-600 p-6 rounded-xl text-center text-[#019ebd]">
+                <div className="bg-gradient-to-br from-abraj-red to-red-600 text-white p-6 rounded-xl text-center card-3d">
                   <BarChart className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Analytics</h4>
                   <p className="text-sm opacity-90">Track performance</p>
