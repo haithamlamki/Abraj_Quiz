@@ -298,4 +298,25 @@
       0 2px 4px rgba(0, 0, 0, 0.1);
     border-color: var(--abraj-primary);
   }
+
+  /* 3D Text Effects */
+  .text-3d {
+    text-shadow: 
+      0 2px 4px rgba(1, 158, 189, 0.3),
+      0 4px 8px rgba(1, 158, 189, 0.2),
+      0 6px 12px rgba(0, 0, 0, 0.1);
+    transform: translateZ(0);
+    filter: drop-shadow(0 2px 4px rgba(1, 158, 189, 0.2));
+    position: relative;
+  }
+
+  .text-3d::before {
+    content: attr(data-text);
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    color: rgba(1, 158, 189, 0.3);
+    transform: translate(2px, 2px);
+  }
 }
