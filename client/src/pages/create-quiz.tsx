@@ -1,0 +1,340 @@
+import { useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Trash2, Triangle, Diamond, Circle, Square } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import type { Question } from "@shared/schema";
+
+interface QuizForm {
+  title: string;
+  description: string;
+  questions: Question[];
+}
+
+const answerIcons = [Triangle, Diamond, Circle, Square];
+const answerColors = ['kahoot-red', 'kahoot-blue', 'kahoot-green', 'kahoot-orange'];
+
+export default function CreateQuiz() {
+  const [, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const [quiz, setQuiz] = useState<QuizForm>({
+    title: "",
+    description: "",
+    questions: [
+      {
+        question: "",
+        answers: ["", "", "", ""],
+        correctAnswer: 0,
+        timeLimit: 30
+      }
+    ]
+  });
+
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+
+  const createQuizMutation = useMutation({
+    mutationFn: async (quizData: QuizForm) => {
+      const response = await apiRequest("POST", "/api/quizzes", {
+        title: quizData.title,
+        description: quizData.description,
+        questions: quizData.questions,
+        createdBy: 1, // Default to demo user
+        isPublic: true
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Quiz Created!",
+        description: "Your quiz has been created successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
+      setLocation("/");
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create quiz. Please try again.",
+        variant: "destructive",
+      });
+    }
+  });
+
+  const addQuestion = () => {
+    setQuiz(prev => ({
+      ...prev,
+      questions: [...prev.questions, {
+        question: "",
+        answers: ["", "", "", ""],
+        correctAnswer: 0,
+        timeLimit: 30
+      }]
+    }));
+    setCurrentQuestionIndex(quiz.questions.length);
+  };
+
+  const removeQuestion = (index: number) => {
+    if (quiz.questions.length <= 1) return;
+    
+    setQuiz(prev => ({
+      ...prev,
+      questions: prev.questions.filter((_, i) => i !== index)
+    }));
+    
+    if (currentQuestionIndex >= index && currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+    }
+  };
+
+  const updateQuestion = (index: number, field: keyof Question, value: any) => {
+    setQuiz(prev => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => 
+        i === index ? { ...q, [field]: value } : q
+      )
+    }));
+  };
+
+  const updateAnswer = (questionIndex: number, answerIndex: number, value: string) => {
+    setQuiz(prev => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => 
+        i === questionIndex ? {
+          ...q,
+          answers: q.answers.map((a, ai) => ai === answerIndex ? value : a)
+        } : q
+      )
+    }));
+  };
+
+  const handleSubmit = () => {
+    if (!quiz.title.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a quiz title.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (quiz.questions.some(q => !q.question.trim() || q.answers.some(a => !a.trim()))) {
+      toast({
+        title: "Error", 
+        description: "Please fill in all questions and answers.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    createQuizMutation.mutate(quiz);
+  };
+
+  const currentQuestion = quiz.questions[currentQuestionIndex];
+
+  return (
+    <div className="min-h-screen py-8">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-8">
+          <h1 className="font-bold text-4xl text-gray-800 mb-4">Create Your Quiz</h1>
+          <p className="text-xl text-gray-600">Build engaging quizzes in minutes</p>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-8">
+          {/* Quiz Details */}
+          <div className="lg:col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Quiz Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                  <Input
+                    value={quiz.title}
+                    onChange={(e) => setQuiz(prev => ({ ...prev, title: e.target.value }))}
+                    placeholder="Enter quiz title"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                  <Textarea
+                    value={quiz.description}
+                    onChange={(e) => setQuiz(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Describe your quiz"
+                    rows={3}
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-gray-600">
+                    {quiz.questions.length} question{quiz.questions.length !== 1 ? 's' : ''}
+                  </span>
+                  <Button onClick={addQuestion} size="sm" className="kahoot-purple">
+                    <Plus className="w-4 h-4 mr-1" />
+                    Add Question
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Question Navigation */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Questions</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {quiz.questions.map((q, index) => (
+                    <div
+                      key={index}
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                        index === currentQuestionIndex 
+                          ? 'bg-purple-100 border-2 border-kahoot-purple' 
+                          : 'bg-gray-50 hover:bg-gray-100'
+                      }`}
+                      onClick={() => setCurrentQuestionIndex(index)}
+                    >
+                      <span className="text-sm font-medium">
+                        Q{index + 1}: {q.question || "Untitled"}
+                      </span>
+                      {quiz.questions.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeQuestion(index);
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Question Editor */}
+          <div className="lg:col-span-2">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle>Question {currentQuestionIndex + 1} of {quiz.questions.length}</CardTitle>
+                  <Badge variant="secondary">Multiple Choice</Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Question</label>
+                  <Input
+                    value={currentQuestion.question}
+                    onChange={(e) => updateQuestion(currentQuestionIndex, 'question', e.target.value)}
+                    placeholder="Enter your question"
+                    className="text-lg"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-4">Answer Options</label>
+                  <div className="grid grid-cols-2 gap-4">
+                    {currentQuestion.answers.map((answer, answerIndex) => {
+                      const IconComponent = answerIcons[answerIndex];
+                      const colorClass = answerColors[answerIndex];
+                      
+                      return (
+                        <div
+                          key={answerIndex}
+                          className={`${colorClass} text-white p-4 rounded-lg cursor-pointer hover:scale-105 transition-transform`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-bold">{String.fromCharCode(65 + answerIndex)}</span>
+                            <IconComponent className="w-5 h-5" />
+                          </div>
+                          <Input
+                            value={answer}
+                            onChange={(e) => updateAnswer(currentQuestionIndex, answerIndex, e.target.value)}
+                            placeholder={`Answer ${String.fromCharCode(65 + answerIndex)}`}
+                            className="w-full bg-transparent border-none text-white placeholder:text-white/70 focus:outline-none"
+                          />
+                          <div className="flex items-center space-x-2 mt-2">
+                            <Checkbox
+                              checked={currentQuestion.correctAnswer === answerIndex}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  updateQuestion(currentQuestionIndex, 'correctAnswer', answerIndex);
+                                }
+                              }}
+                              className="border-white data-[state=checked]:bg-white data-[state=checked]:text-black"
+                            />
+                            <span className="text-sm opacity-90">Correct answer</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <label className="text-sm font-medium text-gray-700">Time limit:</label>
+                    <select
+                      value={currentQuestion.timeLimit}
+                      onChange={(e) => updateQuestion(currentQuestionIndex, 'timeLimit', parseInt(e.target.value))}
+                      className="border border-gray-300 rounded-md px-3 py-1"
+                    >
+                      <option value={10}>10 seconds</option>
+                      <option value={20}>20 seconds</option>
+                      <option value={30}>30 seconds</option>
+                      <option value={60}>60 seconds</option>
+                    </select>
+                  </div>
+
+                  <div className="flex space-x-3">
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
+                      disabled={currentQuestionIndex === 0}
+                    >
+                      Previous
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setCurrentQuestionIndex(Math.min(quiz.questions.length - 1, currentQuestionIndex + 1))}
+                      disabled={currentQuestionIndex === quiz.questions.length - 1}
+                    >
+                      Next
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Submit */}
+            <div className="mt-8 flex justify-center">
+              <Button
+                onClick={handleSubmit}
+                disabled={createQuizMutation.isPending}
+                className="kahoot-purple hover:bg-purple-600 text-white px-8 py-3 text-lg font-bold"
+              >
+                {createQuizMutation.isPending ? "Creating..." : "Create Quiz"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

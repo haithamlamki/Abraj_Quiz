@@ -1,0 +1,99 @@
+# Kahoot-style Quiz Application
+
+## Overview
+
+This is a real-time quiz application inspired by Kahoot, built with React (frontend) and Express.js (backend). The application allows users to create quizzes, host live quiz games with PIN-based joining, and provides real-time gameplay with leaderboards and scoring.
+
+## User Preferences
+
+Preferred communication style: Simple, everyday language.
+
+## System Architecture
+
+### Frontend Architecture
+- **Framework**: React 18 with TypeScript
+- **Routing**: Wouter for client-side routing
+- **UI Components**: Radix UI primitives with shadcn/ui design system
+- **Styling**: Tailwind CSS with custom Kahoot brand colors
+- **State Management**: TanStack Query (React Query) for server state
+- **Build Tool**: Vite with custom configuration for monorepo structure
+
+### Backend Architecture
+- **Framework**: Express.js with TypeScript
+- **Database**: PostgreSQL with Drizzle ORM
+- **Database Provider**: Neon Database (serverless PostgreSQL)
+- **API Style**: REST API with JSON responses
+- **Development**: Hot module replacement via Vite middleware in development
+
+### Key Design Decisions
+
+**Monorepo Structure**: The application uses a monorepo with shared schema between client and server, enabling type safety across the full stack.
+
+**Real-time Features**: While WebSocket infrastructure isn't visible in the current codebase, the application is designed for real-time gameplay with polling-based updates (evident from refetchInterval usage in queries).
+
+**Component-based UI**: Leverages Radix UI for accessibility and shadcn/ui for consistent design patterns, with custom Kahoot-inspired theming.
+
+## Key Components
+
+### Database Schema (shared/schema.ts)
+- **Users**: Authentication and user management
+- **Quizzes**: Quiz content with JSONB questions storage
+- **Games**: Live game sessions with PIN-based access
+- **Game Responses**: Player answers and scoring data
+
+### API Routes (server/routes.ts)
+- **Quiz Management**: CRUD operations for quizzes
+- **Game Management**: Creating and managing live game sessions
+- **Real-time Gameplay**: Player joining, answer submission, and results
+
+### Frontend Pages
+- **Home**: Quiz discovery and game PIN entry
+- **Create Quiz**: Interactive quiz builder with question management
+- **Host Game**: Real-time game control and player management
+- **Join/Play Game**: Player experience with answer submission
+- **Game Results**: Leaderboards and final scoring
+
+### Storage Layer
+- **Interface-based Design**: IStorage interface allows for multiple implementations
+- **Memory Storage**: Development/testing implementation
+- **Database Storage**: Production implementation (not shown but referenced)
+
+## Data Flow
+
+1. **Quiz Creation**: Users create quizzes with questions stored as JSONB
+2. **Game Hosting**: Host creates game session with generated PIN
+3. **Player Joining**: Players join via PIN, stored in game's players array
+4. **Real-time Gameplay**: Questions displayed, answers submitted, results calculated
+5. **Scoring**: Point calculation based on correctness and response time
+6. **Leaderboards**: Real-time score updates and final rankings
+
+## External Dependencies
+
+### Core Dependencies
+- **@neondatabase/serverless**: Serverless PostgreSQL connection
+- **drizzle-orm**: Type-safe database operations
+- **@tanstack/react-query**: Server state management
+- **@radix-ui/***: Accessible UI primitives
+- **tailwindcss**: Utility-first CSS framework
+
+### Development Tools
+- **tsx**: TypeScript execution for development
+- **esbuild**: Fast bundling for production
+- **drizzle-kit**: Database migrations and schema management
+
+## Deployment Strategy
+
+### Build Process
+- **Frontend**: Vite builds React app to `dist/public`
+- **Backend**: esbuild bundles Express server to `dist/index.js`
+- **Database**: Drizzle migrations handle schema updates
+
+### Environment Configuration
+- **DATABASE_URL**: PostgreSQL connection string (required)
+- **NODE_ENV**: Environment detection for development features
+- **REPL_ID**: Replit-specific features when deployed on Replit
+
+### Production Considerations
+- Static file serving handled by Express in production
+- Database migrations via `db:push` script
+- Serverless-compatible architecture with Neon Database

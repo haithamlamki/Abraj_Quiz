@@ -1,0 +1,158 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(20, 14.3%, 4.1%);
+  --muted: hsl(60, 4.8%, 95.9%);
+  --muted-foreground: hsl(25, 5.3%, 44.7%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(20, 14.3%, 4.1%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(20, 14.3%, 4.1%);
+  --border: hsl(20, 5.9%, 90%);
+  --input: hsl(20, 5.9%, 90%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(60, 4.8%, 95.9%);
+  --secondary-foreground: hsl(24, 9.8%, 10%);
+  --accent: hsl(60, 4.8%, 95.9%);
+  --accent-foreground: hsl(24, 9.8%, 10%);
+  --destructive: hsl(0, 84.2%, 60.2%);
+  --destructive-foreground: hsl(60, 9.1%, 97.8%);
+  --ring: hsl(20, 14.3%, 4.1%);
+  --radius: 0.5rem;
+
+  /* Kahoot brand colors */
+  --kahoot-purple: hsl(246, 85%, 69%);
+  --kahoot-blue: hsl(207, 90%, 54%);
+  --kahoot-red: hsl(0, 84%, 60%);
+  --kahoot-green: hsl(142, 71%, 45%);
+  --kahoot-orange: hsl(25, 95%, 53%);
+  --kahoot-pink: hsl(330, 81%, 60%);
+}
+
+.dark {
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(207, 90%, 54%);
+  --primary-foreground: hsl(211, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  .kahoot-purple {
+    background-color: var(--kahoot-purple);
+  }
+  
+  .kahoot-blue {
+    background-color: var(--kahoot-blue);
+  }
+  
+  .kahoot-red {
+    background-color: var(--kahoot-red);
+  }
+  
+  .kahoot-green {
+    background-color: var(--kahoot-green);
+  }
+  
+  .kahoot-orange {
+    background-color: var(--kahoot-orange);
+  }
+  
+  .kahoot-pink {
+    background-color: var(--kahoot-pink);
+  }
+
+  .text-kahoot-purple {
+    color: var(--kahoot-purple);
+  }
+  
+  .text-kahoot-blue {
+    color: var(--kahoot-blue);
+  }
+  
+  .text-kahoot-red {
+    color: var(--kahoot-red);
+  }
+  
+  .text-kahoot-green {
+    color: var(--kahoot-green);
+  }
+  
+  .text-kahoot-orange {
+    color: var(--kahoot-orange);
+  }
+  
+  .text-kahoot-pink {
+    color: var(--kahoot-pink);
+  }
+
+  .border-kahoot-purple {
+    border-color: var(--kahoot-purple);
+  }
+
+  .hover\:kahoot-purple:hover {
+    background-color: var(--kahoot-purple);
+  }
+
+  .hover\:kahoot-blue:hover {
+    background-color: var(--kahoot-blue);
+  }
+
+  .hover\:kahoot-red:hover {
+    background-color: var(--kahoot-red);
+  }
+
+  .hover\:kahoot-green:hover {
+    background-color: var(--kahoot-green);
+  }
+
+  .hover\:kahoot-orange:hover {
+    background-color: var(--kahoot-orange);
+  }
+
+  .animate-bounce-gentle {
+    animation: bounce 2s infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s infinite;
+  }
+
+  .animate-wiggle {
+    animation: wiggle 1s ease-in-out infinite;
+  }
+
+  @keyframes wiggle {
+    0%, 100% { transform: rotate(-3deg); }
+    50% { transform: rotate(3deg); }
+  }
+}
