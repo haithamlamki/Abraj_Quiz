@@ -220,7 +220,7 @@ export default function Home() {
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2024 Abraj Quiz. All rights reserved. Built for educational purposes.</p>
+            <p>© 2025 Abraj Quiz. All rights reserved. Built for educational purposes.</p>
           </div>
         </div>
       </footer>
