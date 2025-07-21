@@ -100,6 +100,15 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**Quiz History Feature (January 21, 2025)**
+- ✓ Added comprehensive authentication system with login/signup functionality
+- ✓ Implemented password hashing with bcrypt for secure user authentication
+- ✓ Created quiz history page for users to view and manage their created quizzes
+- ✓ Added "/my-quizzes" API endpoint to fetch user-specific quizzes
+- ✓ Updated navigation to show "My Quizzes" link for authenticated users
+- ✓ Fixed quiz creation validation issues for authenticated users
+- ✓ Quiz creation now properly assigns createdBy from user session
+
 **Database Integration (January 21, 2025)**
 - ✓ Integrated PostgreSQL database using Neon Database
 - ✓ Replaced MemStorage with DatabaseStorage implementation

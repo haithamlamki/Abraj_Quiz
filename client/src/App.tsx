@@ -12,6 +12,7 @@ import PlayGame from "@/pages/play-game";
 import GameResults from "@/pages/game-results";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
+import QuizHistory from "@/pages/quiz-history";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -21,6 +22,7 @@ function Router() {
       <Route path="/login" component={Login} />
       <Route path="/signup" component={Signup} />
       <Route path="/create" component={CreateQuiz} />
+      <Route path="/my-quizzes" component={QuizHistory} />
       <Route path="/host/:pin" component={HostGame} />
       <Route path="/join/:pin?" component={JoinGame} />
       <Route path="/play/:pin" component={PlayGame} />

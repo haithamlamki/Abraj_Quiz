@@ -18,6 +18,7 @@ export interface IStorage {
   getQuiz(id: number): Promise<Quiz | undefined>;
   getQuizzes(): Promise<Quiz[]>;
   getPublicQuizzes(): Promise<Quiz[]>;
+  getUserQuizzes(userId: number): Promise<Quiz[]>;
   createQuiz(quiz: InsertQuiz): Promise<Quiz>;
   updateQuiz(id: number, quiz: Partial<Quiz>): Promise<Quiz | undefined>;
   deleteQuiz(id: number): Promise<boolean>;
@@ -67,6 +68,10 @@ export class DatabaseStorage implements IStorage {
 
   async getPublicQuizzes(): Promise<Quiz[]> {
     return await db.select().from(quizzes).where(eq(quizzes.isPublic, true));
+  }
+
+  async getUserQuizzes(userId: number): Promise<Quiz[]> {
+    return await db.select().from(quizzes).where(eq(quizzes.createdBy, userId));
   }
 
   async createQuiz(insertQuiz: InsertQuiz): Promise<Quiz> {
@@ -293,6 +298,10 @@ export class MemStorage implements IStorage {
 
   async getPublicQuizzes(): Promise<Quiz[]> {
     return Array.from(this.quizzes.values()).filter(quiz => quiz.isPublic);
+  }
+
+  async getUserQuizzes(userId: number): Promise<Quiz[]> {
+    return Array.from(this.quizzes.values()).filter(quiz => quiz.createdBy === userId);
   }
 
   async createQuiz(insertQuiz: InsertQuiz): Promise<Quiz> {

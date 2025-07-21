@@ -37,6 +37,17 @@ export default function Navigation() {
                   Create
                 </span>
               </Link>
+              {isAuthenticated && (
+                <Link href="/my-quizzes">
+                  <span className={`px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                    location === '/my-quizzes' 
+                      ? 'text-abraj-primary bg-teal-50' 
+                      : 'text-gray-700 hover:text-abraj-primary'
+                  }`}>
+                    My Quizzes
+                  </span>
+                </Link>
+              )}
               <Link href="/join">
                 <span className={`px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
                   location.startsWith('/join') 

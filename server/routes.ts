@@ -145,6 +145,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/my-quizzes", requireAuth, async (req, res) => {
+    try {
+      const userId = (req as any).session.userId;
+      const quizzes = await storage.getUserQuizzes(userId);
+      res.json(quizzes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch user quizzes" });
+    }
+  });
+
   app.post("/api/quizzes", requireAuth, async (req, res) => {
     try {
       const validation = insertQuizSchema.safeParse(req.body);
