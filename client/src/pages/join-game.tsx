@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { QrCode, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -17,6 +19,9 @@ export default function JoinGame() {
   const [gamePin, setGamePin] = useState(urlPin || "");
   const [playerName, setPlayerName] = useState("");
   const [step, setStep] = useState<"pin" | "name">(urlPin ? "name" : "pin");
+  const [showScanner, setShowScanner] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Auto-fill player name if user is authenticated
   useEffect(() => {
@@ -24,6 +29,67 @@ export default function JoinGame() {
       setPlayerName(user.username);
     }
   }, [isAuthenticated, user, playerName]);
+
+  // Camera access and QR scanning functions
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } // Use back camera if available
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch (error) {
+      toast({
+        title: "Camera Access Failed",
+        description: "Please allow camera access to scan QR codes.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  const handleVideoClick = () => {
+    // Simulate QR code detection when user taps the video area
+    const scannedPin = prompt("For demo: Enter the game PIN from the QR code you're scanning:");
+    
+    if (scannedPin && scannedPin.trim()) {
+      setGamePin(scannedPin.trim());
+      setShowScanner(false);
+      stopCamera();
+      toast({
+        title: "QR Code Scanned!",
+        description: `Game PIN ${scannedPin.trim()} has been entered.`,
+      });
+    }
+  };
+
+  const handleScanClick = () => {
+    setShowScanner(true);
+  };
+
+  const handleCloseScanner = () => {
+    setShowScanner(false);
+    stopCamera();
+  };
+
+  // Start scanning when camera is ready
+  useEffect(() => {
+    if (showScanner && videoRef.current) {
+      startCamera();
+      return () => {
+        stopCamera();
+      };
+    }
+  }, [showScanner]);
 
   const checkGameMutation = useMutation({
     mutationFn: async (pin: string) => {
@@ -106,21 +172,79 @@ export default function JoinGame() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Game PIN
                 </label>
-                <Input
-                  type="text"
-                  value={gamePin}
-                  onChange={(e) => setGamePin(e.target.value)}
-                  placeholder="Enter Game PIN"
-                  className="text-center text-2xl font-bold"
-                  onKeyPress={(e) => e.key === 'Enter' && handlePinSubmit()}
-                  autoFocus
-                />
+                <div className="flex gap-2">
+                  <Input
+                    type="text"
+                    value={gamePin}
+                    onChange={(e) => setGamePin(e.target.value)}
+                    placeholder="Enter Game PIN"
+                    className="text-center text-2xl font-bold flex-1"
+                    onKeyPress={(e) => e.key === 'Enter' && handlePinSubmit()}
+                    autoFocus
+                  />
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        onClick={handleScanClick}
+                        className="px-4 py-3 text-lg font-medium"
+                        title="Scan QR Code"
+                      >
+                        <QrCode className="w-6 h-6" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle className="text-center flex items-center gap-2 justify-center">
+                          <QrCode className="w-5 h-5" />
+                          Scan QR Code
+                        </DialogTitle>
+                      </DialogHeader>
+                      <div className="flex flex-col items-center space-y-4 p-4">
+                        <div className="relative bg-black rounded-lg overflow-hidden cursor-pointer" onClick={handleVideoClick}>
+                          <video
+                            ref={videoRef}
+                            className="w-64 h-64 object-cover"
+                            autoPlay
+                            playsInline
+                            muted
+                          />
+                          <canvas
+                            ref={canvasRef}
+                            className="hidden"
+                          />
+                          <div className="absolute inset-0 border-2 border-white/50 m-8 pointer-events-none">
+                            <div className="absolute top-0 left-0 w-8 h-8 border-l-4 border-t-4 border-abraj-primary"></div>
+                            <div className="absolute top-0 right-0 w-8 h-8 border-r-4 border-t-4 border-abraj-primary"></div>
+                            <div className="absolute bottom-0 left-0 w-8 h-8 border-l-4 border-b-4 border-abraj-primary"></div>
+                            <div className="absolute bottom-0 right-0 w-8 h-8 border-r-4 border-b-4 border-abraj-primary"></div>
+                          </div>
+                          <div className="absolute bottom-2 left-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                            Tap to scan QR code (Demo)
+                          </div>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600 mb-2">Point your camera at a QR code and tap to scan</p>
+                          <p className="text-xs text-gray-500">The game PIN will be automatically entered</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          onClick={handleCloseScanner}
+                          className="w-full"
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Cancel
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
               
               <Button
                 onClick={handlePinSubmit}
                 disabled={checkGameMutation.isPending}
-                className="w-full abraj-primary hover:abraj-secondary text-white font-bold text-lg py-3"
+                className="w-full abraj-primary hover:abraj-secondary text-white font-bold text-lg py-3 rounded-xl shadow-lg"
               >
                 {checkGameMutation.isPending ? "Checking..." : "Continue"}
               </Button>
@@ -163,17 +287,22 @@ export default function JoinGame() {
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder={isAuthenticated && user ? user.username : "Enter your name"}
-                  className="text-center text-xl font-medium"
+                  className="text-center text-xl font-medium px-4 py-3 rounded-xl input-3d"
                   maxLength={20}
                   onKeyPress={(e) => e.key === 'Enter' && handleNameSubmit()}
                   autoFocus
                 />
+                {isAuthenticated && user && (
+                  <p className="text-xs text-abraj-primary text-center mt-2">
+                    Your name is auto-filled from your account
+                  </p>
+                )}
                 {!isAuthenticated && (
                   <p className="text-xs text-gray-500 mt-2 text-center">
                     <Button
                       variant="link"
                       onClick={() => setLocation("/login")}
-                      className="text-abraj-primary p-0 h-auto text-xs"
+                      className="text-abraj-primary p-0 h-auto text-xs hover:underline"
                     >
                       Login
                     </Button>
@@ -185,7 +314,7 @@ export default function JoinGame() {
               <Button
                 onClick={handleNameSubmit}
                 disabled={joinGameMutation.isPending}
-                className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3"
+                className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3 rounded-xl shadow-lg"
               >
                 {joinGameMutation.isPending ? "Joining..." : "Join Game"}
               </Button>
