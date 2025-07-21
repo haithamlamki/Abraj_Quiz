@@ -159,7 +159,7 @@ export default function Home() {
                   <p className="text-sm opacity-90">Add images & videos</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-blue to-blue-600 text-white p-6 rounded-xl text-center">
+                <div className="bg-gradient-to-br from-abraj-blue to-blue-600 p-6 rounded-xl text-center text-[#019ebd]">
                   <Users className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Team Mode</h4>
                   <p className="text-sm opacity-90">Collaborative play</p>
