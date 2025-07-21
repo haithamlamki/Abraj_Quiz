@@ -39,7 +39,7 @@ export default function Home() {
             <div className="text-center max-w-4xl">
               <h1 className="font-bold text-5xl lg:text-6xl text-gray-800 leading-tight">
                 Make Learning
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-abraj-primary to-abraj-secondary">
+                <span className="bg-clip-text bg-gradient-to-r from-abraj-primary to-abraj-secondary text-[#019ebd]">
                   {" "}Awesome!
                 </span>
               </h1>
@@ -50,7 +50,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
       {/* Quick Actions */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -131,9 +130,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
-
-
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
