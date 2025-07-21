@@ -165,7 +165,7 @@ export default function HostGame() {
               <Badge variant="secondary" className="text-lg px-4 py-2">
                 PIN: {game.gamePin}
               </Badge>
-              <Badge variant="outline" className="text-lg px-4 py-2 bg-[#019ebd] text-[#f0fcfa]">
+              <Badge variant="outline" className="text-lg px-4 py-2 bg-[#019ebd] text-[#ffffff]">
                 {quiz.title}
               </Badge>
             </div>
