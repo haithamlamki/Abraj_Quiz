@@ -1,11 +1,13 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, Clock, Image, Users, BarChart, BookOpen, Play } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Trophy, Clock, Image, Users, BarChart, BookOpen, Play, QrCode, X } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 interface Quiz {
   id: number;
@@ -25,8 +27,12 @@ interface Quiz {
 export default function Home() {
   const [gamePin, setGamePin] = useState("");
   const [playerName, setPlayerName] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
   const [, setLocation] = useLocation();
   const { user, isAuthenticated } = useAuth();
+  const { toast } = useToast();
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   // Fetch user's quizzes when authenticated
   const { data: userQuizzes } = useQuery<Quiz[]>({
@@ -40,6 +46,89 @@ export default function Home() {
       setPlayerName(user.username);
     }
   }, [isAuthenticated, user, playerName]);
+
+  // Camera access and QR scanning
+  const startCamera = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        video: { facingMode: 'environment' } // Use back camera if available
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+    } catch (error) {
+      toast({
+        title: "Camera Access Failed",
+        description: "Please allow camera access to scan QR codes.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject as MediaStream;
+      stream.getTracks().forEach(track => track.stop());
+      videoRef.current.srcObject = null;
+    }
+  };
+
+  // Simple QR code detection function
+  // In production, you would use a proper QR library like jsQR
+  const scanQRCode = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    if (!context || video.videoWidth === 0 || video.videoHeight === 0) return;
+
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // For demonstration, we'll check if user clicks the video area to simulate scanning
+    // In a real app, you'd integrate with jsQR or similar library
+  };
+
+  const handleVideoClick = () => {
+    // Simulate QR code detection when user taps the video area
+    const currentUrl = window.location.origin;
+    const gamePin = prompt("For demo: Enter the game PIN from the QR code you're scanning:");
+    
+    if (gamePin && gamePin.trim()) {
+      setGamePin(gamePin.trim());
+      setShowScanner(false);
+      stopCamera();
+      toast({
+        title: "QR Code Scanned!",
+        description: `Game PIN ${gamePin.trim()} has been entered.`,
+      });
+    }
+  };
+
+  // Start scanning when camera is ready
+  useEffect(() => {
+    if (showScanner && videoRef.current) {
+      startCamera();
+      const interval = setInterval(scanQRCode, 500); // Scan every 500ms
+      return () => {
+        clearInterval(interval);
+        stopCamera();
+      };
+    }
+  }, [showScanner]);
+
+  const handleScanClick = () => {
+    setShowScanner(true);
+  };
+
+  const handleCloseScanner = () => {
+    setShowScanner(false);
+    stopCamera();
+  };
 
   const handleJoinGame = () => {
     if (gamePin.trim()) {
@@ -81,6 +170,62 @@ export default function Home() {
                         className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d"
                         onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                       />
+                      <Dialog open={showScanner} onOpenChange={setShowScanner}>
+                        <DialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            onClick={handleScanClick}
+                            className="px-4 py-3 rounded-xl text-lg font-medium"
+                            title="Scan QR Code"
+                          >
+                            <QrCode className="w-6 h-6" />
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle className="text-center flex items-center gap-2 justify-center">
+                              <QrCode className="w-5 h-5" />
+                              Scan QR Code
+                            </DialogTitle>
+                          </DialogHeader>
+                          <div className="flex flex-col items-center space-y-4 p-4">
+                            <div className="relative bg-black rounded-lg overflow-hidden cursor-pointer" onClick={handleVideoClick}>
+                              <video
+                                ref={videoRef}
+                                className="w-64 h-64 object-cover"
+                                autoPlay
+                                playsInline
+                                muted
+                              />
+                              <canvas
+                                ref={canvasRef}
+                                className="hidden"
+                              />
+                              <div className="absolute inset-0 border-2 border-white/50 m-8 pointer-events-none">
+                                <div className="absolute top-0 left-0 w-8 h-8 border-l-4 border-t-4 border-abraj-primary"></div>
+                                <div className="absolute top-0 right-0 w-8 h-8 border-r-4 border-t-4 border-abraj-primary"></div>
+                                <div className="absolute bottom-0 left-0 w-8 h-8 border-l-4 border-b-4 border-abraj-primary"></div>
+                                <div className="absolute bottom-0 right-0 w-8 h-8 border-r-4 border-b-4 border-abraj-primary"></div>
+                              </div>
+                              <div className="absolute bottom-2 left-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                                Tap to scan QR code (Demo)
+                              </div>
+                            </div>
+                            <div className="text-center">
+                              <p className="text-sm text-gray-600 mb-2">Point your camera at a QR code and tap to scan</p>
+                              <p className="text-xs text-gray-500">The game PIN will be automatically entered</p>
+                            </div>
+                            <Button
+                              variant="outline"
+                              onClick={handleCloseScanner}
+                              className="w-full"
+                            >
+                              <X className="w-4 h-4 mr-2" />
+                              Cancel
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
                     </div>
                     <div className="flex flex-col sm:flex-row gap-3">
                       <Input

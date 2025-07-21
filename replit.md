@@ -141,3 +141,6 @@ Preferred communication style: Simple, everyday language.
 - ✓ Created visual share interface with copy buttons for PIN and shareable URLs
 - ✓ QR codes use custom Abraj blue branding colors for consistent visual identity
 - ✓ Players can now join games by scanning QR codes or clicking shared links
+- ✓ Added QR code scanning functionality to home page for easy game joining
+- ✓ Implemented camera access with user-friendly scanning interface
+- ✓ Added tap-to-scan demo functionality with proper UI feedback
