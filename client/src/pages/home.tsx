@@ -34,22 +34,22 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="max-w-4xl mx-auto text-center">
             
-            {/* Left Content */}
-            <div className="text-center lg:text-left">
+            {/* Main Content */}
+            <div>
               <h1 className="font-bold text-5xl lg:text-6xl text-gray-800 leading-tight">
                 Make Learning
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-abraj-primary to-abraj-blue">
                   {" "}Awesome!
                 </span>
               </h1>
-              <p className="mt-6 text-xl text-gray-600 max-w-lg">
+              <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
                 Abraj Quiz makes it easy to create, share and play learning games or trivia quizzes in minutes.
               </p>
               
               {/* Game PIN Entry */}
-              <Card className="mt-8 shadow-xl border border-gray-100">
+              <Card className="mt-8 shadow-xl border border-gray-100 max-w-lg mx-auto">
                 <CardContent className="p-8">
                   <h3 className="font-bold text-2xl text-gray-800 mb-4">Join a game</h3>
                   <div className="space-y-4">
@@ -109,9 +109,9 @@ export default function Home() {
             <p className="text-xl text-gray-600">Create your quiz in minutes with our intuitive editor</p>
           </div>
           
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            {/* Quick Create Preview */}
-            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 shadow-xl">
+          <div className="max-w-5xl mx-auto">
+            {/* Quick Create Preview - Centered */}
+            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 shadow-xl max-w-md mx-auto mb-12">
               <div className="bg-white rounded-xl p-6 shadow-lg">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold text-xl text-gray-800">Create New Quiz</h3>
@@ -148,10 +148,8 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Features Grid */}
-            <div className="space-y-6">
-              
-              
+            {/* Features Grid - Centered */}
+            <div className="max-w-2xl mx-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gradient-to-br from-abraj-primary to-teal-600 text-white p-6 rounded-xl">
                   <Clock className="w-8 h-8 mb-2" />
