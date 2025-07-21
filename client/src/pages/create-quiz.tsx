@@ -281,7 +281,7 @@ export default function CreateQuiz() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-4">Answer Options</label>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-4">
                     {currentQuestion.answers.map((answer, answerIndex) => {
                       const IconComponent = answerIcons[answerIndex];
                       const colorClass = answerColors[answerIndex];
