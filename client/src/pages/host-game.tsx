@@ -127,10 +127,10 @@ export default function HostGame() {
 
   if (gameLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading game...</p>
+          <p className="text-lg text-white">Loading game...</p>
         </div>
       </div>
     );
@@ -138,10 +138,10 @@ export default function HostGame() {
 
   if (!game || !quiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center">
+        <Card className="w-full max-w-md bg-white/10 backdrop-blur-lg border-white/20">
           <CardContent className="pt-6 text-center">
-            <p className="text-lg text-gray-600 mb-4">Game not found</p>
+            <p className="text-lg text-white mb-4">Game not found</p>
             <Button onClick={() => setLocation("/")} className="abraj-primary">
               Go Home
             </Button>
@@ -157,38 +157,38 @@ export default function HostGame() {
 
   if (game.status === "waiting") {
     return (
-      <div className="min-h-screen py-8">
+      <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 py-8">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h1 className="font-bold text-4xl text-gray-800 mb-4">Game Lobby</h1>
+            <h1 className="font-bold text-4xl text-white mb-4">Game Lobby</h1>
             <div className="flex justify-center items-center space-x-4 mb-6">
-              <Badge variant="secondary" className="text-lg px-4 py-2">
+              <Badge variant="secondary" className="text-lg px-4 py-2 bg-white/20 text-white border-white/20">
                 PIN: {game.gamePin}
               </Badge>
-              <Badge variant="outline" className="text-lg px-4 py-2">
+              <Badge variant="outline" className="text-lg px-4 py-2 bg-white/10 text-white border-white/20">
                 {quiz.title}
               </Badge>
             </div>
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
-            <Card>
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20">
               <CardHeader>
-                <CardTitle className="flex items-center space-x-2">
+                <CardTitle className="flex items-center space-x-2 text-white">
                   <Users className="w-5 h-5" />
                   <span>Players ({players.length})</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {players.length === 0 ? (
-                  <p className="text-gray-500 text-center py-8">
+                  <p className="text-white/70 text-center py-8">
                     Waiting for players to join...
                   </p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
                     {players.map((player, index) => (
-                      <div key={index} className="bg-gray-100 rounded-lg p-3 text-center">
-                        <span className="font-medium">{player.name}</span>
+                      <div key={index} className="bg-white/20 rounded-lg p-3 text-center">
+                        <span className="font-medium text-white">{player.name}</span>
                       </div>
                     ))}
                   </div>
@@ -196,15 +196,15 @@ export default function HostGame() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white/10 backdrop-blur-lg border-white/20">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
+                <CardTitle className="flex items-center justify-between text-white">
                   <span>Share Game</span>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowQRCode(!showQRCode)}
-                    className="p-2"
+                    className="p-2 text-white hover:bg-white/20"
                   >
                     <QrCode className="w-4 h-4" />
                   </Button>
@@ -214,7 +214,7 @@ export default function HostGame() {
                 {showQRCode && qrCodeUrl && (
                   <div className="text-center space-y-2">
                     <img src={qrCodeUrl} alt="QR Code to join game" className="w-32 h-32 mx-auto" />
-                    <p className="text-xs text-gray-500">Players can scan to join</p>
+                    <p className="text-xs text-white/70">Players can scan to join</p>
                   </div>
                 )}
                 
@@ -222,7 +222,7 @@ export default function HostGame() {
                   <Button
                     variant="outline"
                     onClick={() => copyToClipboard(game.gamePin, "Game PIN")}
-                    className="w-full"
+                    className="w-full bg-white/20 text-white border-white/30 hover:bg-white/30"
                   >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy PIN ({game.gamePin})
@@ -231,17 +231,17 @@ export default function HostGame() {
                   <Button
                     variant="outline"
                     onClick={() => copyToClipboard(`${window.location.origin}/join/${game.gamePin}`, "Join link")}
-                    className="w-full"
+                    className="w-full bg-white/20 text-white border-white/30 hover:bg-white/30"
                   >
                     <Share2 className="w-4 h-4 mr-2" />
                     Copy Join Link
                   </Button>
                 </div>
 
-                <div className="pt-4 border-t">
+                <div className="pt-4 border-t border-white/20">
                   <div className="text-center space-y-2 mb-4">
-                    <h3 className="font-bold text-lg">{quiz.title}</h3>
-                    <p className="text-sm text-gray-500">
+                    <h3 className="font-bold text-lg text-white">{quiz.title}</h3>
+                    <p className="text-sm text-white/70">
                       {questions.length} questions • Multiple Choice
                     </p>
                   </div>
