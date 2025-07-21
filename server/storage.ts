@@ -5,6 +5,8 @@ import {
   type Game, type InsertGame,
   type GameResponse, type InsertGameResponse
 } from "@shared/schema";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
 
 export interface IStorage {
   // Users
@@ -31,6 +33,125 @@ export interface IStorage {
   getGameResponses(gameId: number): Promise<GameResponse[]>;
   createGameResponse(response: InsertGameResponse): Promise<GameResponse>;
   getPlayerResponses(gameId: number, playerName: string): Promise<GameResponse[]>;
+}
+
+export class DatabaseStorage implements IStorage {
+  // Users
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db
+      .insert(users)
+      .values(insertUser)
+      .returning();
+    return user;
+  }
+
+  // Quizzes
+  async getQuiz(id: number): Promise<Quiz | undefined> {
+    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, id));
+    return quiz || undefined;
+  }
+
+  async getQuizzes(): Promise<Quiz[]> {
+    return await db.select().from(quizzes);
+  }
+
+  async getPublicQuizzes(): Promise<Quiz[]> {
+    return await db.select().from(quizzes).where(eq(quizzes.isPublic, true));
+  }
+
+  async createQuiz(insertQuiz: InsertQuiz): Promise<Quiz> {
+    const [quiz] = await db
+      .insert(quizzes)
+      .values(insertQuiz)
+      .returning();
+    return quiz;
+  }
+
+  async updateQuiz(id: number, updates: Partial<Quiz>): Promise<Quiz | undefined> {
+    const [quiz] = await db
+      .update(quizzes)
+      .set(updates)
+      .where(eq(quizzes.id, id))
+      .returning();
+    return quiz || undefined;
+  }
+
+  async deleteQuiz(id: number): Promise<boolean> {
+    const result = await db.delete(quizzes).where(eq(quizzes.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Games
+  async getGame(id: number): Promise<Game | undefined> {
+    const [game] = await db.select().from(games).where(eq(games.id, id));
+    return game || undefined;
+  }
+
+  async getGameByPin(pin: string): Promise<Game | undefined> {
+    const [game] = await db.select().from(games).where(eq(games.gamePin, pin));
+    return game || undefined;
+  }
+
+  async createGame(insertGame: InsertGame): Promise<Game> {
+    const [game] = await db
+      .insert(games)
+      .values(insertGame)
+      .returning();
+    return game;
+  }
+
+  async updateGame(id: number, updates: Partial<Game>): Promise<Game | undefined> {
+    const [game] = await db
+      .update(games)
+      .set(updates)
+      .where(eq(games.id, id))
+      .returning();
+    return game || undefined;
+  }
+
+  async deleteGame(id: number): Promise<boolean> {
+    const result = await db.delete(games).where(eq(games.id, id));
+    return (result.rowCount || 0) > 0;
+  }
+
+  // Game Responses
+  async getGameResponses(gameId: number): Promise<GameResponse[]> {
+    return await db.select().from(gameResponses).where(eq(gameResponses.gameId, gameId));
+  }
+
+  async createGameResponse(insertResponse: InsertGameResponse): Promise<GameResponse> {
+    const [response] = await db
+      .insert(gameResponses)
+      .values(insertResponse)
+      .returning();
+    return response;
+  }
+
+  async getPlayerResponses(gameId: number, playerName: string): Promise<GameResponse[]> {
+    const { and } = await import("drizzle-orm");
+    return await db
+      .select()
+      .from(gameResponses)
+      .where(and(
+        eq(gameResponses.gameId, gameId),
+        eq(gameResponses.playerName, playerName)
+      ));
+  }
+
+  // Helper method to generate unique game PIN
+  generateGamePin(): string {
+    return Math.floor(100000 + Math.random() * 900000).toString();
+  }
 }
 
 export class MemStorage implements IStorage {
@@ -179,6 +300,8 @@ export class MemStorage implements IStorage {
     const quiz: Quiz = { 
       ...insertQuiz, 
       id,
+      description: insertQuiz.description || null,
+      isPublic: insertQuiz.isPublic ?? null,
       createdAt: new Date()
     };
     this.quizzes.set(id, quiz);
@@ -259,4 +382,4 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a real-time quiz application rebranded as "Abraj Quiz", built with React (frontend) and Express.js (backend). The application allows users to create quizzes, host live quiz games with PIN-based joining, and provides real-time gameplay with leaderboards and scoring. Features a custom turquoise/teal color scheme matching the Abraj brand identity.
+This is a real-time quiz application rebranded as "Abraj Quiz", built with React (frontend) and Express.js (backend). The application allows users to create quizzes, host live quiz games with PIN-based joining, and provides real-time gameplay with leaderboards and scoring. Features a custom turquoise/teal color scheme matching the Abraj brand identity. Now integrated with PostgreSQL database for persistent data storage.
 
 ## User Preferences
 
@@ -55,8 +55,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Storage Layer
 - **Interface-based Design**: IStorage interface allows for multiple implementations
-- **Memory Storage**: Development/testing implementation
-- **Database Storage**: Production implementation (not shown but referenced)
+- **Database Storage**: Production implementation using PostgreSQL via Drizzle ORM
+- **Memory Storage**: Legacy development/testing implementation (replaced)
 
 ## Data Flow
 
@@ -97,3 +97,13 @@ Preferred communication style: Simple, everyday language.
 - Static file serving handled by Express in production
 - Database migrations via `db:push` script
 - Serverless-compatible architecture with Neon Database
+
+## Recent Changes
+
+**Database Integration (January 21, 2025)**
+- ✓ Integrated PostgreSQL database using Neon Database
+- ✓ Replaced MemStorage with DatabaseStorage implementation
+- ✓ Successfully pushed database schema using Drizzle ORM
+- ✓ Fixed TypeScript errors in storage layer and frontend components
+- ✓ Application now uses persistent PostgreSQL storage for all data
+- ✓ Maintained complete compatibility with existing IStorage interface

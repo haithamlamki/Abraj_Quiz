@@ -20,7 +20,7 @@ export default function HostGame() {
 
   const { data: game, isLoading: gameLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
-    refetchInterval: (data) => data?.status === "waiting" ? 2000 : false,
+    refetchInterval: (query) => query.state.data?.status === "waiting" ? 2000 : false,
     enabled: !!pin
   });
 
