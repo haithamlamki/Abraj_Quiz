@@ -34,24 +34,19 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            
-            {/* Left Content */}
-            <div className="text-center lg:text-left">
+          <div className="flex justify-center">
+            {/* Centered Content */}
+            <div className="text-center max-w-4xl">
               <h1 className="font-bold text-5xl lg:text-6xl text-gray-800 leading-tight">
                 Make Learning
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-abraj-primary to-abraj-blue">
                   {" "}Awesome!
                 </span>
               </h1>
-              <p className="mt-6 text-xl text-gray-600 max-w-lg">
+              <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
                 Abraj Quiz makes it easy to create, share and play learning games or trivia quizzes in minutes.
               </p>
-              
-              
             </div>
-            
-            
           </div>
         </div>
       </section>
