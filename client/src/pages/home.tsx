@@ -147,25 +147,25 @@ export default function Home() {
             {/* Features Grid - Horizontal */}
             <div className="max-w-6xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="from-abraj-primary to-teal-600 p-6 rounded-xl text-center card-3d text-[#019ebd] bg-[#019ebd00]">
+                <div className="bg-transparent p-6 rounded-xl text-center card-3d text-[#019ebd]">
                   <Clock className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Time Limits</h4>
                   <p className="text-sm opacity-90">Set custom timers</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-green to-green-600 text-white p-6 rounded-xl text-center card-3d">
+                <div className="bg-transparent p-6 rounded-xl text-center card-3d text-[#019ebd]">
                   <Image className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Rich Media</h4>
                   <p className="text-sm opacity-90">Add images & videos</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-blue to-blue-600 text-white p-6 rounded-xl text-center card-3d">
+                <div className="bg-transparent p-6 rounded-xl text-center card-3d text-[#019ebd]">
                   <Users className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Team Mode</h4>
                   <p className="text-sm opacity-90">Collaborative play</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-red to-red-600 text-white p-6 rounded-xl text-center card-3d">
+                <div className="bg-transparent p-6 rounded-xl text-center card-3d text-[#019ebd]">
                   <BarChart className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Analytics</h4>
                   <p className="text-sm opacity-90">Track performance</p>
