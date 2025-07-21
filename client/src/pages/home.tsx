@@ -138,9 +138,7 @@ export default function Home() {
               <div className="flex items-center space-x-2 mb-4">
                 <span className="font-bold text-xl">Abraj Quiz</span>
               </div>
-              <p className="text-gray-400 text-sm">
-                Making learning awesome for millions of people around the world.
-              </p>
+              <p className="text-gray-400 text-sm">Making learning awesome</p>
             </div>
             
             <div>
