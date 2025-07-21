@@ -34,22 +34,28 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-center">
-            {/* Centered Content */}
-            <div className="text-center max-w-4xl">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            
+            {/* Left Content */}
+            <div className="text-center lg:text-left">
               <h1 className="font-bold text-5xl lg:text-6xl text-gray-800 leading-tight">
                 Make Learning
-                <span className="bg-clip-text bg-gradient-to-r from-abraj-primary to-abraj-secondary text-[#019ebd]">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-abraj-primary to-abraj-blue">
                   {" "}Awesome!
                 </span>
               </h1>
-              <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
+              <p className="mt-6 text-xl text-gray-600 max-w-lg">
                 Abraj Quiz makes it easy to create, share and play learning games or trivia quizzes in minutes.
               </p>
+              
+              
             </div>
+            
+            
           </div>
         </div>
       </section>
+
       {/* Quick Actions */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -58,78 +64,81 @@ export default function Home() {
             <p className="text-xl text-gray-600">Create your quiz in minutes with our intuitive editor</p>
           </div>
           
-          <div className="flex justify-center">
-            <div className="max-w-2xl w-full">
-              {/* Quick Create Preview */}
-              <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 shadow-xl">
-                <div className="bg-white rounded-xl p-6 shadow-lg">
-                  <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-bold text-xl text-gray-800">Create New Quiz</h3>
-                    <div className="abraj-blue text-white px-3 py-1 rounded-full text-sm font-medium">
-                      Quick Start
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <Input placeholder="Quiz Title" className="w-full" />
-                    <Input placeholder="Description" className="w-full" />
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="abraj-red text-white p-4 rounded-lg text-center font-bold">
-                        A
-                      </div>
-                      <div className="abraj-blue text-white p-4 rounded-lg text-center font-bold">
-                        B
-                      </div>
-                      <div className="abraj-green text-white p-4 rounded-lg text-center font-bold">
-                        C
-                      </div>
-                      <div className="abraj-orange text-white p-4 rounded-lg text-center font-bold">
-                        D
-                      </div>
-                    </div>
-                    
-                    <Link href="/create">
-                      <Button className="w-full abraj-primary hover:abraj-secondary text-white font-bold">
-                        Start Creating
-                      </Button>
-                    </Link>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Quick Create Preview */}
+            <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 shadow-xl">
+              <div className="bg-white rounded-xl p-6 shadow-lg">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="font-bold text-xl text-gray-800">Create New Quiz</h3>
+                  <div className="abraj-blue text-white px-3 py-1 rounded-full text-sm font-medium">
+                    Quick Start
                   </div>
                 </div>
+                
+                <div className="space-y-4">
+                  <Input placeholder="Quiz Title" className="w-full" />
+                  <Input placeholder="Description" className="w-full" />
+                  
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="abraj-red text-white p-4 rounded-lg text-center font-bold">
+                      A
+                    </div>
+                    <div className="abraj-blue text-white p-4 rounded-lg text-center font-bold">
+                      B
+                    </div>
+                    <div className="abraj-green text-white p-4 rounded-lg text-center font-bold">
+                      C
+                    </div>
+                    <div className="abraj-orange text-white p-4 rounded-lg text-center font-bold">
+                      D
+                    </div>
+                  </div>
+                  
+                  <Link href="/create">
+                    <Button className="w-full abraj-primary hover:abraj-secondary text-white font-bold">
+                      Start Creating
+                    </Button>
+                  </Link>
+                </div>
               </div>
+            </div>
+            
+            {/* Features Grid */}
+            <div className="space-y-6">
               
-              {/* Features Grid */}
-              <div className="mt-8">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-br from-abraj-primary to-teal-600 text-white p-6 rounded-xl">
-                    <Clock className="w-8 h-8 mb-2" />
-                    <h4 className="font-bold">Time Limits</h4>
-                    <p className="text-sm opacity-90">Set custom timers</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-abraj-green to-green-600 text-white p-6 rounded-xl">
-                    <Image className="w-8 h-8 mb-2" />
-                    <h4 className="font-bold">Rich Media</h4>
-                    <p className="text-sm opacity-90">Add images & videos</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-abraj-blue to-blue-600 text-white p-6 rounded-xl">
-                    <Users className="w-8 h-8 mb-2" />
-                    <h4 className="font-bold">Team Mode</h4>
-                    <p className="text-sm opacity-90">Collaborative play</p>
-                  </div>
-                  
-                  <div className="bg-gradient-to-br from-abraj-red to-red-600 text-white p-6 rounded-xl">
-                    <BarChart className="w-8 h-8 mb-2" />
-                    <h4 className="font-bold">Analytics</h4>
-                    <p className="text-sm opacity-90">Track performance</p>
-                  </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-gradient-to-br from-abraj-primary to-teal-600 text-white p-6 rounded-xl">
+                  <Clock className="w-8 h-8 mb-2" />
+                  <h4 className="font-bold">Time Limits</h4>
+                  <p className="text-sm opacity-90">Set custom timers</p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-abraj-green to-green-600 text-white p-6 rounded-xl">
+                  <Image className="w-8 h-8 mb-2" />
+                  <h4 className="font-bold">Rich Media</h4>
+                  <p className="text-sm opacity-90">Add images & videos</p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-abraj-blue to-blue-600 text-white p-6 rounded-xl">
+                  <Users className="w-8 h-8 mb-2" />
+                  <h4 className="font-bold">Team Mode</h4>
+                  <p className="text-sm opacity-90">Collaborative play</p>
+                </div>
+                
+                <div className="bg-gradient-to-br from-abraj-red to-red-600 text-white p-6 rounded-xl">
+                  <BarChart className="w-8 h-8 mb-2" />
+                  <h4 className="font-bold">Analytics</h4>
+                  <p className="text-sm opacity-90">Track performance</p>
                 </div>
               </div>
             </div>
           </div>
         </div>
       </section>
+
+
+
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -138,7 +147,9 @@ export default function Home() {
               <div className="flex items-center space-x-2 mb-4">
                 <span className="font-bold text-xl">Abraj Quiz</span>
               </div>
-              <p className="text-gray-400 text-sm">Making learning awesome</p>
+              <p className="text-gray-400 text-sm">
+                Making learning awesome for millions of people around the world.
+              </p>
             </div>
             
             <div>
