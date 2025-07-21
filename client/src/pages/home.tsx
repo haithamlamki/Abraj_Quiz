@@ -48,7 +48,52 @@ export default function Home() {
                 Abraj Quiz makes it easy to create, share and play learning games or trivia quizzes in minutes.
               </p>
               
-              
+              {/* Game PIN Entry */}
+              <Card className="mt-8 shadow-xl border border-gray-100">
+                <CardContent className="p-8">
+                  <h3 className="font-bold text-2xl text-gray-800 mb-4">Join a game</h3>
+                  <div className="space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Input
+                        type="text"
+                        placeholder="Game PIN"
+                        value={gamePin}
+                        onChange={(e) => setGamePin(e.target.value)}
+                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-medium text-center focus:border-abraj-primary"
+                        onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
+                      />
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <Input
+                        type="text"
+                        placeholder={isAuthenticated && user ? user.username : "Player name"}
+                        value={playerName}
+                        onChange={(e) => setPlayerName(e.target.value)}
+                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-medium text-center focus:border-abraj-primary"
+                        maxLength={20}
+                        onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
+                      />
+                      <Button 
+                        onClick={handleJoinGame}
+                        className="abraj-primary hover:abraj-secondary text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg"
+                      >
+                        Join Game
+                      </Button>
+                    </div>
+                    {isAuthenticated && user && (
+                      <p className="text-xs text-abraj-primary text-center">
+                        Your name is auto-filled from your account
+                      </p>
+                    )}
+                    {!isAuthenticated && (
+                      <p className="text-xs text-gray-500 text-center">
+                        <Link href="/login" className="text-abraj-primary hover:underline">Login</Link>
+                        {" "}to auto-fill your name
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </div>
             
             
