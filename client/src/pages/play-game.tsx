@@ -66,31 +66,6 @@ export default function PlayGame() {
   const [gameStartCountdown, setGameStartCountdown] = useState<number | null>(null);
   const [isGameStarting, setIsGameStarting] = useState(false);
 
-  // Watch for game status changes to start countdown when game begins
-  useEffect(() => {
-    if (game?.status === "active" && !isGameStarting && quiz) {
-      setIsGameStarting(true);
-      setGameStartCountdown(3);
-    }
-  }, [game?.status, isGameStarting, quiz]);
-
-  // Game start countdown effect
-  useEffect(() => {
-    if (gameStartCountdown === null || !isGameStarting) return;
-
-    if (gameStartCountdown > 0) {
-      playCountdownSound(gameStartCountdown);
-      const timer = setTimeout(() => {
-        setGameStartCountdown(prev => prev! - 1);
-      }, 1000);
-      return () => clearTimeout(timer);
-    } else {
-      // Countdown finished
-      setIsGameStarting(false);
-      setGameStartCountdown(null);
-    }
-  }, [gameStartCountdown, isGameStarting]);
-
   const { data: game, isLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
     refetchInterval: 2000,
@@ -135,6 +110,31 @@ export default function PlayGame() {
       return;
     }
   }, [playerName, pin, setLocation]);
+
+  // Watch for game status changes to start countdown when game begins
+  useEffect(() => {
+    if (game?.status === "active" && !isGameStarting && quiz) {
+      setIsGameStarting(true);
+      setGameStartCountdown(3);
+    }
+  }, [game?.status, isGameStarting, quiz]);
+
+  // Game start countdown effect
+  useEffect(() => {
+    if (gameStartCountdown === null || !isGameStarting) return;
+
+    if (gameStartCountdown > 0) {
+      playCountdownSound(gameStartCountdown);
+      const timer = setTimeout(() => {
+        setGameStartCountdown(prev => prev! - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else {
+      // Countdown finished
+      setIsGameStarting(false);
+      setGameStartCountdown(null);
+    }
+  }, [gameStartCountdown, isGameStarting]);
 
   useEffect(() => {
     if (game?.status === "active" && quiz) {
