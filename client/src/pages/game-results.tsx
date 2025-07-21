@@ -6,6 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import Leaderboard from "@/components/leaderboard";
 import { Trophy, Home, RotateCcw } from "lucide-react";
 
+import logo from "@assets/logo.jpg";
+
 export default function GameResults() {
   const { pin } = useParams();
   const [, setLocation] = useLocation();
@@ -214,7 +216,7 @@ export default function GameResults() {
 
             {/* Celebration Image */}
             <img 
-              src="https://images.unsplash.com/photo-1551601651-2a8555f1a136?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=300" 
+              src={logo} 
               alt="Quiz competition celebration with trophy and confetti" 
               className="rounded-xl shadow-lg w-full h-40 object-cover"
             />
