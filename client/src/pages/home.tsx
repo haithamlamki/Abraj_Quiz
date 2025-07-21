@@ -147,29 +147,29 @@ export default function Home() {
               </div>
             </div>
             
-            {/* Features Grid - Centered */}
-            <div className="max-w-2xl mx-auto">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-abraj-primary to-teal-600 p-6 rounded-xl text-[#019ebd]">
-                  <Clock className="w-8 h-8 mb-2" />
+            {/* Features Grid - Horizontal */}
+            <div className="max-w-6xl mx-auto">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="bg-gradient-to-br from-abraj-primary to-teal-600 text-white p-6 rounded-xl text-center">
+                  <Clock className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Time Limits</h4>
                   <p className="text-sm opacity-90">Set custom timers</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-green to-green-600 p-6 rounded-xl text-[#019ebd]">
-                  <Image className="w-8 h-8 mb-2" />
+                <div className="bg-gradient-to-br from-abraj-green to-green-600 text-white p-6 rounded-xl text-center">
+                  <Image className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Rich Media</h4>
                   <p className="text-sm opacity-90">Add images & videos</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-blue to-blue-600 p-6 rounded-xl text-[#019ebd]">
-                  <Users className="w-8 h-8 mb-2" />
+                <div className="bg-gradient-to-br from-abraj-blue to-blue-600 text-white p-6 rounded-xl text-center">
+                  <Users className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Team Mode</h4>
                   <p className="text-sm opacity-90">Collaborative play</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-red to-red-600 p-6 rounded-xl text-[#019ebd]">
-                  <BarChart className="w-8 h-8 mb-2" />
+                <div className="bg-gradient-to-br from-abraj-red to-red-600 text-white p-6 rounded-xl text-center">
+                  <BarChart className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Analytics</h4>
                   <p className="text-sm opacity-90">Track performance</p>
                 </div>
