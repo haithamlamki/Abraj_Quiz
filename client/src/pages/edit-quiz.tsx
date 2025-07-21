@@ -136,7 +136,7 @@ export default function EditQuiz() {
       question: "",
       answers: ["", "", "", ""],
       correctAnswer: 0,
-      timeLimit: 30
+      timeLimit: 10
     });
   };
 
