@@ -96,17 +96,7 @@ export default function Home() {
               </Card>
             </div>
             
-            {/* Right Content - Featured Image */}
-            <div className="relative">
-              <img 
-                src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" 
-                alt="Quiz results and achievements display showing student performance" 
-                className="rounded-2xl shadow-2xl w-full h-auto transform rotate-2 hover:rotate-0 transition-transform duration-300"
-              />
-              <div className="absolute -top-4 -right-4 abraj-green text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl animate-bounce-gentle">
-                <Trophy className="w-8 h-8" />
-              </div>
-            </div>
+            
           </div>
         </div>
       </section>
