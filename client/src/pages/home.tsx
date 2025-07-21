@@ -165,7 +165,7 @@ export default function Home() {
                   <p className="text-sm opacity-90">Collaborative play</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-abraj-red to-red-600 text-white p-6 rounded-xl text-center">
+                <div className="bg-gradient-to-br from-abraj-red to-red-600 p-6 rounded-xl text-center text-[#019ebd]">
                   <BarChart className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Analytics</h4>
                   <p className="text-sm opacity-90">Track performance</p>
