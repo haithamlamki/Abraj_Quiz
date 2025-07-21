@@ -176,11 +176,11 @@ export default function Home() {
         </div>
       </section>
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-gray-900 text-white py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid md:grid-cols-4 gap-6">
             <div>
-              <div className="flex items-center space-x-2 mb-4">
+              <div className="flex items-center space-x-2 mb-3">
                 <span className="font-bold text-xl">Abraj Quiz</span>
               </div>
               <p className="text-gray-400 text-sm">
@@ -189,7 +189,7 @@ export default function Home() {
             </div>
             
             <div>
-              <h4 className="font-bold text-lg mb-4">Platform</h4>
+              <h4 className="font-bold text-lg mb-3">Platform</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li><Link href="/create" className="hover:text-white transition-colors">Create</Link></li>
                 <li><Link href="/join" className="hover:text-white transition-colors">Play</Link></li>
@@ -198,7 +198,7 @@ export default function Home() {
             </div>
             
             <div>
-              <h4 className="font-bold text-lg mb-4">Resources</h4>
+              <h4 className="font-bold text-lg mb-3">Resources</h4>
               <ul className="space-y-2 text-sm text-gray-400">
                 <li><a href="#" className="hover:text-white transition-colors">Help Center</a></li>
                 <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
@@ -207,7 +207,7 @@ export default function Home() {
             </div>
             
             <div>
-              <h4 className="font-bold text-lg mb-4">Connect</h4>
+              <h4 className="font-bold text-lg mb-3">Connect</h4>
               <div className="flex space-x-4">
                 <a href="#" className="bg-gray-800 hover:abraj-primary w-10 h-10 rounded-lg flex items-center justify-center transition-colors">
                   <span className="text-sm">𝕏</span>
@@ -219,7 +219,7 @@ export default function Home() {
             </div>
           </div>
           
-          <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
+          <div className="border-t border-gray-800 mt-6 pt-4 text-center text-sm text-gray-400">
             <p>© 2025 Abraj Quiz. All rights reserved. Built for educational purposes.</p>
           </div>
         </div>
