@@ -181,6 +181,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/quizzes/:id", requireAuth, async (req, res) => {
+    try {
+      const quizId = parseInt(req.params.id);
+      const userId = (req as any).session.userId;
+
+      // Check if quiz exists and user owns it
+      const existingQuiz = await storage.getQuiz(quizId);
+      if (!existingQuiz) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
+
+      if (existingQuiz.createdBy !== userId) {
+        return res.status(403).json({ message: "You can only edit your own quizzes" });
+      }
+
+      const validation = insertQuizSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ message: "Invalid quiz data", errors: validation.error.errors });
+      }
+
+      // Validate questions format
+      const questionsValidation = quizQuestionsSchema.safeParse(validation.data.questions);
+      if (!questionsValidation.success) {
+        return res.status(400).json({ message: "Invalid questions format", errors: questionsValidation.error.errors });
+      }
+
+      const updatedQuiz = await storage.updateQuiz(quizId, {
+        title: validation.data.title,
+        description: validation.data.description,
+        questions: validation.data.questions,
+        isPublic: validation.data.isPublic
+      });
+
+      res.json(updatedQuiz);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update quiz" });
+    }
+  });
+
   // Game routes
   app.post("/api/games", requireAuth, async (req, res) => {
     try {

@@ -20,7 +20,7 @@ export interface IStorage {
   getPublicQuizzes(): Promise<Quiz[]>;
   getUserQuizzes(userId: number): Promise<Quiz[]>;
   createQuiz(quiz: InsertQuiz): Promise<Quiz>;
-  updateQuiz(id: number, quiz: Partial<Quiz>): Promise<Quiz | undefined>;
+  updateQuiz(id: number, quiz: Partial<InsertQuiz>): Promise<Quiz>;
   deleteQuiz(id: number): Promise<boolean>;
 
   // Games
@@ -82,13 +82,13 @@ export class DatabaseStorage implements IStorage {
     return quiz;
   }
 
-  async updateQuiz(id: number, updates: Partial<Quiz>): Promise<Quiz | undefined> {
+  async updateQuiz(id: number, updates: Partial<InsertQuiz>): Promise<Quiz> {
     const [quiz] = await db
       .update(quizzes)
       .set(updates)
       .where(eq(quizzes.id, id))
       .returning();
-    return quiz || undefined;
+    return quiz;
   }
 
   async deleteQuiz(id: number): Promise<boolean> {
@@ -304,27 +304,40 @@ export class MemStorage implements IStorage {
     return Array.from(this.quizzes.values()).filter(quiz => quiz.createdBy === userId);
   }
 
-  async createQuiz(insertQuiz: InsertQuiz): Promise<Quiz> {
+  async createQuiz(quiz: InsertQuiz): Promise<Quiz> {
     const id = this.currentQuizId++;
-    const quiz: Quiz = { 
-      ...insertQuiz, 
+    const newQuiz: Quiz = {
       id,
-      description: insertQuiz.description || null,
-      isPublic: insertQuiz.isPublic ?? null,
-      createdAt: new Date()
+      title: quiz.title,
+      description: quiz.description,
+      questions: quiz.questions,
+      isPublic: quiz.isPublic ?? true,
+      createdBy: quiz.createdBy!,
+      createdAt: new Date().toISOString()
     };
-    this.quizzes.set(id, quiz);
-    return quiz;
+    this.quizzes.set(id, newQuiz);
+    return newQuiz;
   }
 
-  async updateQuiz(id: number, updates: Partial<Quiz>): Promise<Quiz | undefined> {
-    const quiz = this.quizzes.get(id);
-    if (!quiz) return undefined;
+  async updateQuiz(id: number, updates: Partial<InsertQuiz>): Promise<Quiz> {
+    const existing = this.quizzes.get(id);
+    if (!existing) {
+      throw new Error("Quiz not found");
+    }
     
-    const updatedQuiz = { ...quiz, ...updates };
-    this.quizzes.set(id, updatedQuiz);
-    return updatedQuiz;
+    const updated: Quiz = {
+      ...existing,
+      ...updates,
+      id: existing.id,
+      createdBy: existing.createdBy,
+      createdAt: existing.createdAt
+    };
+    
+    this.quizzes.set(id, updated);
+    return updated;
   }
+
+
 
   async deleteQuiz(id: number): Promise<boolean> {
     return this.quizzes.delete(id);
