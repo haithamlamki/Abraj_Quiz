@@ -343,7 +343,7 @@ export default function Home() {
                       <div className="abraj-green text-white p-4 rounded-lg text-center font-bold">
                         C
                       </div>
-                      <div className="abraj-orange text-white p-4 rounded-lg text-center font-bold">
+                      <div className="abraj-yellow text-white p-4 rounded-lg text-center font-bold">
                         D
                       </div>
                     </div>
