@@ -47,8 +47,6 @@ function App() {
             className="classroom-background"
             style={{ backgroundImage: `url(${classroomBg})` }}
           />
-          {/* Overlay for better readability */}
-          <div className="classroom-overlay" />
           
           {/* Content */}
           <div className="relative z-10">
