@@ -24,13 +24,14 @@
   --ring: hsl(20, 14.3%, 4.1%);
   --radius: 0.5rem;
 
-  /* Kahoot brand colors */
-  --kahoot-purple: hsl(246, 85%, 69%);
-  --kahoot-blue: hsl(207, 90%, 54%);
-  --kahoot-red: hsl(0, 84%, 60%);
-  --kahoot-green: hsl(142, 71%, 45%);
-  --kahoot-orange: hsl(25, 95%, 53%);
-  --kahoot-pink: hsl(330, 81%, 60%);
+  /* Abraj Quiz brand colors */
+  --abraj-primary: hsl(184, 100%, 47%); /* Main turquoise */
+  --abraj-secondary: hsl(184, 85%, 35%); /* Darker turquoise */
+  --abraj-blue: hsl(207, 90%, 54%);
+  --abraj-red: hsl(0, 84%, 60%);
+  --abraj-green: hsl(142, 71%, 45%);
+  --abraj-orange: hsl(25, 95%, 53%);
+  --abraj-pink: hsl(330, 81%, 60%);
 }
 
 .dark {
@@ -67,76 +68,88 @@
 }
 
 @layer utilities {
-  .kahoot-purple {
-    background-color: var(--kahoot-purple);
+  .abraj-primary {
+    background-color: var(--abraj-primary);
   }
   
-  .kahoot-blue {
-    background-color: var(--kahoot-blue);
+  .abraj-secondary {
+    background-color: var(--abraj-secondary);
   }
   
-  .kahoot-red {
-    background-color: var(--kahoot-red);
+  .abraj-blue {
+    background-color: var(--abraj-blue);
   }
   
-  .kahoot-green {
-    background-color: var(--kahoot-green);
+  .abraj-red {
+    background-color: var(--abraj-red);
   }
   
-  .kahoot-orange {
-    background-color: var(--kahoot-orange);
+  .abraj-green {
+    background-color: var(--abraj-green);
   }
   
-  .kahoot-pink {
-    background-color: var(--kahoot-pink);
+  .abraj-orange {
+    background-color: var(--abraj-orange);
+  }
+  
+  .abraj-pink {
+    background-color: var(--abraj-pink);
   }
 
-  .text-kahoot-purple {
-    color: var(--kahoot-purple);
+  .text-abraj-primary {
+    color: var(--abraj-primary);
   }
   
-  .text-kahoot-blue {
-    color: var(--kahoot-blue);
+  .text-abraj-secondary {
+    color: var(--abraj-secondary);
   }
   
-  .text-kahoot-red {
-    color: var(--kahoot-red);
+  .text-abraj-blue {
+    color: var(--abraj-blue);
   }
   
-  .text-kahoot-green {
-    color: var(--kahoot-green);
+  .text-abraj-red {
+    color: var(--abraj-red);
   }
   
-  .text-kahoot-orange {
-    color: var(--kahoot-orange);
+  .text-abraj-green {
+    color: var(--abraj-green);
   }
   
-  .text-kahoot-pink {
-    color: var(--kahoot-pink);
+  .text-abraj-orange {
+    color: var(--abraj-orange);
+  }
+  
+  .text-abraj-pink {
+    color: var(--abraj-pink);
   }
 
-  .border-kahoot-purple {
-    border-color: var(--kahoot-purple);
+  .border-abraj-primary {
+    border-color: var(--abraj-primary);
   }
 
-  .hover\:kahoot-purple:hover {
-    background-color: var(--kahoot-purple);
+  .hover\:abraj-primary:hover {
+    background-color: var(--abraj-primary);
   }
 
-  .hover\:kahoot-blue:hover {
-    background-color: var(--kahoot-blue);
+  .hover\:abraj-secondary:hover {
+    background-color: var(--abraj-secondary);
   }
 
-  .hover\:kahoot-red:hover {
-    background-color: var(--kahoot-red);
+  .hover\:abraj-blue:hover {
+    background-color: var(--abraj-blue);
   }
 
-  .hover\:kahoot-green:hover {
-    background-color: var(--kahoot-green);
+  .hover\:abraj-red:hover {
+    background-color: var(--abraj-red);
   }
 
-  .hover\:kahoot-orange:hover {
-    background-color: var(--kahoot-orange);
+  .hover\:abraj-green:hover {
+    background-color: var(--abraj-green);
+  }
+
+  .hover\:abraj-orange:hover {
+    background-color: var(--abraj-orange);
   }
 
   .animate-bounce-gentle {

@@ -1,8 +1,8 @@
-# Kahoot-style Quiz Application
+# Abraj Quiz Application
 
 ## Overview
 
-This is a real-time quiz application inspired by Kahoot, built with React (frontend) and Express.js (backend). The application allows users to create quizzes, host live quiz games with PIN-based joining, and provides real-time gameplay with leaderboards and scoring.
+This is a real-time quiz application rebranded as "Abraj Quiz", built with React (frontend) and Express.js (backend). The application allows users to create quizzes, host live quiz games with PIN-based joining, and provides real-time gameplay with leaderboards and scoring. Features a custom turquoise/teal color scheme matching the Abraj brand identity.
 
 ## User Preferences
 
@@ -14,7 +14,7 @@ Preferred communication style: Simple, everyday language.
 - **Framework**: React 18 with TypeScript
 - **Routing**: Wouter for client-side routing
 - **UI Components**: Radix UI primitives with shadcn/ui design system
-- **Styling**: Tailwind CSS with custom Kahoot brand colors
+- **Styling**: Tailwind CSS with custom Abraj brand colors (turquoise/teal theme)
 - **State Management**: TanStack Query (React Query) for server state
 - **Build Tool**: Vite with custom configuration for monorepo structure
 
@@ -31,7 +31,7 @@ Preferred communication style: Simple, everyday language.
 
 **Real-time Features**: While WebSocket infrastructure isn't visible in the current codebase, the application is designed for real-time gameplay with polling-based updates (evident from refetchInterval usage in queries).
 
-**Component-based UI**: Leverages Radix UI for accessibility and shadcn/ui for consistent design patterns, with custom Kahoot-inspired theming.
+**Component-based UI**: Leverages Radix UI for accessibility and shadcn/ui for consistent design patterns, with custom Abraj-inspired turquoise/teal theming.
 
 ## Key Components
 

@@ -38,12 +38,12 @@ export default function Home() {
             <div className="text-center lg:text-left">
               <h1 className="font-bold text-5xl lg:text-6xl text-gray-800 leading-tight">
                 Make Learning
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-kahoot-purple to-kahoot-blue">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-abraj-primary to-abraj-blue">
                   {" "}Awesome!
                 </span>
               </h1>
               <p className="mt-6 text-xl text-gray-600 max-w-lg">
-                Kahoot! makes it easy to create, share and play learning games or trivia quizzes in minutes.
+                Abraj Quiz makes it easy to create, share and play learning games or trivia quizzes in minutes.
               </p>
               
               {/* Game PIN Entry */}
@@ -56,12 +56,12 @@ export default function Home() {
                       placeholder="Game PIN"
                       value={gamePin}
                       onChange={(e) => setGamePin(e.target.value)}
-                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-medium text-center focus:border-kahoot-purple"
+                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-medium text-center focus:border-abraj-primary"
                       onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                     />
                     <Button 
                       onClick={handleJoinGame}
-                      className="kahoot-purple hover:bg-purple-600 text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg"
+                      className="abraj-primary hover:abraj-secondary text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg"
                     >
                       Enter
                     </Button>
@@ -77,7 +77,7 @@ export default function Home() {
                 alt="Students engaged in interactive quiz competition" 
                 className="rounded-2xl shadow-2xl w-full h-auto transform rotate-2 hover:rotate-0 transition-transform duration-300"
               />
-              <div className="absolute -top-4 -right-4 kahoot-green text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl animate-bounce-gentle">
+              <div className="absolute -top-4 -right-4 abraj-green text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl animate-bounce-gentle">
                 <Trophy className="w-8 h-8" />
               </div>
             </div>
@@ -99,7 +99,7 @@ export default function Home() {
               <div className="bg-white rounded-xl p-6 shadow-lg">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="font-bold text-xl text-gray-800">Create New Quiz</h3>
-                  <div className="kahoot-blue text-white px-3 py-1 rounded-full text-sm font-medium">
+                  <div className="abraj-blue text-white px-3 py-1 rounded-full text-sm font-medium">
                     Quick Start
                   </div>
                 </div>
@@ -109,22 +109,22 @@ export default function Home() {
                   <Input placeholder="Description" className="w-full" />
                   
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="kahoot-red text-white p-4 rounded-lg text-center font-bold">
+                    <div className="abraj-red text-white p-4 rounded-lg text-center font-bold">
                       A
                     </div>
-                    <div className="kahoot-blue text-white p-4 rounded-lg text-center font-bold">
+                    <div className="abraj-blue text-white p-4 rounded-lg text-center font-bold">
                       B
                     </div>
-                    <div className="kahoot-green text-white p-4 rounded-lg text-center font-bold">
+                    <div className="abraj-green text-white p-4 rounded-lg text-center font-bold">
                       C
                     </div>
-                    <div className="kahoot-orange text-white p-4 rounded-lg text-center font-bold">
+                    <div className="abraj-orange text-white p-4 rounded-lg text-center font-bold">
                       D
                     </div>
                   </div>
                   
                   <Link href="/create">
-                    <Button className="w-full kahoot-purple hover:bg-purple-600 text-white font-bold">
+                    <Button className="w-full abraj-primary hover:abraj-secondary text-white font-bold">
                       Start Creating
                     </Button>
                   </Link>
@@ -141,25 +141,25 @@ export default function Home() {
               />
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gradient-to-br from-kahoot-purple to-purple-600 text-white p-6 rounded-xl">
+                <div className="bg-gradient-to-br from-abraj-primary to-teal-600 text-white p-6 rounded-xl">
                   <Clock className="w-8 h-8 mb-2" />
                   <h4 className="font-bold">Time Limits</h4>
                   <p className="text-sm opacity-90">Set custom timers</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-kahoot-green to-green-600 text-white p-6 rounded-xl">
+                <div className="bg-gradient-to-br from-abraj-green to-green-600 text-white p-6 rounded-xl">
                   <Image className="w-8 h-8 mb-2" />
                   <h4 className="font-bold">Rich Media</h4>
                   <p className="text-sm opacity-90">Add images & videos</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-kahoot-blue to-blue-600 text-white p-6 rounded-xl">
+                <div className="bg-gradient-to-br from-abraj-blue to-blue-600 text-white p-6 rounded-xl">
                   <Users className="w-8 h-8 mb-2" />
                   <h4 className="font-bold">Team Mode</h4>
                   <p className="text-sm opacity-90">Collaborative play</p>
                 </div>
                 
-                <div className="bg-gradient-to-br from-kahoot-red to-red-600 text-white p-6 rounded-xl">
+                <div className="bg-gradient-to-br from-abraj-red to-red-600 text-white p-6 rounded-xl">
                   <BarChart className="w-8 h-8 mb-2" />
                   <h4 className="font-bold">Analytics</h4>
                   <p className="text-sm opacity-90">Track performance</p>
@@ -204,10 +204,10 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="kahoot-purple text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">
-                  K
+                <div className="abraj-primary text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">
+                  A
                 </div>
-                <span className="font-bold text-xl">Kahoot!</span>
+                <span className="font-bold text-xl">Abraj Quiz</span>
               </div>
               <p className="text-gray-400 text-sm">
                 Making learning awesome for millions of people around the world.
@@ -235,10 +235,10 @@ export default function Home() {
             <div>
               <h4 className="font-bold text-lg mb-4">Connect</h4>
               <div className="flex space-x-4">
-                <a href="#" className="bg-gray-800 hover:kahoot-purple w-10 h-10 rounded-lg flex items-center justify-center transition-colors">
+                <a href="#" className="bg-gray-800 hover:abraj-primary w-10 h-10 rounded-lg flex items-center justify-center transition-colors">
                   <span className="text-sm">𝕏</span>
                 </a>
-                <a href="#" className="bg-gray-800 hover:kahoot-purple w-10 h-10 rounded-lg flex items-center justify-center transition-colors">
+                <a href="#" className="bg-gray-800 hover:abraj-primary w-10 h-10 rounded-lg flex items-center justify-center transition-colors">
                   <span className="text-sm">f</span>
                 </a>
               </div>
@@ -246,7 +246,7 @@ export default function Home() {
           </div>
           
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
-            <p>&copy; 2024 Kahoot! Clone. All rights reserved. Built for educational purposes.</p>
+            <p>&copy; 2024 Abraj Quiz. All rights reserved. Built for educational purposes.</p>
           </div>
         </div>
       </footer>

@@ -124,7 +124,7 @@ export default function PlayGame() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-kahoot-purple mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">Loading game...</p>
         </div>
       </div>
@@ -137,7 +137,7 @@ export default function PlayGame() {
         <Card className="w-full max-w-md mx-4">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">Game not found</p>
-            <Button onClick={() => setLocation("/")} className="kahoot-purple">
+            <Button onClick={() => setLocation("/")} className="abraj-primary">
               Go Home
             </Button>
           </CardContent>
@@ -159,7 +159,7 @@ export default function PlayGame() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">
           <CardContent className="pt-6 text-center space-y-6">
-            <div className="kahoot-purple text-white w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl mx-auto">
+            <div className="abraj-primary text-white w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl mx-auto">
               {playerName.charAt(0).toUpperCase()}
             </div>
             
@@ -183,9 +183,9 @@ export default function PlayGame() {
             <p className="text-gray-600">Waiting for host to start the game...</p>
             
             <div className="animate-pulse flex justify-center">
-              <div className="kahoot-purple w-2 h-2 rounded-full mx-1"></div>
-              <div className="kahoot-purple w-2 h-2 rounded-full mx-1"></div>
-              <div className="kahoot-purple w-2 h-2 rounded-full mx-1"></div>
+              <div className="abraj-primary w-2 h-2 rounded-full mx-1"></div>
+              <div className="abraj-primary w-2 h-2 rounded-full mx-1"></div>
+              <div className="abraj-primary w-2 h-2 rounded-full mx-1"></div>
             </div>
           </CardContent>
         </Card>
@@ -199,7 +199,7 @@ export default function PlayGame() {
         <Card className="w-full max-w-md mx-4">
           <CardContent className="pt-6 text-center space-y-6">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${
-              lastResult.isCorrect ? 'kahoot-green' : 'kahoot-red'
+              lastResult.isCorrect ? 'abraj-green' : 'abraj-red'
             } text-white`}>
               {lastResult.isCorrect ? <Check className="w-10 h-10" /> : <X className="w-10 h-10" />}
             </div>
@@ -218,7 +218,7 @@ export default function PlayGame() {
               )}
             </div>
             
-            <div className="bg-gradient-to-r from-kahoot-purple to-kahoot-blue rounded-xl p-4 text-white text-center">
+            <div className="bg-gradient-to-r from-abraj-primary to-abraj-secondary rounded-xl p-4 text-white text-center">
               <p className="text-sm opacity-90">Your Score</p>
               <p className="font-bold text-2xl">{(currentPlayer?.score || 0).toLocaleString()}</p>
             </div>
@@ -226,10 +226,10 @@ export default function PlayGame() {
             <div className="text-center">
               <p className="text-gray-600 text-sm mb-2">Current Rank</p>
               <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl mx-auto ${
-                currentRank === 1 ? 'kahoot-green' :
+                currentRank === 1 ? 'abraj-green' :
                 currentRank === 2 ? 'bg-gray-400' :
                 currentRank === 3 ? 'bg-orange-500' :
-                'kahoot-purple'
+                'abraj-primary'
               } text-white`}>
                 {currentRank === 1 ? <Trophy className="w-6 h-6" /> : currentRank}
               </div>
@@ -252,7 +252,7 @@ export default function PlayGame() {
           </Badge>
           
           {timeLeft !== null && timeLeft > 0 && !hasAnswered && (
-            <div className="kahoot-red text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 animate-pulse">
+            <div className="abraj-red text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 animate-pulse">
               {timeLeft}
             </div>
           )}
@@ -272,7 +272,7 @@ export default function PlayGame() {
         {/* Answer Options */}
         <div className="space-y-4">
           {currentQuestion?.answers.map((answer, index) => {
-            const colors = ['kahoot-red', 'kahoot-blue', 'kahoot-green', 'kahoot-orange'];
+            const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-orange'];
             const isSelected = selectedAnswer === index;
             const isDisabled = hasAnswered || timeLeft === 0;
             
@@ -299,7 +299,7 @@ export default function PlayGame() {
           <div className="bg-white rounded-lg p-4 shadow">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Score:</span>
-              <span className="font-bold text-kahoot-purple">{(currentPlayer?.score || 0).toLocaleString()}</span>
+              <span className="font-bold text-abraj-primary">{(currentPlayer?.score || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center mt-2">
               <span className="text-gray-600">Rank:</span>

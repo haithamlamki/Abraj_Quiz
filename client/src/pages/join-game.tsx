@@ -111,7 +111,7 @@ export default function JoinGame() {
               <Button
                 onClick={handlePinSubmit}
                 disabled={checkGameMutation.isPending}
-                className="w-full kahoot-purple hover:bg-purple-600 text-white font-bold text-lg py-3"
+                className="w-full abraj-primary hover:abraj-secondary text-white font-bold text-lg py-3"
               >
                 {checkGameMutation.isPending ? "Checking..." : "Continue"}
               </Button>
@@ -135,7 +135,7 @@ export default function JoinGame() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">
-                <div className="kahoot-purple text-white w-20 h-20 rounded-full flex items-center justify-center font-bold text-3xl mx-auto mb-4">
+                <div className="abraj-primary text-white w-20 h-20 rounded-full flex items-center justify-center font-bold text-3xl mx-auto mb-4">
                   {playerName.charAt(0).toUpperCase() || "?"}
                 </div>
               </div>
@@ -159,7 +159,7 @@ export default function JoinGame() {
               <Button
                 onClick={handleNameSubmit}
                 disabled={joinGameMutation.isPending}
-                className="w-full kahoot-green hover:bg-green-600 text-white font-bold text-lg py-3"
+                className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3"
               >
                 {joinGameMutation.isPending ? "Joining..." : "Join Game"}
               </Button>

@@ -20,7 +20,7 @@ export default function HostGame() {
 
   const { data: game, isLoading: gameLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
-    refetchInterval: game?.status === "waiting" ? 2000 : false,
+    refetchInterval: (data) => data?.status === "waiting" ? 2000 : false,
     enabled: !!pin
   });
 
@@ -29,7 +29,7 @@ export default function HostGame() {
     enabled: !!game?.quizId
   });
 
-  const { data: questionResults } = useQuery({
+  const { data: questionResults } = useQuery<{answerPercentages: number[], answerCounts: number[]}>({
     queryKey: ["/api/games", pin, "question-results", game?.currentQuestion],
     enabled: !!pin && !!game && showResults && game.status === "active",
     refetchInterval: showResults ? 1000 : false
@@ -95,7 +95,7 @@ export default function HostGame() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-kahoot-purple mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">Loading game...</p>
         </div>
       </div>
@@ -108,7 +108,7 @@ export default function HostGame() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">Game not found</p>
-            <Button onClick={() => setLocation("/")} className="kahoot-purple">
+            <Button onClick={() => setLocation("/")} className="abraj-primary">
               Go Home
             </Button>
           </CardContent>
@@ -179,7 +179,7 @@ export default function HostGame() {
                 <Button
                   onClick={() => startGameMutation.mutate()}
                   disabled={players.length === 0 || startGameMutation.isPending}
-                  className="w-full kahoot-green hover:bg-green-600 text-white font-bold text-lg py-3"
+                  className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3"
                 >
                   <Play className="w-5 h-5 mr-2" />
                   Start Game
@@ -203,7 +203,7 @@ export default function HostGame() {
                 PIN: {game.gamePin}
               </Badge>
               {timeLeft !== null && timeLeft > 0 && (
-                <div className="kahoot-red text-white px-4 py-2 rounded-full font-bold text-lg animate-pulse">
+                <div className="abraj-red text-white px-4 py-2 rounded-full font-bold text-lg animate-pulse">
                   <Clock className="inline w-5 h-5 mr-2" />
                   {timeLeft}s
                 </div>
@@ -230,9 +230,9 @@ export default function HostGame() {
                           <div
                             key={index}
                             className={`${
-                              index === 0 ? 'kahoot-red' :
-                              index === 1 ? 'kahoot-blue' :
-                              index === 2 ? 'kahoot-green' : 'kahoot-orange'
+                              index === 0 ? 'abraj-red' :
+                              index === 1 ? 'abraj-blue' :
+                              index === 2 ? 'abraj-green' : 'abraj-orange'
                             } rounded-xl p-4 relative overflow-hidden ${isCorrect ? 'ring-4 ring-yellow-400' : ''}`}
                           >
                             <div className="flex items-center justify-between mb-2">
@@ -255,9 +255,9 @@ export default function HostGame() {
                         <div
                           key={index}
                           className={`${
-                            index === 0 ? 'kahoot-red' :
-                            index === 1 ? 'kahoot-blue' :
-                            index === 2 ? 'kahoot-green' : 'kahoot-orange'
+                            index === 0 ? 'abraj-red' :
+                            index === 1 ? 'abraj-blue' :
+                            index === 2 ? 'abraj-green' : 'abraj-orange'
                           } rounded-xl p-4`}
                         >
                           <div className="flex items-center justify-between">
@@ -274,7 +274,7 @@ export default function HostGame() {
                       <Button
                         onClick={() => nextQuestionMutation.mutate()}
                         disabled={nextQuestionMutation.isPending}
-                        className="kahoot-purple hover:bg-purple-600 text-white px-8 py-3 font-bold"
+                        className="abraj-primary hover:abraj-secondary text-white px-8 py-3 font-bold"
                       >
                         <SkipForward className="w-5 h-5 mr-2" />
                         {(game.currentQuestion || 0) + 1 >= questions.length ? "Finish Game" : "Next Question"}
@@ -298,7 +298,7 @@ export default function HostGame() {
                     </div>
                     <div className="flex justify-between">
                       <span className="opacity-90">Game PIN:</span>
-                      <span className="font-bold text-kahoot-blue">{game.gamePin}</span>
+                      <span className="font-bold text-abraj-blue">{game.gamePin}</span>
                     </div>
                     <div className="flex justify-between">
                       <span className="opacity-90">Questions:</span>

@@ -14,7 +14,12 @@ export default function GameResults() {
   const urlParams = new URLSearchParams(window.location.search);
   const playerName = urlParams.get('player');
 
-  const { data: results, isLoading } = useQuery({
+  const { data: results, isLoading } = useQuery<{
+    game: any;
+    players: any[];
+    responses: any[];
+    totalQuestions: number;
+  }>({
     queryKey: ["/api/games", pin, "results"],
     enabled: !!pin
   });
@@ -23,7 +28,7 @@ export default function GameResults() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-kahoot-purple mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
           <p className="text-lg text-gray-600">Loading results...</p>
         </div>
       </div>
@@ -36,7 +41,7 @@ export default function GameResults() {
         <Card className="w-full max-w-md mx-4">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">Results not found</p>
-            <Button onClick={() => setLocation("/")} className="kahoot-purple">
+            <Button onClick={() => setLocation("/")} className="abraj-primary">
               Go Home
             </Button>
           </CardContent>
@@ -63,7 +68,7 @@ export default function GameResults() {
       <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 py-8">
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <div className="kahoot-green text-white w-24 h-24 rounded-full flex items-center justify-center font-bold text-3xl mx-auto mb-4 animate-bounce-gentle">
+            <div className="abraj-green text-white w-24 h-24 rounded-full flex items-center justify-center font-bold text-3xl mx-auto mb-4 animate-bounce-gentle">
               <Trophy className="w-12 h-12" />
             </div>
             <h1 className="font-bold text-4xl text-gray-800 mb-2">Game Complete!</h1>
@@ -78,16 +83,16 @@ export default function GameResults() {
               </CardHeader>
               <CardContent className="text-center space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gradient-to-r from-kahoot-purple to-kahoot-blue rounded-xl p-4 text-white">
+                  <div className="bg-gradient-to-r from-abraj-primary to-abraj-secondary rounded-xl p-4 text-white">
                     <p className="text-sm opacity-90">Final Score</p>
                     <p className="font-bold text-2xl">{(playerData?.score || 0).toLocaleString()}</p>
                   </div>
                   
                   <div className={`rounded-xl p-4 text-white ${
-                    playerRank === 1 ? 'kahoot-green' :
+                    playerRank === 1 ? 'abraj-green' :
                     playerRank === 2 ? 'bg-gray-400' :
                     playerRank === 3 ? 'bg-orange-500' :
-                    'kahoot-purple'
+                    'abraj-primary'
                   }`}>
                     <p className="text-sm opacity-90">Final Rank</p>
                     <p className="font-bold text-2xl">{playerRank}</p>
@@ -141,7 +146,7 @@ export default function GameResults() {
           </div>
 
           <div className="mt-8 flex justify-center space-x-4">
-            <Button onClick={() => setLocation("/")} className="kahoot-purple">
+            <Button onClick={() => setLocation("/")} className="abraj-primary">
               <Home className="w-4 h-4 mr-2" />
               Home
             </Button>
@@ -190,19 +195,19 @@ export default function GameResults() {
               <CardContent className="space-y-4">
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Total Players</span>
-                  <span className="font-bold text-kahoot-purple">{players.length}</span>
+                  <span className="font-bold text-abraj-primary">{players.length}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Questions</span>
-                  <span className="font-bold text-kahoot-blue">{totalQuestions}</span>
+                  <span className="font-bold text-abraj-blue">{totalQuestions}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Average Score</span>
-                  <span className="font-bold text-kahoot-green">{averageScore.toLocaleString()}</span>
+                  <span className="font-bold text-abraj-green">{averageScore.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">Accuracy</span>
-                  <span className="font-bold text-kahoot-orange">{accuracy}%</span>
+                  <span className="font-bold text-abraj-orange">{accuracy}%</span>
                 </div>
               </CardContent>
             </Card>
@@ -217,7 +222,7 @@ export default function GameResults() {
             {/* Actions */}
             <Card className="shadow-lg">
               <CardContent className="p-6 space-y-3">
-                <Button onClick={() => setLocation("/create")} className="w-full kahoot-purple">
+                <Button onClick={() => setLocation("/create")} className="w-full abraj-primary">
                   Create New Quiz
                 </Button>
                 <Button onClick={() => setLocation("/")} variant="outline" className="w-full">

@@ -19,7 +19,7 @@ interface QuizForm {
 }
 
 const answerIcons = [Triangle, Diamond, Circle, Square];
-const answerColors = ['kahoot-red', 'kahoot-blue', 'kahoot-green', 'kahoot-orange'];
+const answerColors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-orange'];
 
 export default function CreateQuiz() {
   const [, setLocation] = useLocation();
@@ -179,7 +179,7 @@ export default function CreateQuiz() {
                   <span className="text-sm text-gray-600">
                     {quiz.questions.length} question{quiz.questions.length !== 1 ? 's' : ''}
                   </span>
-                  <Button onClick={addQuestion} size="sm" className="kahoot-purple">
+                  <Button onClick={addQuestion} size="sm" className="abraj-primary">
                     <Plus className="w-4 h-4 mr-1" />
                     Add Question
                   </Button>
@@ -199,7 +199,7 @@ export default function CreateQuiz() {
                       key={index}
                       className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
                         index === currentQuestionIndex 
-                          ? 'bg-purple-100 border-2 border-kahoot-purple' 
+                          ? 'bg-teal-100 border-2 border-abraj-primary' 
                           : 'bg-gray-50 hover:bg-gray-100'
                       }`}
                       onClick={() => setCurrentQuestionIndex(index)}
@@ -327,7 +327,7 @@ export default function CreateQuiz() {
               <Button
                 onClick={handleSubmit}
                 disabled={createQuizMutation.isPending}
-                className="kahoot-purple hover:bg-purple-600 text-white px-8 py-3 text-lg font-bold"
+                className="abraj-primary hover:abraj-secondary text-white px-8 py-3 text-lg font-bold"
               >
                 {createQuizMutation.isPending ? "Creating..." : "Create Quiz"}
               </Button>

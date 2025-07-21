@@ -69,7 +69,7 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
             {rest.map((player, index) => (
               <div key={player.name} className="flex items-center justify-between bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center space-x-3">
-                  <span className="w-8 h-8 kahoot-purple text-white rounded-full flex items-center justify-center font-bold text-sm">
+                  <span className="w-8 h-8 abraj-primary text-white rounded-full flex items-center justify-center font-bold text-sm">
                     {index + 4}
                   </span>
                   <span className="font-medium">{player.name}</span>
@@ -92,17 +92,17 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
           <div key={player.name} className="flex items-center justify-between bg-white/10 rounded-lg p-3">
             <div className="flex items-center space-x-3">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                index === 0 ? 'kahoot-green text-white' :
+                index === 0 ? 'abraj-green text-white' :
                 index === 1 ? 'bg-gray-400 text-white' :
                 index === 2 ? 'bg-orange-500 text-white' :
-                'kahoot-purple text-white'
+                'abraj-primary text-white'
               }`}>
                 {index + 1}
               </div>
               <span className="font-medium text-white">{player.name}</span>
             </div>
             <span className={`font-bold ${
-              index === 0 ? 'text-kahoot-green' :
+              index === 0 ? 'text-abraj-green' :
               index === 1 ? 'text-gray-300' :
               index === 2 ? 'text-orange-300' :
               'text-white'
