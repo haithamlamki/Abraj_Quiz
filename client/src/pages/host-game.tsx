@@ -5,10 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Leaderboard from "@/components/leaderboard";
-import { Clock, Users, Play, SkipForward } from "lucide-react";
+import { Clock, Users, Play, SkipForward, QrCode, Copy, Share2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
+import QRCode from "qrcode";
 
 export default function HostGame() {
   const { pin } = useParams();
@@ -17,6 +18,24 @@ export default function HostGame() {
   const queryClient = useQueryClient();
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [showResults, setShowResults] = useState(false);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+  const [showQRCode, setShowQRCode] = useState(false);
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: `${label} copied to clipboard.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Please copy the link manually.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const { data: game, isLoading: gameLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
@@ -74,6 +93,21 @@ export default function HostGame() {
       }
     }
   }, [game?.status, game?.currentQuestion, showResults, quiz]);
+
+  // Generate QR code when game loads
+  useEffect(() => {
+    if (game && !qrCodeUrl) {
+      const gameUrl = `${window.location.origin}/join/${game.gamePin}`;
+      QRCode.toDataURL(gameUrl, {
+        width: 256,
+        margin: 2,
+        color: {
+          dark: '#0EA5E9', // Abraj blue color
+          light: '#FFFFFF'
+        }
+      }).then(setQrCodeUrl).catch(console.error);
+    }
+  }, [game, qrCodeUrl]);
 
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return;
@@ -164,26 +198,63 @@ export default function HostGame() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Quiz Preview</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Share Game</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowQRCode(!showQRCode)}
+                    className="p-2"
+                  >
+                    <QrCode className="w-4 h-4" />
+                  </Button>
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <h3 className="font-bold text-lg">{quiz.title}</h3>
-                  <p className="text-gray-600">{quiz.description}</p>
-                </div>
-                <div className="flex justify-between text-sm text-gray-500">
-                  <span>{questions.length} questions</span>
-                  <span>Multiple Choice</span>
-                </div>
+                {showQRCode && qrCodeUrl && (
+                  <div className="text-center space-y-2">
+                    <img src={qrCodeUrl} alt="QR Code to join game" className="w-32 h-32 mx-auto" />
+                    <p className="text-xs text-gray-500">Players can scan to join</p>
+                  </div>
+                )}
                 
-                <Button
-                  onClick={() => startGameMutation.mutate()}
-                  disabled={players.length === 0 || startGameMutation.isPending}
-                  className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3"
-                >
-                  <Play className="w-5 h-5 mr-2" />
-                  Start Game
-                </Button>
+                <div className="space-y-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => copyToClipboard(game.gamePin, "Game PIN")}
+                    className="w-full"
+                  >
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copy PIN ({game.gamePin})
+                  </Button>
+                  
+                  <Button
+                    variant="outline"
+                    onClick={() => copyToClipboard(`${window.location.origin}/join/${game.gamePin}`, "Join link")}
+                    className="w-full"
+                  >
+                    <Share2 className="w-4 h-4 mr-2" />
+                    Copy Join Link
+                  </Button>
+                </div>
+
+                <div className="pt-4 border-t">
+                  <div className="text-center space-y-2 mb-4">
+                    <h3 className="font-bold text-lg">{quiz.title}</h3>
+                    <p className="text-sm text-gray-500">
+                      {questions.length} questions • Multiple Choice
+                    </p>
+                  </div>
+                  
+                  <Button
+                    onClick={() => startGameMutation.mutate()}
+                    disabled={players.length === 0 || startGameMutation.isPending}
+                    className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3"
+                  >
+                    <Play className="w-5 h-5 mr-2" />
+                    Start Game
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </div>

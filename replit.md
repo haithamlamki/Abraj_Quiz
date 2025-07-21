@@ -132,3 +132,12 @@ Preferred communication style: Simple, everyday language.
 - ✓ Provided login prompts for non-authenticated users to enable auto-fill
 - ✓ Streamlined game joining process: users can now join directly from home page with name pre-filled
 - ✓ Maintained backward compatibility with existing join flow via separate join-game page
+
+**QR Code and Sharing Features (January 21, 2025)**
+- ✓ Integrated QRCode library for generating unique QR codes for each game
+- ✓ Added QR code generation in host-quiz-setup page when game is created
+- ✓ Enhanced host game waiting screen with QR code display toggle and share options
+- ✓ Implemented copy-to-clipboard functionality for game PINs and join links
+- ✓ Created visual share interface with copy buttons for PIN and shareable URLs
+- ✓ QR codes use custom Abraj blue branding colors for consistent visual identity
+- ✓ Players can now join games by scanning QR codes or clicking shared links

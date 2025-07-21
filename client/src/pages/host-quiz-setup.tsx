@@ -4,11 +4,12 @@ import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Users, Play, Settings } from "lucide-react";
+import { Clock, Users, Play, Settings, Share2, Copy, QrCode } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import Navigation from "@/components/navigation";
+import QRCode from "qrcode";
 
 interface Quiz {
   id: number;
@@ -42,6 +43,24 @@ export default function HostQuizSetup() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading } = useAuth();
+  const [createdGame, setCreatedGame] = useState<Game | null>(null);
+  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
+
+  const copyToClipboard = async (text: string, label: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      toast({
+        title: "Copied!",
+        description: `${label} copied to clipboard.`,
+      });
+    } catch (error) {
+      toast({
+        title: "Copy Failed",
+        description: "Please copy the link manually.",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -67,13 +86,29 @@ export default function HostQuizSetup() {
       });
       return response.json();
     },
-    onSuccess: (game: Game) => {
+    onSuccess: async (game: Game) => {
+      // Generate QR code for the game join URL
+      const gameUrl = `${window.location.origin}/join/${game.gamePin}`;
+      try {
+        const qrDataUrl = await QRCode.toDataURL(gameUrl, {
+          width: 256,
+          margin: 2,
+          color: {
+            dark: '#0EA5E9', // Abraj blue color
+            light: '#FFFFFF'
+          }
+        });
+        setQrCodeUrl(qrDataUrl);
+      } catch (error) {
+        console.error('Failed to generate QR code:', error);
+      }
+      
+      setCreatedGame(game);
       toast({
         title: "Game Created!",
         description: `Game PIN: ${game.gamePin}. Players can now join!`,
       });
       queryClient.invalidateQueries({ queryKey: ["/api/games"] });
-      setLocation(`/host/${game.gamePin}`);
     },
     onError: () => {
       toast({
@@ -197,43 +232,107 @@ export default function HostQuizSetup() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="text-center space-y-4">
-                  <div className="bg-abraj-primary/10 rounded-lg p-6">
-                    <h3 className="font-semibold text-lg text-gray-800 mb-2">How it works:</h3>
-                    <ol className="text-left text-gray-600 space-y-2">
-                      <li className="flex items-start gap-2">
-                        <span className="bg-abraj-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
-                        <span>Click "Create Game" to generate a unique game PIN</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="bg-abraj-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
-                        <span>Share the PIN with players so they can join</span>
-                      </li>
-                      <li className="flex items-start gap-2">
-                        <span className="bg-abraj-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>
-                        <span>Start the game when all players have joined</span>
-                      </li>
-                    </ol>
-                  </div>
+                {!createdGame ? (
+                  <div className="text-center space-y-4">
+                    <div className="bg-abraj-primary/10 rounded-lg p-6">
+                      <h3 className="font-semibold text-lg text-gray-800 mb-2">How it works:</h3>
+                      <ol className="text-left text-gray-600 space-y-2">
+                        <li className="flex items-start gap-2">
+                          <span className="bg-abraj-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">1</span>
+                          <span>Click "Create Game" to generate a unique game PIN</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="bg-abraj-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">2</span>
+                          <span>Share the PIN or QR code with players so they can join</span>
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <span className="bg-abraj-primary text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold flex-shrink-0 mt-0.5">3</span>
+                          <span>Start the game when all players have joined</span>
+                        </li>
+                      </ol>
+                    </div>
 
-                  <Button
-                    onClick={() => createGameMutation.mutate()}
-                    disabled={createGameMutation.isPending}
-                    className="w-full abraj-primary hover:abraj-secondary text-white font-medium py-3 text-lg"
-                  >
-                    {createGameMutation.isPending ? (
-                      <>
-                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                        Creating Game...
-                      </>
-                    ) : (
-                      <>
-                        <Play className="w-5 h-5 mr-2" />
-                        Create Game & Get PIN
-                      </>
+                    <Button
+                      onClick={() => createGameMutation.mutate()}
+                      disabled={createGameMutation.isPending}
+                      className="w-full abraj-primary hover:abraj-secondary text-white font-medium py-3 text-lg"
+                    >
+                      {createGameMutation.isPending ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
+                          Creating Game...
+                        </>
+                      ) : (
+                        <>
+                          <Play className="w-5 h-5 mr-2" />
+                          Create Game & Get PIN
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="text-center space-y-6">
+                    {/* Game PIN Display */}
+                    <div className="bg-abraj-primary/10 rounded-lg p-6">
+                      <h3 className="font-semibold text-lg text-gray-800 mb-2">Game PIN</h3>
+                      <div className="text-4xl font-bold text-abraj-primary mb-2">
+                        {createdGame.gamePin}
+                      </div>
+                      <p className="text-sm text-gray-600">Players can join using this PIN</p>
+                    </div>
+
+                    {/* QR Code */}
+                    {qrCodeUrl && (
+                      <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
+                        <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2 justify-center">
+                          <QrCode className="w-4 h-4" />
+                          QR Code
+                        </h4>
+                        <div className="flex justify-center mb-3">
+                          <img src={qrCodeUrl} alt="QR Code to join game" className="w-32 h-32" />
+                        </div>
+                        <p className="text-xs text-gray-500">Players can scan this QR code to join</p>
+                      </div>
                     )}
-                  </Button>
-                </div>
+
+                    {/* Share Options */}
+                    <div className="space-y-3">
+                      <h4 className="font-semibold text-gray-800 flex items-center gap-2 justify-center">
+                        <Share2 className="w-4 h-4" />
+                        Share with Players
+                      </h4>
+                      
+                      <div className="space-y-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => copyToClipboard(createdGame.gamePin, "Game PIN")}
+                          className="w-full"
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy PIN
+                        </Button>
+                        
+                        <Button
+                          variant="outline"
+                          onClick={() => copyToClipboard(`${window.location.origin}/join/${createdGame.gamePin}`, "Join link")}
+                          className="w-full"
+                        >
+                          <Copy className="w-4 h-4 mr-2" />
+                          Copy Join Link
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Start Hosting */}
+                    <Button
+                      onClick={() => setLocation(`/host/${createdGame.gamePin}`)}
+                      className="w-full abraj-green hover:bg-green-600 text-white font-medium py-3 text-lg"
+                    >
+                      <Play className="w-5 h-5 mr-2" />
+                      Start Hosting
+                    </Button>
+                  </div>
+                )}
 
                 <div className="pt-4 border-t text-center">
                   <p className="text-sm text-gray-500 mb-3">
