@@ -166,9 +166,6 @@ export default function Home() {
           <div className="grid md:grid-cols-4 gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="abraj-primary text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">
-                  A
-                </div>
                 <span className="font-bold text-xl">Abraj Quiz</span>
               </div>
               <p className="text-gray-400 text-sm">
