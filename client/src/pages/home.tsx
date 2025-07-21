@@ -147,7 +147,7 @@ export default function Home() {
             {/* Features Grid - Horizontal */}
             <div className="max-w-6xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-gradient-to-br from-abraj-primary to-teal-600 p-6 rounded-xl text-center card-3d text-[#019ebd]">
+                <div className="from-abraj-primary to-teal-600 p-6 rounded-xl text-center card-3d text-[#019ebd] bg-[#019ebd00]">
                   <Clock className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Time Limits</h4>
                   <p className="text-sm opacity-90">Set custom timers</p>
