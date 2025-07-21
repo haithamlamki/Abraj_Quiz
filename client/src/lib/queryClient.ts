@@ -12,10 +12,13 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  // Don't include body for GET/HEAD requests
+  const shouldIncludeBody = method !== "GET" && method !== "HEAD" && data !== undefined;
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
-    body: data ? JSON.stringify(data) : undefined,
+    headers: shouldIncludeBody ? { "Content-Type": "application/json" } : {},
+    body: shouldIncludeBody ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
 
@@ -29,7 +32,22 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    // Handle array query keys - use the first element as URL, rest as parameters
+    let url: string;
+    if (Array.isArray(queryKey)) {
+      if (queryKey.length === 1) {
+        url = String(queryKey[0]);
+      } else {
+        // For multi-part keys like ['/api/games', pin], join them appropriately
+        const baseUrl = String(queryKey[0]);
+        const params = queryKey.slice(1).map(String);
+        url = baseUrl + (params.length > 0 ? '/' + params.join('/') : '');
+      }
+    } else {
+      url = String(queryKey);
+    }
+
+    const res = await fetch(url, {
       credentials: "include",
     });
 

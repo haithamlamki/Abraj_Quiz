@@ -27,7 +27,7 @@ export default function JoinGame() {
 
   const checkGameMutation = useMutation({
     mutationFn: async (pin: string) => {
-      const response = await apiRequest("GET", `/api/games/${pin}`, {});
+      const response = await apiRequest("GET", `/api/games/${pin}`);
       return response.json();
     },
     onSuccess: () => {
