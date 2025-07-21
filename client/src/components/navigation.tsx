@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { Plus, FileText, Play } from "lucide-react";
 import abrajLogo from "@assets/ABRJ.OM - Copy_1753085299475.png";
 
 export default function Navigation() {
@@ -27,37 +28,39 @@ export default function Navigation() {
           </div>
           
           <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
+            <div className="ml-10 flex items-center space-x-6">
               <Link href="/create">
-                <span className={`px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                <span className={`px-4 py-3 rounded-md text-lg font-medium transition-colors cursor-pointer flex items-center space-x-2 ${
                   location === '/create' 
                     ? 'text-abraj-primary bg-teal-50' 
                     : 'text-gray-700 hover:text-abraj-primary'
                 }`}>
-                  Create
+                  <Plus className="w-6 h-6" />
+                  <span>Create</span>
                 </span>
               </Link>
               {isAuthenticated && (
                 <Link href="/my-quizzes">
-                  <span className={`px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                  <span className={`px-4 py-3 rounded-md text-lg font-medium transition-colors cursor-pointer flex items-center space-x-2 ${
                     location === '/my-quizzes' 
                       ? 'text-abraj-primary bg-teal-50' 
                       : 'text-gray-700 hover:text-abraj-primary'
                   }`}>
-                    My Quizzes
+                    <FileText className="w-6 h-6" />
+                    <span>My Quizzes</span>
                   </span>
                 </Link>
               )}
               <Link href="/join">
-                <span className={`px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                <span className={`px-4 py-3 rounded-md text-lg font-medium transition-colors cursor-pointer flex items-center space-x-2 ${
                   location.startsWith('/join') 
                     ? 'text-abraj-primary bg-teal-50' 
                     : 'text-gray-700 hover:text-abraj-primary'
                 }`}>
-                  Play
+                  <Play className="w-6 h-6" />
+                  <span>Play</span>
                 </span>
               </Link>
-
             </div>
           </div>
           
