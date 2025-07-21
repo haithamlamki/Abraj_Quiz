@@ -159,7 +159,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const quiz = await storage.createQuiz({
-        ...validation.data,
+        title: validation.data.title,
+        description: validation.data.description,
+        questions: validation.data.questions,
+        isPublic: validation.data.isPublic,
         createdBy: (req as any).session.userId
       });
       res.status(201).json(quiz);
