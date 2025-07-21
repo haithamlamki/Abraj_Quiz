@@ -49,12 +49,15 @@ export default function Navigation() {
                 </Link>
               )}
               <Link href="/join">
-                <span className={`px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
+                <span className={`px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer flex items-center space-x-1 ${
                   location.startsWith('/join') 
                     ? 'text-abraj-primary bg-teal-50' 
                     : 'text-gray-700 hover:text-abraj-primary'
                 }`}>
-                  Play
+                  <div className="w-4 h-4 bg-gradient-to-r from-abraj-primary to-abraj-secondary rounded-full flex items-center justify-center shadow-lg transform hover:scale-110 transition-transform">
+                    <div className="w-0 h-0 border-l-[6px] border-l-white border-t-[3px] border-t-transparent border-b-[3px] border-b-transparent ml-0.5"></div>
+                  </div>
+                  <span>Play</span>
                 </span>
               </Link>
 
