@@ -101,7 +101,7 @@ export default function Home() {
         </div>
       </section>
       {/* Quick Actions */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-[#ffffff00]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-bold text-4xl text-gray-800 mb-4">Get Started</h2>
