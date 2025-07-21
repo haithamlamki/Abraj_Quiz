@@ -1,30 +1,18 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import QuizCard from "@/components/quiz-card";
 import { Trophy, Clock, Image, Users, BarChart } from "lucide-react";
-import type { Quiz } from "@shared/schema";
 
 export default function Home() {
   const [gamePin, setGamePin] = useState("");
   const [, setLocation] = useLocation();
 
-  const { data: quizzes = [], isLoading } = useQuery<Quiz[]>({
-    queryKey: ["/api/quizzes"]
-  });
-
   const handleJoinGame = () => {
     if (gamePin.trim()) {
       setLocation(`/join/${gamePin.trim()}`);
     }
-  };
-
-  const handleSelectQuiz = (quiz: Quiz) => {
-    // For now, just navigate to create page - could be extended to show quiz details
-    console.log("Selected quiz:", quiz);
   };
 
   return (
@@ -170,33 +158,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Popular Quizzes */}
-      <section className="py-16 bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="font-bold text-4xl text-gray-800 mb-4">Discover Popular Quizzes</h2>
-            <p className="text-xl text-gray-600">Join millions of learners worldwide</p>
-          </div>
-          
-          {isLoading ? (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[...Array(6)].map((_, i) => (
-                <div key={i} className="bg-gray-200 animate-pulse rounded-2xl h-64"></div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {quizzes.slice(0, 6).map((quiz) => (
-                <QuizCard 
-                  key={quiz.id} 
-                  quiz={quiz} 
-                  onSelect={handleSelectQuiz}
-                />
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
+
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white py-12">
