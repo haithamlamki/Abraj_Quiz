@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -6,15 +6,24 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 export default function JoinGame() {
   const { pin: urlPin } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user, isAuthenticated } = useAuth();
   
   const [gamePin, setGamePin] = useState(urlPin || "");
   const [playerName, setPlayerName] = useState("");
   const [step, setStep] = useState<"pin" | "name">(urlPin ? "name" : "pin");
+
+  // Auto-fill player name if user is authenticated
+  useEffect(() => {
+    if (isAuthenticated && user && !playerName) {
+      setPlayerName(user.username);
+    }
+  }, [isAuthenticated, user, playerName]);
 
   const checkGameMutation = useMutation({
     mutationFn: async (pin: string) => {
@@ -143,17 +152,34 @@ export default function JoinGame() {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Your Name
+                  {isAuthenticated && user && (
+                    <span className="text-abraj-primary text-xs ml-2">
+                      (Auto-filled from your account)
+                    </span>
+                  )}
                 </label>
                 <Input
                   type="text"
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
-                  placeholder="Enter your name"
+                  placeholder={isAuthenticated && user ? user.username : "Enter your name"}
                   className="text-center text-xl font-medium"
                   maxLength={20}
                   onKeyPress={(e) => e.key === 'Enter' && handleNameSubmit()}
                   autoFocus
                 />
+                {!isAuthenticated && (
+                  <p className="text-xs text-gray-500 mt-2 text-center">
+                    <Button
+                      variant="link"
+                      onClick={() => setLocation("/login")}
+                      className="text-abraj-primary p-0 h-auto text-xs"
+                    >
+                      Login
+                    </Button>
+                    {" "}to auto-fill your name
+                  </p>
+                )}
               </div>
               
               <Button

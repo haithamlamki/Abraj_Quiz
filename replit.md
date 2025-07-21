@@ -124,3 +124,11 @@ Preferred communication style: Simple, everyday language.
 - ✓ Improved gameplay logic: Players no longer see correct/incorrect feedback immediately after answering
 - ✓ Results now only display after the question timer expires, creating proper Kahoot-style experience
 - ✓ Maintained answer submission and scoring while hiding premature feedback
+
+**User Experience Improvements (January 21, 2025)**
+- ✓ Added automatic name filling for registered users in game joining flow
+- ✓ Enhanced home page with player name input field alongside game PIN entry
+- ✓ Added visual indicators when names are auto-filled from user accounts  
+- ✓ Provided login prompts for non-authenticated users to enable auto-fill
+- ✓ Streamlined game joining process: users can now join directly from home page with name pre-filled
+- ✓ Maintained backward compatibility with existing join flow via separate join-game page
