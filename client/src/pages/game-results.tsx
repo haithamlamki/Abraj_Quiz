@@ -114,35 +114,65 @@ export default function GameResults() {
               </CardContent>
             </Card>
 
-            {/* Top 3 */}
-            <Card className="shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-center">Top 3 Players</CardTitle>
+            {/* All Players Results */}
+            <Card className="shadow-xl border-2 border-abraj-primary">
+              <CardHeader className="bg-abraj-primary text-white">
+                <CardTitle className="text-center">
+                  🏆 Final Rankings ({players.length} Players)
+                </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex justify-center items-end space-x-4">
-                  {sortedPlayers.slice(0, 3).map((player, index) => (
-                    <div key={player.name} className="text-center">
-                      <div className={`w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl mb-2 ${
-                        index === 0 ? 'bg-yellow-400 text-yellow-900' :
-                        index === 1 ? 'bg-gray-300 text-gray-700' :
-                        'bg-orange-400 text-orange-900'
+              <CardContent className="p-4">
+                {players.length > 0 ? (
+                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                    {sortedPlayers.map((player, index) => (
+                      <div key={`${player.name}-${index}`} className={`flex items-center justify-between rounded-lg p-3 border-2 transition-colors ${
+                        player.name === playerName 
+                          ? 'bg-abraj-primary text-white border-abraj-primary shadow-lg' 
+                          : 'bg-white border-gray-200 hover:border-abraj-primary'
                       }`}>
-                        {index === 0 ? <Trophy className="w-8 h-8" /> : index + 1}
+                        <div className="flex items-center space-x-3">
+                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                            index === 0 ? 'bg-yellow-400 text-yellow-900 shadow-lg' :
+                            index === 1 ? 'bg-gray-300 text-gray-700 shadow-lg' :
+                            index === 2 ? 'bg-orange-400 text-orange-900 shadow-lg' :
+                            player.name === playerName ? 'bg-white text-abraj-primary shadow-md' : 'bg-blue-500 text-white shadow-md'
+                          }`}>
+                            {index === 0 ? <Trophy className="w-5 h-5" /> : index + 1}
+                          </div>
+                          <div>
+                            <p className={`font-bold ${
+                              player.name === playerName ? 'text-white' : 'text-gray-900'
+                            }`}>
+                              {player.name}
+                              {player.name === playerName && <span className="ml-2 text-xs">(You)</span>}
+                            </p>
+                            <p className={`text-xs ${
+                              player.name === playerName ? 'text-white opacity-90' : 'text-gray-500'
+                            }`}>
+                              Rank #{index + 1} of {players.length}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className={`font-bold text-lg ${
+                            player.name === playerName ? 'text-white' : 'text-abraj-primary'
+                          }`}>
+                            {(player.score || 0).toLocaleString()}
+                          </p>
+                          <p className={`text-xs font-medium ${
+                            player.name === playerName ? 'text-white opacity-90' : 'text-gray-500'
+                          }`}>
+                            points
+                          </p>
+                        </div>
                       </div>
-                      <div className={`${
-                        index === 0 ? 'bg-yellow-400 h-24' :
-                        index === 1 ? 'bg-gray-300 h-16' :
-                        'bg-orange-400 h-12'
-                      } w-20 rounded-t-lg flex items-center justify-center px-2`}>
-                        <span className="font-bold text-sm truncate text-center">
-                          {player.name}
-                        </span>
-                      </div>
-                      <p className="text-xs text-gray-600 mt-2">{(player.score || 0).toLocaleString()}</p>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-500">
+                    <p>No players found</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
