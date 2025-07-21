@@ -140,9 +140,9 @@ export default function Home() {
                   </Link>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="flex flex-wrap justify-center gap-4">
                   {userQuizzes.slice(0, 4).map((quiz) => (
-                    <Card key={quiz.id} className="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 card-3d">
+                    <Card key={quiz.id} className="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 card-3d w-72 flex-shrink-0">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-bold text-gray-800 line-clamp-2">
                           {quiz.title}
