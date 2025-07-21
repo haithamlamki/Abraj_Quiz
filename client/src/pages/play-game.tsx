@@ -279,7 +279,7 @@ export default function PlayGame() {
         {/* Answer Options */}
         <div className="space-y-4">
           {currentQuestion?.answers.map((answer, index) => {
-            const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-orange'];
+            const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
             const isSelected = selectedAnswer === index;
             const isDisabled = hasAnswered || timeLeft === 0;
             

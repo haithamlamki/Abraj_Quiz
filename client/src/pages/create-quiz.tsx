@@ -20,7 +20,7 @@ interface QuizForm {
 }
 
 const answerIcons = [Triangle, Diamond, Circle, Square];
-const answerColors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-orange'];
+const answerColors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
 
 export default function CreateQuiz() {
   const [, setLocation] = useLocation();

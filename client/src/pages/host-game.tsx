@@ -303,7 +303,7 @@ export default function HostGame() {
                             className={`${
                               index === 0 ? 'abraj-red' :
                               index === 1 ? 'abraj-blue' :
-                              index === 2 ? 'abraj-green' : 'abraj-orange'
+                              index === 2 ? 'abraj-green' : 'abraj-yellow'
                             } rounded-xl p-4 relative overflow-hidden ${isCorrect ? 'ring-4 ring-yellow-400' : ''}`}
                           >
                             <div className="flex items-center justify-between mb-2">
@@ -328,7 +328,7 @@ export default function HostGame() {
                           className={`${
                             index === 0 ? 'abraj-red' :
                             index === 1 ? 'abraj-blue' :
-                            index === 2 ? 'abraj-green' : 'abraj-orange'
+                            index === 2 ? 'abraj-green' : 'abraj-yellow'
                           } rounded-xl p-4`}
                         >
                           <div className="flex items-center justify-between">

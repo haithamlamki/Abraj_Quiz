@@ -30,7 +30,7 @@
   --abraj-blue: hsl(207, 90%, 54%);
   --abraj-red: hsl(0, 84%, 60%);
   --abraj-green: hsl(142, 71%, 45%);
-  --abraj-orange: hsl(25, 95%, 53%);
+  --abraj-yellow: hsl(45, 100%, 50%);
   --abraj-pink: hsl(330, 81%, 60%);
 }
 
@@ -102,8 +102,8 @@
     background-color: var(--abraj-green);
   }
   
-  .abraj-orange {
-    background-color: var(--abraj-orange);
+  .abraj-yellow {
+    background-color: var(--abraj-yellow);
   }
   
   .abraj-pink {
