@@ -187,40 +187,42 @@ export default function GameResults() {
               </CardContent>
             </Card>
             
-            {/* All Players List */}
-            <Card className="shadow-xl">
-              <CardHeader>
-                <CardTitle className="text-center">All Players & Points</CardTitle>
+            {/* All Players List - Always Show */}
+            <Card className="shadow-xl border-2 border-abraj-primary">
+              <CardHeader className="bg-abraj-primary text-white">
+                <CardTitle className="text-center text-xl">
+                  🏆 All Players & Points ({players.length} Total)
+                </CardTitle>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="space-y-3">
-                  {sortedPlayers.map((player, index) => (
-                    <div key={player.name} className="flex items-center justify-between bg-gray-50 rounded-lg p-4 hover:bg-gray-100 transition-colors border">
-                      <div className="flex items-center space-x-4">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                          index === 0 ? 'bg-yellow-400 text-yellow-900' :
-                          index === 1 ? 'bg-gray-300 text-gray-700' :
-                          index === 2 ? 'bg-orange-400 text-orange-900' :
-                          'bg-blue-500 text-white'
-                        }`}>
-                          {index === 0 ? <Trophy className="w-5 h-5" /> : index + 1}
+                {players.length > 0 ? (
+                  <div className="space-y-3">
+                    {sortedPlayers.map((player, index) => (
+                      <div key={`${player.name}-${index}`} className="flex items-center justify-between bg-white rounded-lg p-4 border-2 border-gray-200 hover:border-abraj-primary transition-colors shadow-sm">
+                        <div className="flex items-center space-x-4">
+                          <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm ${
+                            index === 0 ? 'bg-yellow-400 text-yellow-900 shadow-lg' :
+                            index === 1 ? 'bg-gray-300 text-gray-700 shadow-lg' :
+                            index === 2 ? 'bg-orange-400 text-orange-900 shadow-lg' :
+                            'bg-blue-500 text-white shadow-md'
+                          }`}>
+                            {index === 0 ? <Trophy className="w-6 h-6" /> : index + 1}
+                          </div>
+                          <div>
+                            <p className="font-bold text-lg text-gray-900">{player.name}</p>
+                            <p className="text-sm text-gray-500">Rank #{index + 1} of {players.length}</p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{player.name}</p>
-                          <p className="text-sm text-gray-500">Rank #{index + 1}</p>
+                        <div className="text-right">
+                          <p className="font-bold text-2xl text-abraj-primary">{(player.score || 0).toLocaleString()}</p>
+                          <p className="text-sm text-gray-500 font-medium">points</p>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-lg text-gray-900">{(player.score || 0).toLocaleString()}</p>
-                        <p className="text-sm text-gray-500">points</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {players.length === 0 && (
-                  <div className="text-center py-8 text-gray-500">
-                    <p>No players joined this quiz.</p>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-gray-500">
+                    <p className="text-lg">No players joined this quiz.</p>
                   </div>
                 )}
               </CardContent>
