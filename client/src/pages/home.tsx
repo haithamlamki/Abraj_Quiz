@@ -38,11 +38,8 @@ export default function Home() {
             
             {/* Main Content */}
             <div>
-              <h1 className="font-bold text-5xl lg:text-6xl text-gray-800 leading-tight">
-                Make Learning
-                <span className="bg-clip-text bg-gradient-to-r from-abraj-primary to-abraj-blue text-[#019ebd]">
-                  {" "}Awesome!
-                </span>
+              <h1 className="font-bold text-5xl lg:text-6xl leading-tight" style={{color: 'var(--abraj-primary)'}}>
+                Make Learning Awesome!
               </h1>
               <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
                 Abraj Quiz makes it easy to create, share and play learning games or trivia quizzes in minutes.
