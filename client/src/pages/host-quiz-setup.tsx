@@ -86,14 +86,11 @@ export default function HostQuizSetup() {
 
   if (isLoading || quizLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
-        <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading quiz...</p>
-            </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading quiz...</p>
           </div>
         </div>
       </div>
@@ -106,16 +103,13 @@ export default function HostQuizSetup() {
 
   if (!quiz) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
-        <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="text-center py-12">
-            <h1 className="text-2xl font-bold text-gray-800 mb-4">Quiz Not Found</h1>
-            <p className="text-gray-600 mb-6">The quiz you're looking for doesn't exist.</p>
-            <Button onClick={() => setLocation("/")} className="abraj-primary hover:abraj-secondary text-white">
-              Go Home
-            </Button>
-          </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center py-12">
+          <h1 className="text-2xl font-bold text-gray-800 mb-4">Quiz Not Found</h1>
+          <p className="text-gray-600 mb-6">The quiz you're looking for doesn't exist.</p>
+          <Button onClick={() => setLocation("/")} className="abraj-primary hover:abraj-secondary text-white">
+            Go Home
+          </Button>
         </div>
       </div>
     );
@@ -125,8 +119,7 @@ export default function HostQuizSetup() {
   const estimatedTime = Math.ceil(quiz.questions.reduce((acc, q) => acc + q.timeLimit, 0) / 60);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
-      <Navigation />
+    <div>
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">

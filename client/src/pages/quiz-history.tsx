@@ -48,14 +48,11 @@ export default function QuizHistory() {
 
   if (isLoading || quizzesLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
-        <Navigation />
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-              <p className="text-gray-600">Loading your quizzes...</p>
-            </div>
+      <div className="container mx-auto px-4 py-8">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading your quizzes...</p>
           </div>
         </div>
       </div>
@@ -77,8 +74,7 @@ export default function QuizHistory() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
-      <Navigation />
+    <div>
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
