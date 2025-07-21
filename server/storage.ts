@@ -309,11 +309,11 @@ export class MemStorage implements IStorage {
     const newQuiz: Quiz = {
       id,
       title: quiz.title,
-      description: quiz.description,
+      description: quiz.description || null,
       questions: quiz.questions,
       isPublic: quiz.isPublic ?? true,
-      createdBy: quiz.createdBy!,
-      createdAt: new Date().toISOString()
+      createdBy: quiz.createdBy,
+      createdAt: new Date()
     };
     this.quizzes.set(id, newQuiz);
     return newQuiz;

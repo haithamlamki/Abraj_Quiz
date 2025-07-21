@@ -49,6 +49,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const insertQuizSchema = createInsertSchema(quizzes).pick({
   title: true,
   description: true,
+  createdBy: true,
   questions: true,
   isPublic: true,
 });
