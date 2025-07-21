@@ -57,15 +57,7 @@ export default function Navigation() {
                   Play
                 </span>
               </Link>
-              <Link href="/">
-                <span className={`px-3 py-2 rounded-md text-sm font-medium transition-colors cursor-pointer ${
-                  location === '/' 
-                    ? 'text-abraj-primary bg-teal-50' 
-                    : 'text-gray-700 hover:text-abraj-primary'
-                }`}>
-                  Discover
-                </span>
-              </Link>
+
             </div>
           </div>
           
