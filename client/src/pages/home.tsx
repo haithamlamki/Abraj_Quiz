@@ -66,7 +66,7 @@ export default function Home() {
                     <div className="flex flex-col sm:flex-row gap-3">
                       <Input
                         type="text"
-                        placeholder={isAuthenticated && user ? user.username : "Player name (optional)"}
+                        placeholder={isAuthenticated && user ? user.username : "Player name"}
                         value={playerName}
                         onChange={(e) => setPlayerName(e.target.value)}
                         className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-medium text-center focus:border-abraj-primary"
