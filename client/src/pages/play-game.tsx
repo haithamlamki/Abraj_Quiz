@@ -71,7 +71,7 @@ export default function PlayGame() {
   }, [playerName, pin, setLocation]);
 
   useEffect(() => {
-    if (game?.status === "active" && quiz && !hasAnswered) {
+    if (game?.status === "active" && quiz) {
       const questions = quiz.questions as Question[];
       const currentQuestion = questions[game.currentQuestion || 0];
       if (currentQuestion) {
@@ -81,7 +81,7 @@ export default function PlayGame() {
         setHasAnswered(false);
       }
     }
-  }, [game?.currentQuestion, game?.status, quiz, hasAnswered]);
+  }, [game?.currentQuestion, game?.status, quiz]);
 
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0 || hasAnswered) return;
