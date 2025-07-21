@@ -2,7 +2,7 @@ import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, FileText, Play } from "lucide-react";
+import { PlusCircle, BookOpen, Gamepad2 } from "lucide-react";
 import abrajLogo from "@assets/ABRJ.OM - Copy_1753085299475.png";
 
 export default function Navigation() {
@@ -35,7 +35,7 @@ export default function Navigation() {
                     ? 'text-abraj-primary bg-teal-50' 
                     : 'text-gray-700 hover:text-abraj-primary'
                 }`}>
-                  <Plus className="w-6 h-6" />
+                  <PlusCircle className="w-8 h-8" />
                   <span>Create</span>
                 </span>
               </Link>
@@ -46,7 +46,7 @@ export default function Navigation() {
                       ? 'text-abraj-primary bg-teal-50' 
                       : 'text-gray-700 hover:text-abraj-primary'
                   }`}>
-                    <FileText className="w-6 h-6" />
+                    <BookOpen className="w-8 h-8" />
                     <span>My Quizzes</span>
                   </span>
                 </Link>
@@ -57,7 +57,7 @@ export default function Navigation() {
                     ? 'text-abraj-primary bg-teal-50' 
                     : 'text-gray-700 hover:text-abraj-primary'
                 }`}>
-                  <Play className="w-6 h-6" />
+                  <Gamepad2 className="w-8 h-8" />
                   <span>Play</span>
                 </span>
               </Link>
