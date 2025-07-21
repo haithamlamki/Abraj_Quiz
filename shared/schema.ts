@@ -76,7 +76,7 @@ export const questionSchema = z.object({
   question: z.string(),
   answers: z.array(z.string()).length(4),
   correctAnswer: z.number().min(0).max(3),
-  timeLimit: z.number().default(10),
+  timeLimit: z.number().min(5).max(120).default(10),
 });
 
 export const quizQuestionsSchema = z.array(questionSchema);

@@ -368,11 +368,11 @@ export default function EditQuiz() {
                                 <FormControl>
                                   <Input
                                     type="number"
-                                    min="10"
+                                    min="5"
                                     max="120"
-                                    placeholder="30"
+                                    placeholder="10"
                                     {...field}
-                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 30)}
+                                    onChange={(e) => field.onChange(parseInt(e.target.value) || 10)}
                                   />
                                 </FormControl>
                                 <FormMessage />

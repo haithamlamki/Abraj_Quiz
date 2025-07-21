@@ -327,7 +327,9 @@ export default function CreateQuiz() {
                       onChange={(e) => updateQuestion(currentQuestionIndex, 'timeLimit', parseInt(e.target.value))}
                       className="border border-gray-300 rounded-md px-3 py-1"
                     >
+                      <option value={5}>5 seconds</option>
                       <option value={10}>10 seconds</option>
+                      <option value={15}>15 seconds</option>
                       <option value={20}>20 seconds</option>
                       <option value={30}>30 seconds</option>
                       <option value={60}>60 seconds</option>
