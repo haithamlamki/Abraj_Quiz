@@ -16,6 +16,7 @@ import QuizHistory from "@/pages/quiz-history";
 import HostQuizSetup from "./pages/host-quiz-setup";
 import EditQuiz from "@/pages/edit-quiz";
 import NotFound from "@/pages/not-found";
+import classroomBg from "@assets/classroom-background.jpg";
 
 function Router() {
   return (
@@ -40,9 +41,20 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
-          <Navigation />
-          <Router />
+        <div className="min-h-screen relative">
+          {/* Classroom background */}
+          <div 
+            className="classroom-background"
+            style={{ backgroundImage: `url(${classroomBg})` }}
+          />
+          {/* Overlay for better readability */}
+          <div className="classroom-overlay" />
+          
+          {/* Content */}
+          <div className="relative z-10">
+            <Navigation />
+            <Router />
+          </div>
           <Toaster />
         </div>
       </TooltipProvider>
