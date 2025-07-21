@@ -85,10 +85,11 @@ export default function CreateQuiz() {
     onSuccess: (data) => {
       toast({
         title: "Quiz Created!",
-        description: "Your quiz has been created successfully.",
+        description: "Redirecting to host your quiz game...",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
-      setLocation("/");
+      queryClient.invalidateQueries({ queryKey: ["/api/my-quizzes"] });
+      setLocation(`/host-quiz/${data.id}`);
     },
     onError: () => {
       toast({

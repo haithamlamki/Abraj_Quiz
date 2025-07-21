@@ -156,7 +156,7 @@ export default function QuizHistory() {
                           Edit
                         </Button>
                       </Link>
-                      <Link href={`/host/${quiz.id}`}>
+                      <Link href={`/host-quiz/${quiz.id}`}>
                         <Button size="sm" className="abraj-primary hover:abraj-secondary text-white flex-1">
                           Host Game
                         </Button>

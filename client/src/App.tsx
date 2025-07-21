@@ -13,6 +13,7 @@ import GameResults from "@/pages/game-results";
 import Login from "@/pages/login";
 import Signup from "@/pages/signup";
 import QuizHistory from "@/pages/quiz-history";
+import HostQuizSetup from "./pages/host-quiz-setup";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -24,6 +25,7 @@ function Router() {
       <Route path="/create" component={CreateQuiz} />
       <Route path="/my-quizzes" component={QuizHistory} />
       <Route path="/host/:pin" component={HostGame} />
+      <Route path="/host-quiz/:quizId" component={HostQuizSetup} />
       <Route path="/join/:pin?" component={JoinGame} />
       <Route path="/play/:pin" component={PlayGame} />
       <Route path="/results/:pin" component={GameResults} />
