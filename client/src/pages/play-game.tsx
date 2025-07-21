@@ -50,8 +50,8 @@ export default function PlayGame() {
       return response.json();
     },
     onSuccess: (data) => {
+      // Store the result but don't show it until timer expires
       setLastResult(data);
-      setShowResult(true);
       setPlayerScore(prev => prev + (data.pointsEarned || 0));
     },
     onError: () => {
@@ -84,7 +84,7 @@ export default function PlayGame() {
   }, [game?.currentQuestion, game?.status, quiz]);
 
   useEffect(() => {
-    if (timeLeft === null || timeLeft <= 0 || hasAnswered) return;
+    if (timeLeft === null || timeLeft <= 0) return;
 
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
@@ -96,7 +96,14 @@ export default function PlayGame() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, hasAnswered]);
+  }, [timeLeft]);
+
+  // Show results when timer reaches 0 AND we have a result from answering
+  useEffect(() => {
+    if (timeLeft === 0 && lastResult && hasAnswered) {
+      setShowResult(true);
+    }
+  }, [timeLeft, lastResult, hasAnswered]);
 
   useEffect(() => {
     if (game?.status === "completed") {
