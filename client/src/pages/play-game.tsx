@@ -337,8 +337,8 @@ export default function PlayGame() {
 
   if (game.status === "waiting") {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md mx-4">
+      <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
+        <Card className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm">
           <CardContent className="pt-6 text-center space-y-6">
             <div className="abraj-primary text-white w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl mx-auto">
               {playerName.charAt(0).toUpperCase()}
@@ -376,8 +376,8 @@ export default function PlayGame() {
 
   if (showResult && lastResult) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100">
-        <Card className="w-full max-w-md mx-4 animate-in slide-in-from-bottom-4 duration-500">
+      <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
+        <Card className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm animate-in slide-in-from-bottom-4 duration-500">
           <CardContent className="pt-6 text-center space-y-6">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${
               lastResult.isCorrect ? 'abraj-green animate-bounce' : 'abraj-red animate-pulse'
@@ -430,9 +430,9 @@ export default function PlayGame() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4">
+    <div className="min-h-screen bg-cover bg-center bg-no-repeat p-4" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
       <TimeUpOverlay />
-      <div className="max-w-md mx-auto">
+      <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-6">
           <Badge variant="secondary" className="mb-2">
@@ -464,8 +464,8 @@ export default function PlayGame() {
           </CardContent>
         </Card>
 
-        {/* Answer Options */}
-        <div className="space-y-4">
+        {/* Answer Options - 2x2 Grid */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
           {currentQuestion?.answers.map((answer, index) => {
             const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
             const isSelected = selectedAnswer === index;
@@ -476,13 +476,13 @@ export default function PlayGame() {
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 disabled={isDisabled}
-                className={`w-full ${colors[index]} hover:scale-105 text-white p-6 rounded-xl font-bold text-lg transition-all transform ${
+                className={`${colors[index]} hover:scale-105 text-white p-8 rounded-xl font-bold text-xl transition-all transform h-24 ${
                   isSelected ? 'ring-4 ring-white' : ''
                 } ${isDisabled ? 'opacity-60' : 'active:scale-95'}`}
               >
                 <div className="flex items-center justify-between w-full">
-                  <span>{String.fromCharCode(65 + index)}</span>
-                  <span className="flex-1 text-center">{answer}</span>
+                  <span className="text-2xl font-black">{String.fromCharCode(65 + index)}</span>
+                  <span className="flex-1 text-center text-lg">{answer}</span>
                 </div>
               </Button>
             );

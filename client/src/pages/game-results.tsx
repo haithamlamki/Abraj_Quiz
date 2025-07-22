@@ -123,7 +123,7 @@ export default function GameResults() {
     const playerRank = sortedPlayers.findIndex((p: any) => p.name === playerName) + 1;
     
     return (
-      <div className="min-h-screen py-8 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50">
+      <div className="min-h-screen bg-cover bg-center bg-no-repeat py-8" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
         {showCelebration && <ConfettiParticles />}
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 animate-in slide-in-from-top-4 duration-700">
@@ -149,7 +149,7 @@ export default function GameResults() {
 
           <div className="space-y-6">
             {/* Player Performance */}
-            <Card className="shadow-xl animate-in slide-in-from-bottom-4 duration-700 delay-200">
+            <Card className="bg-white/95 backdrop-blur-sm shadow-xl animate-in slide-in-from-bottom-4 duration-700 delay-200">
               <CardHeader>
                 <CardTitle className="text-center">Your Performance</CardTitle>
               </CardHeader>
@@ -185,7 +185,7 @@ export default function GameResults() {
             </Card>
 
             {/* All Players Results */}
-            <Card className="shadow-xl border-2 border-abraj-primary">
+            <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-2 border-abraj-primary">
               <CardHeader className="bg-abraj-primary text-white">
                 <CardTitle className="text-center">
                   🏆 Final Rankings ({players.length} Players)
@@ -264,7 +264,7 @@ export default function GameResults() {
 
   // Host view
   return (
-    <div className="min-h-screen py-8 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+    <div className="min-h-screen bg-cover bg-center bg-no-repeat py-8" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
       {showCelebration && <ConfettiParticles />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 animate-in slide-in-from-top-4 duration-700">
@@ -285,14 +285,14 @@ export default function GameResults() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Final Leaderboard */}
           <div className="lg:col-span-2 space-y-6">
-            <Card className="shadow-xl">
+            <Card className="bg-white/95 backdrop-blur-sm shadow-xl">
               <CardContent className="p-8">
                 <Leaderboard players={players} showPodium={true} title="Final Results" />
               </CardContent>
             </Card>
             
             {/* All Players List - Always Show */}
-            <Card className="shadow-xl border-2 border-abraj-primary">
+            <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-2 border-abraj-primary">
               <CardHeader className="bg-abraj-primary text-white">
                 <CardTitle className="text-center text-xl">
                   🏆 All Players & Points ({players.length} Total)
@@ -355,7 +355,7 @@ export default function GameResults() {
 
           {/* Game Statistics */}
           <div className="space-y-6 animate-in slide-in-from-right-4 duration-700 delay-500">
-            <Card className="shadow-xl bg-gradient-to-br from-white to-purple-50 border-2 border-purple-200">
+            <Card className="bg-white/95 backdrop-blur-sm shadow-xl bg-gradient-to-br from-white to-purple-50 border-2 border-purple-200">
               <CardHeader className="text-center">
                 <CardTitle className="text-xl text-purple-700">🎯 Game Statistics</CardTitle>
               </CardHeader>
@@ -389,7 +389,7 @@ export default function GameResults() {
             </div>
 
             {/* Actions */}
-            <Card className="shadow-xl bg-gradient-to-br from-white to-green-50 border-2 border-green-200">
+            <Card className="bg-white/95 backdrop-blur-sm shadow-xl bg-gradient-to-br from-white to-green-50 border-2 border-green-200">
               <CardHeader className="text-center">
                 <CardTitle className="text-lg text-green-700">🚀 What's Next?</CardTitle>
               </CardHeader>

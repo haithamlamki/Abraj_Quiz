@@ -241,7 +241,7 @@ export default function HostGame() {
 
   if (game.status === "waiting") {
     return (
-      <div className="min-h-screen py-8">
+      <div className="min-h-screen bg-cover bg-center bg-no-repeat py-8" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
         <CountdownOverlay />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
@@ -257,7 +257,7 @@ export default function HostGame() {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
-            <Card>
+            <Card className="bg-white/95 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Users className="w-5 h-5" />
@@ -281,7 +281,7 @@ export default function HostGame() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="bg-white/95 backdrop-blur-sm">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Share Game</span>
@@ -396,8 +396,8 @@ export default function HostGame() {
 
   if (game.status === "active") {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4">
-        <div className="max-w-md mx-auto">
+      <div className="min-h-screen bg-cover bg-center bg-no-repeat p-4" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
+        <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-6">
             <Badge variant="secondary" className="mb-2 bg-[#019ebd] text-[#ffffff]">
@@ -423,14 +423,14 @@ export default function HostGame() {
           </div>
 
           {/* Question */}
-          <Card className="mb-6 hover:scale-105 transition-transform duration-200">
+          <Card className="mb-6 hover:scale-105 transition-transform duration-200 bg-white/95 backdrop-blur-sm">
             <CardContent className="p-4 text-center">
               <h2 className="font-bold text-lg text-gray-800">{currentQuestion?.question}</h2>
             </CardContent>
           </Card>
 
-          {/* Answer Options - Vertical Layout like Player Page */}
-          <div className="space-y-4">
+          {/* Answer Options - 2x2 Grid Layout */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
             {currentQuestion?.answers.map((answer, index) => {
               const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
               const percentage = showResults && questionResults ? questionResults.answerPercentages[index] || 0 : 0;
@@ -440,7 +440,7 @@ export default function HostGame() {
               return (
                 <div
                   key={index}
-                  className={`w-full ${colors[index]} text-white p-6 rounded-xl font-bold text-lg transition-all transform hover:scale-105 cursor-pointer active:scale-95 relative overflow-hidden ${
+                  className={`${colors[index]} text-white p-8 rounded-xl font-bold text-xl transition-all transform hover:scale-105 cursor-pointer active:scale-95 relative overflow-hidden h-24 ${
                     showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce' : ''
                   }`}
                   onClick={() => {
@@ -459,8 +459,8 @@ export default function HostGame() {
                   }}
                 >
                   <div className="flex items-center justify-between w-full">
-                    <span>{String.fromCharCode(65 + index)}</span>
-                    <span className="flex-1 text-center">{answer}</span>
+                    <span className="text-2xl font-black">{String.fromCharCode(65 + index)}</span>
+                    <span className="flex-1 text-center text-lg">{answer}</span>
                   </div>
                   
                   {showResults && questionResults && (
@@ -500,7 +500,7 @@ export default function HostGame() {
 
           {/* Game Info - Matching Player Page Style */}
           <div className="mt-6">
-            <div className="bg-white rounded-lg p-4 shadow hover:scale-105 transition-transform">
+            <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow hover:scale-105 transition-transform">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-600">PIN:</span>
                 <span className="font-bold text-[#019ebd]">{game.gamePin}</span>
@@ -518,7 +518,7 @@ export default function HostGame() {
 
           {/* Leaderboard Preview */}
           <div className="mt-6">
-            <Card className="hover:scale-105 transition-transform">
+            <Card className="bg-white/95 backdrop-blur-sm hover:scale-105 transition-transform">
               <CardHeader>
                 <CardTitle className="text-center">Top Players</CardTitle>
               </CardHeader>
