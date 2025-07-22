@@ -123,7 +123,7 @@ export default function GameResults() {
     const playerRank = sortedPlayers.findIndex((p: any) => p.name === playerName) + 1;
     
     return (
-      <div className="min-h-screen bg-cover bg-center bg-no-repeat py-8" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
+      <div className="min-h-screen bg-cover bg-center bg-no-repeat py-8" style={{ backgroundImage: 'url(/attached_assets/1694_1753144153239.jpg)' }}>
         {showCelebration && <ConfettiParticles />}
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 animate-in slide-in-from-top-4 duration-700">
@@ -264,7 +264,7 @@ export default function GameResults() {
 
   // Host view
   return (
-    <div className="min-h-screen bg-cover bg-center bg-no-repeat py-8" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
+    <div className="min-h-screen bg-cover bg-center bg-no-repeat py-8" style={{ backgroundImage: 'url(/attached_assets/1694_1753144153239.jpg)' }}>
       {showCelebration && <ConfettiParticles />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12 animate-in slide-in-from-top-4 duration-700">

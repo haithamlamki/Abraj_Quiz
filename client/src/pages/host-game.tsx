@@ -396,7 +396,7 @@ export default function HostGame() {
 
   if (game.status === "active") {
     return (
-      <div className="min-h-screen bg-cover bg-center bg-no-repeat p-4" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
+      <div className="min-h-screen bg-cover bg-center bg-no-repeat p-4" style={{ backgroundImage: 'url(/attached_assets/1694_1753144153239.jpg)' }}>
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-6">
