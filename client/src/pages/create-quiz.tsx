@@ -92,10 +92,23 @@ export default function CreateQuiz() {
       queryClient.invalidateQueries({ queryKey: ["/api/my-quizzes"] });
       setLocation(`/host-quiz/${data.id}`);
     },
-    onError: () => {
+    onError: (error: any) => {
+      console.error("Quiz creation error:", error);
+      
+      let errorMessage = "Failed to create quiz. Please try again.";
+      
+      if (error?.response?.status === 400) {
+        const errorData = error.response.data;
+        if (errorData?.errors && Array.isArray(errorData.errors)) {
+          errorMessage = errorData.errors.map((err: any) => err.message).join(", ");
+        } else if (errorData?.message) {
+          errorMessage = errorData.message;
+        }
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to create quiz. Please try again.",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -149,6 +162,7 @@ export default function CreateQuiz() {
   };
 
   const handleSubmit = () => {
+    // Validate quiz title
     if (!quiz.title.trim()) {
       toast({
         title: "Error",
@@ -158,15 +172,43 @@ export default function CreateQuiz() {
       return;
     }
 
-    if (quiz.questions.some(q => !q.question.trim() || q.answers.some(a => !a.trim()))) {
-      toast({
-        title: "Error", 
-        description: "Please fill in all questions and answers.",
-        variant: "destructive",
-      });
-      return;
+    // Validate questions
+    for (let i = 0; i < quiz.questions.length; i++) {
+      const question = quiz.questions[i];
+      
+      if (!question.question.trim()) {
+        toast({
+          title: "Error",
+          description: `Question ${i + 1} text is required.`,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check if all answers are filled
+      for (let j = 0; j < question.answers.length; j++) {
+        if (!question.answers[j].trim()) {
+          toast({
+            title: "Error",
+            description: `Question ${i + 1}, Answer ${String.fromCharCode(65 + j)} is required.`,
+            variant: "destructive",
+          });
+          return;
+        }
+      }
+
+      // Validate time limit
+      if (question.timeLimit < 5 || question.timeLimit > 120) {
+        toast({
+          title: "Error",
+          description: `Question ${i + 1} time limit must be between 5 and 120 seconds.`,
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
+    // All validations passed, create the quiz
     createQuizMutation.mutate(quiz);
   };
 

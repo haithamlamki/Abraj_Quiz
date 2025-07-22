@@ -73,9 +73,9 @@ export const insertGameResponseSchema = createInsertSchema(gameResponses).pick({
 
 // Question schema
 export const questionSchema = z.object({
-  question: z.string(),
-  answers: z.array(z.string()).length(4),
-  correctAnswer: z.number().min(0).max(3),
+  question: z.string().min(1, "Question text is required"),
+  answers: z.array(z.string().min(1, "Answer text is required")).length(4, "Must have exactly 4 answers"),
+  correctAnswer: z.number().min(0).max(3, "Correct answer must be between 0-3"),
   timeLimit: z.number().min(5).max(120).default(10),
 });
 
