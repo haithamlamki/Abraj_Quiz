@@ -75,12 +75,16 @@ export default function CreateQuiz() {
 
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: QuizForm) => {
-      const response = await apiRequest("POST", "/api/quizzes", {
+      const payload = {
         title: quizData.title,
         description: quizData.description,
         questions: quizData.questions,
         isPublic: true
-      });
+      };
+      
+      console.log("Sending quiz data:", payload);
+      
+      const response = await apiRequest("POST", "/api/quizzes", payload);
       return response.json();
     },
     onSuccess: (data) => {
@@ -94,20 +98,30 @@ export default function CreateQuiz() {
     },
     onError: (error: any) => {
       console.error("Quiz creation error:", error);
+      console.error("Error response:", error?.response);
       
       let errorMessage = "Failed to create quiz. Please try again.";
       
       if (error?.response?.status === 400) {
         const errorData = error.response.data;
+        console.log("Error data:", errorData);
+        
         if (errorData?.errors && Array.isArray(errorData.errors)) {
-          errorMessage = errorData.errors.map((err: any) => err.message).join(", ");
+          // Handle Zod validation errors
+          const validationErrors = errorData.errors.map((err: any) => {
+            if (err.path && err.path.length > 0) {
+              return `${err.path.join('.')}: ${err.message}`;
+            }
+            return err.message;
+          });
+          errorMessage = validationErrors.join("; ");
         } else if (errorData?.message) {
           errorMessage = errorData.message;
         }
       }
       
       toast({
-        title: "Error",
+        title: "Validation Error",
         description: errorMessage,
         variant: "destructive",
       });
