@@ -155,6 +155,11 @@ export default function Home() {
               <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
                 Create, share and play interactive quizzes in minutes.
               </p>
+              <div className="mt-8 bg-gradient-to-r from-blue-50 to-teal-50 rounded-xl p-6 max-w-3xl mx-auto">
+                <p className="text-lg text-gray-700 text-center">
+                  <span className="font-semibold text-abraj-primary">Powered by our dedicated team</span> - Abraj's innovative employees work tirelessly to create engaging educational experiences for learners worldwide.
+                </p>
+              </div>
               
               {/* Game PIN Entry */}
               <Card className="mt-8 card-3d max-w-lg mx-auto">
