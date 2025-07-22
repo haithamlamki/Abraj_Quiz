@@ -153,7 +153,7 @@ export default function Home() {
                 Make Learning Awesome!
               </h1>
               <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
-                Abraj Quiz makes it easy to create, share and play learning games or trivia quizzes in minutes.
+                Create, share and play interactive quizzes in minutes.
               </p>
               
               {/* Game PIN Entry */}
