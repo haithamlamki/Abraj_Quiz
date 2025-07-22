@@ -7,15 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import Leaderboard from "@/components/leaderboard";
 import { Trophy, Home, RotateCcw, Star, Award, Crown, Download } from "lucide-react";
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
-
-// Extend jsPDF type to include autoTable
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable: (options: any) => jsPDF;
-    lastAutoTable: { finalY: number };
-  }
-}
 
 import logo from "@assets/logo.jpg";
 
@@ -150,25 +141,46 @@ export default function GameResults() {
     pdf.text('Player Rankings and Scores', 20, yPosition);
     yPosition += 15;
 
-    // Create table data for players
-    const tableData = sortedPlayers.map((player, index) => [
-      `#${index + 1}`,
-      player.name,
-      (player.score || 0).toLocaleString(),
-      index === 0 ? '🏆 Champion' : 
-      index === 1 ? '🥈 Runner-up' : 
-      index === 2 ? '🥉 Third Place' : ''
-    ]);
+    // Add player rankings manually
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(0, 0, 0);
+    pdf.text('Player Rankings:', 20, yPosition);
+    yPosition += 10;
 
-    // Add players table
-    pdf.autoTable({
-      head: [['Rank', 'Player Name', 'Score', 'Achievement']],
-      body: tableData,
-      startY: yPosition,
-      headStyles: { fillColor: [1, 158, 189] }, // Abraj blue color
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      styles: { fontSize: 10 }
+    // Add table headers
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Rank', 20, yPosition);
+    pdf.text('Player Name', 50, yPosition);
+    pdf.text('Score', 120, yPosition);
+    pdf.text('Achievement', 150, yPosition);
+    yPosition += 8;
+
+    // Add line under headers
+    pdf.line(20, yPosition - 2, 190, yPosition - 2);
+    yPosition += 5;
+
+    // Add player data
+    pdf.setFont('helvetica', 'normal');
+    sortedPlayers.forEach((player, index) => {
+      const achievement = index === 0 ? 'Champion' : 
+                         index === 1 ? 'Runner-up' : 
+                         index === 2 ? 'Third Place' : '';
+      
+      if (yPosition > 250) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+
+      pdf.text(`#${index + 1}`, 20, yPosition);
+      pdf.text(player.name, 50, yPosition);
+      pdf.text((player.score || 0).toLocaleString(), 120, yPosition);
+      pdf.text(achievement, 150, yPosition);
+      yPosition += 7;
     });
+
+    yPosition += 10;
 
     // Calculate statistics
     const totalResponses = results.responses.length;
@@ -177,7 +189,7 @@ export default function GameResults() {
     const accuracy = totalResponses > 0 ? Math.round((correctResponses / totalResponses) * 100) : 0;
 
     // Add statistics section
-    const finalY = pdf.lastAutoTable.finalY + 15;
+    const finalY = yPosition + 15;
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Game Statistics', 20, finalY);
