@@ -21,8 +21,9 @@ export interface GeneratedQuiz {
 
 export async function generateQuizFromPDF(pdfBuffer: Buffer): Promise<GeneratedQuiz> {
   try {
-    // Use require for pdf-parse as it's a CommonJS module
-    const pdfParse = require("pdf-parse");
+    // Dynamic import for ES modules compatibility
+    const pdfParseModule = await import("pdf-parse");
+    const pdfParse = pdfParseModule.default;
     
     // Extract text from PDF
     const pdfData = await pdfParse(pdfBuffer);
