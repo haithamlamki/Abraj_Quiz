@@ -48,35 +48,7 @@ export default function CreateQuiz() {
   const [urlInput, setUrlInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // Redirect to login if not authenticated
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please login to create quizzes.",
-        variant: "destructive",
-      });
-      setLocation("/login");
-    }
-  }, [isAuthenticated, isLoading, setLocation, toast]);
-
-  // Show loading while checking authentication
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Don't render the form if not authenticated
-  if (!isAuthenticated) {
-    return null;
-  }
-
+  // All mutations and effects declared first
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: QuizForm) => {
       const payload = {
@@ -198,6 +170,40 @@ export default function CreateQuiz() {
       });
     },
   });
+
+  // Effects for authentication and bounds checking
+  useEffect(() => {
+    if (quiz.questions && quiz.questions.length > 0 && currentQuestionIndex >= quiz.questions.length) {
+      setCurrentQuestionIndex(quiz.questions.length - 1);
+    }
+  }, [quiz.questions, currentQuestionIndex]);
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please login to create quizzes.",
+        variant: "destructive",
+      });
+      setLocation("/login");
+    }
+  }, [isAuthenticated, isLoading, setLocation, toast]);
+
+  // Early returns after all hooks
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   const addQuestion = () => {
     setQuiz(prev => ({
@@ -338,7 +344,7 @@ export default function CreateQuiz() {
     }
   };
 
-  const currentQuestion = quiz.questions[currentQuestionIndex] || {
+  const currentQuestion = (quiz.questions && quiz.questions[currentQuestionIndex]) || {
     question: "",
     answers: ["", "", "", ""],
     correctAnswer: 0,
