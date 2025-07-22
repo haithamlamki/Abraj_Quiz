@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Trash2, Triangle, Diamond, Circle, Square } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Trash2, Triangle, Diamond, Circle, Square, Upload, Link as LinkIcon, Wand2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -43,6 +44,9 @@ export default function CreateQuiz() {
   });
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -126,6 +130,73 @@ export default function CreateQuiz() {
         variant: "destructive",
       });
     }
+  });
+
+  const generateFromPdf = useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append('pdf', file);
+      
+      const response = await fetch('/api/generate-quiz/pdf', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to generate quiz from PDF');
+      }
+
+      return response.json();
+    },
+    onSuccess: (generatedQuiz) => {
+      setQuiz({
+        title: generatedQuiz.title,
+        description: generatedQuiz.description,
+        questions: generatedQuiz.questions
+      });
+      setSelectedFile(null);
+      setIsGenerating(false);
+      toast({ 
+        title: "Success", 
+        description: `Generated ${generatedQuiz.questions.length} questions from PDF. Review and edit before creating your quiz.` 
+      });
+    },
+    onError: (error: any) => {
+      setIsGenerating(false);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate quiz from PDF",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const generateFromUrl = useMutation({
+    mutationFn: async (url: string) => {
+      return apiRequest("POST", "/api/generate-quiz/url", { url });
+    },
+    onSuccess: (generatedQuiz) => {
+      setQuiz({
+        title: generatedQuiz.title,
+        description: generatedQuiz.description,
+        questions: generatedQuiz.questions
+      });
+      setUrlInput('');
+      setIsGenerating(false);
+      toast({ 
+        title: "Success", 
+        description: `Generated ${generatedQuiz.questions.length} questions from URL. Review and edit before creating your quiz.` 
+      });
+    },
+    onError: (error: any) => {
+      setIsGenerating(false);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate quiz from URL",
+        variant: "destructive",
+      });
+    },
   });
 
   const addQuestion = () => {
@@ -226,6 +297,47 @@ export default function CreateQuiz() {
     createQuizMutation.mutate(quiz);
   };
 
+
+
+  const handleGenerateFromUrl = () => {
+    if (!urlInput.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a valid URL.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsGenerating(true);
+    generateFromUrl.mutate(urlInput);
+  };
+
+  const handleGenerateFromPdf = () => {
+    if (!selectedFile) {
+      toast({
+        title: "Error", 
+        description: "Please select a PDF file.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsGenerating(true);
+    generateFromPdf.mutate(selectedFile);
+  };
+
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === 'application/pdf') {
+      setSelectedFile(file);
+    } else {
+      toast({
+        title: "Error",
+        description: "Please select a valid PDF file.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const currentQuestion = quiz.questions[currentQuestionIndex];
 
   return (
@@ -233,12 +345,128 @@ export default function CreateQuiz() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
           <h1 className="font-bold text-4xl text-gray-800 mb-4">Create Your Quiz</h1>
-          <p className="text-xl text-gray-600">Build engaging quizzes in minutes</p>
+          <p className="text-xl text-gray-600">Build engaging quizzes manually or auto-generate from content</p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-8">
-          {/* Quiz Details */}
-          <div className="lg:col-span-1 space-y-6">
+        <Tabs defaultValue="manual" className="w-full">
+          <TabsList className="grid w-full grid-cols-2 mb-8">
+            <TabsTrigger value="manual">Manual Creation</TabsTrigger>
+            <TabsTrigger value="generate">Auto Generate</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="generate">
+            <Card className="mb-8">
+              <CardHeader>
+                <CardTitle className="text-2xl text-center text-gray-800 flex items-center justify-center gap-2">
+                  <Wand2 className="w-6 h-6" />
+                  Auto Generate Quiz
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <Tabs defaultValue="url" className="w-full">
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="url">From URL</TabsTrigger>
+                    <TabsTrigger value="pdf">From PDF</TabsTrigger>
+                  </TabsList>
+
+                  <TabsContent value="url" className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Paste Article or Content URL
+                      </label>
+                      <div className="flex gap-3">
+                        <Input
+                          placeholder="https://example.com/article"
+                          value={urlInput}
+                          onChange={(e) => setUrlInput(e.target.value)}
+                          className="flex-1"
+                          disabled={isGenerating}
+                        />
+                        <Button 
+                          onClick={handleGenerateFromUrl}
+                          disabled={isGenerating || !urlInput.trim()}
+                          className="abraj-primary hover:abraj-secondary text-white flex items-center gap-2"
+                        >
+                          {isGenerating ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            <LinkIcon className="w-4 h-4" />
+                          )}
+                          Generate
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="pdf" className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Upload PDF Document
+                      </label>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-center w-full">
+                          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                              <Upload className="w-8 h-8 mb-2 text-gray-500" />
+                              <p className="mb-2 text-sm text-gray-500">
+                                <span className="font-semibold">Click to upload</span> or drag and drop
+                              </p>
+                              <p className="text-xs text-gray-500">PDF files only</p>
+                            </div>
+                            <input 
+                              type="file" 
+                              className="hidden" 
+                              accept="application/pdf"
+                              onChange={handleFileSelect}
+                              disabled={isGenerating}
+                            />
+                          </label>
+                        </div>
+                        {selectedFile && (
+                          <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                            <span className="text-sm text-blue-800">{selectedFile.name}</span>
+                            <Button
+                              onClick={() => setSelectedFile(null)}
+                              variant="ghost"
+                              size="sm"
+                              className="text-blue-600 hover:text-blue-800"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        )}
+                        <Button 
+                          onClick={handleGenerateFromPdf}
+                          disabled={isGenerating || !selectedFile}
+                          className="w-full abraj-primary hover:abraj-secondary text-white flex items-center gap-2"
+                        >
+                          {isGenerating ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            <Upload className="w-4 h-4" />
+                          )}
+                          Generate Quiz from PDF
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+                
+                {isGenerating && (
+                  <div className="text-center p-6 bg-blue-50 rounded-lg">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-abraj-primary mx-auto mb-4"></div>
+                    <p className="text-gray-600">Analyzing content and generating quiz questions...</p>
+                    <p className="text-sm text-gray-500 mt-2">This may take a few moments</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="manual">
+            <div className="grid lg:grid-cols-3 gap-8">
+              {/* Quiz Details */}
+              <div className="lg:col-span-1 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Quiz Details</CardTitle>
@@ -424,9 +652,11 @@ export default function CreateQuiz() {
               >
                 {createQuizMutation.isPending ? "Creating..." : "Create Quiz"}
               </Button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );

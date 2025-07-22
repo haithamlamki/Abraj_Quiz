@@ -5,8 +5,25 @@ import { insertQuizSchema, insertGameSchema, insertGameResponseSchema, quizQuest
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import session from "express-session";
+import multer from "multer";
+import { generateQuizFromPDF, generateQuizFromURL } from "./openai-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Multer configuration for file uploads
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+      fileSize: 10 * 1024 * 1024, // 10MB limit
+    },
+    fileFilter: (req, file, cb) => {
+      if (file.mimetype === 'application/pdf') {
+        cb(null, true);
+      } else {
+        cb(new Error('Only PDF files are allowed'), false);
+      }
+    }
+  });
+
   // Session configuration
   app.use(session({
     secret: process.env.SESSION_SECRET || 'abraj-quiz-secret-dev',
@@ -152,6 +169,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(quizzes);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user quizzes" });
+    }
+  });
+
+  // Auto-generation routes
+  app.post("/api/generate-quiz/pdf", requireAuth, upload.single('pdf'), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No PDF file uploaded" });
+      }
+
+      const generatedQuiz = await generateQuizFromPDF(req.file.buffer);
+      res.json(generatedQuiz);
+    } catch (error) {
+      console.error("Error generating quiz from PDF:", error);
+      res.status(500).json({ message: error.message || "Failed to generate quiz from PDF" });
+    }
+  });
+
+  app.post("/api/generate-quiz/url", requireAuth, async (req, res) => {
+    try {
+      const { url } = req.body;
+      
+      if (!url || typeof url !== 'string') {
+        return res.status(400).json({ message: "Valid URL is required" });
+      }
+
+      // Basic URL validation
+      try {
+        new URL(url);
+      } catch {
+        return res.status(400).json({ message: "Invalid URL format" });
+      }
+
+      const generatedQuiz = await generateQuizFromURL(url);
+      res.json(generatedQuiz);
+    } catch (error) {
+      console.error("Error generating quiz from URL:", error);
+      res.status(500).json({ message: error.message || "Failed to generate quiz from URL" });
     }
   });
 
