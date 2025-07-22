@@ -193,7 +193,7 @@ export default function GameResults() {
               </CardHeader>
               <CardContent className="p-4">
                 {players.length > 0 ? (
-                  <div className="space-y-2 max-h-80 overflow-y-auto">
+                  <div className="space-y-2">
                     {sortedPlayers.map((player, index) => (
                       <div key={`${player.name}-${index}`} className={`flex items-center justify-between rounded-lg p-3 border-2 transition-colors ${
                         player.name === playerName 

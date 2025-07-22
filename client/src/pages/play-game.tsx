@@ -63,6 +63,7 @@ export default function PlayGame() {
   const [showResult, setShowResult] = useState(false);
   const [lastResult, setLastResult] = useState<any>(null);
   const [playerScore, setPlayerScore] = useState(0);
+  const [showTimeUpEffect, setShowTimeUpEffect] = useState(false);
 
 
   const { data: game, isLoading } = useQuery<Game>({
@@ -122,6 +123,7 @@ export default function PlayGame() {
         setShowResult(false);
         setSelectedAnswer(null);
         setHasAnswered(false);
+        setShowTimeUpEffect(false);
       }
     }
   }, [game?.currentQuestion, game?.status, quiz]);
@@ -155,6 +157,15 @@ export default function PlayGame() {
       } else {
         playWrongSound();
       }
+    } else if (timeLeft === 0 && !hasAnswered) {
+      // Show time-up effect for players who haven't answered
+      setShowTimeUpEffect(true);
+      playTimeUpSound(); // Play time-up sound effect
+      
+      // Hide time-up effect after 3 seconds
+      setTimeout(() => {
+        setShowTimeUpEffect(false);
+      }, 3000);
     }
   }, [timeLeft, lastResult, hasAnswered]);
 
@@ -229,6 +240,30 @@ export default function PlayGame() {
     }
   };
 
+  const playTimeUpSound = () => {
+    if (typeof Audio !== 'undefined') {
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      
+      // Play descending tone sequence for time-up effect
+      const frequencies = [440, 330, 220]; // A, E, A (lower)
+      frequencies.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'triangle';
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime + index * 0.2);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.2 + 0.5);
+        
+        oscillator.start(audioContext.currentTime + index * 0.2);
+        oscillator.stop(audioContext.currentTime + index * 0.2 + 0.5);
+      });
+    }
+  };
+
   const handleAnswerSelect = (answerIndex: number) => {
     if (hasAnswered || timeLeft === 0) return;
     
@@ -280,6 +315,23 @@ export default function PlayGame() {
   const currentRank = players
     .sort((a, b) => (b.score || 0) - (a.score || 0))
     .findIndex(p => p.name === playerName) + 1;
+
+  // Time-up effect overlay component
+  const TimeUpOverlay = () => {
+    if (!showTimeUpEffect) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-red-500 bg-opacity-80 flex items-center justify-center z-50 animate-pulse">
+        <div className="text-center">
+          <div className="w-40 h-40 rounded-full bg-white flex items-center justify-center font-bold text-4xl mx-auto mb-6 animate-bounce text-red-500 shadow-2xl">
+            ⏰
+          </div>
+          <h2 className="text-white text-4xl font-bold mb-2 animate-bounce">TIME'S UP!</h2>
+          <p className="text-white text-xl">You didn't answer in time</p>
+        </div>
+      </div>
+    );
+  };
 
 
 
@@ -379,6 +431,7 @@ export default function PlayGame() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 p-4">
+      <TimeUpOverlay />
       <div className="max-w-md mx-auto">
         {/* Header */}
         <div className="text-center mb-6">

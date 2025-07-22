@@ -270,7 +270,7 @@ export default function HostGame() {
                     Waiting for players to join...
                   </p>
                 ) : (
-                  <div className="grid grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+                  <div className="grid grid-cols-2 gap-2">
                     {players.map((player, index) => (
                       <div key={index} className="bg-gray-100 rounded-lg p-3 text-center">
                         <span className="font-medium">{player.name}</span>

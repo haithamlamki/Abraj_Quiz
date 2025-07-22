@@ -161,3 +161,13 @@ Preferred communication style: Simple, everyday language.
 - ✓ Implemented urgent timer warnings for last 3 seconds with enhanced animations and sounds
 - ✓ Created full-screen countdown overlay with color-coded animations (red/yellow/green)
 - ✓ Added timer animations that change from pulse to bounce to ping based on urgency
+
+**Time-Up Effects and UI Improvements (January 21, 2025)**
+- ✓ Implemented "Time's Up" overlay effect for players who don't answer within time limit
+- ✓ Added distinctive time-up sound effect with descending tone sequence
+- ✓ Created full-screen red overlay with clock emoji and animated "TIME'S UP!" message
+- ✓ Fixed countdown synchronization issues between host and players
+- ✓ Removed player-side countdown logic that caused infinite loops
+- ✓ Fixed all player list scrolling issues by removing max-height constraints
+- ✓ Enhanced player lists in host view, game results, and waiting screens to show all players without scrolling
+- ✓ Time-up effect automatically dismisses after 3 seconds for better user experience
