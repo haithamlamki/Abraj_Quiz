@@ -338,7 +338,12 @@ export default function CreateQuiz() {
     }
   };
 
-  const currentQuestion = quiz.questions[currentQuestionIndex];
+  const currentQuestion = quiz.questions[currentQuestionIndex] || {
+    question: "",
+    answers: ["", "", "", ""],
+    correctAnswer: 0,
+    timeLimit: 10
+  };
 
   return (
     <div className="min-h-screen py-8">

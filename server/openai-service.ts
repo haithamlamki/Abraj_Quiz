@@ -21,8 +21,8 @@ export interface GeneratedQuiz {
 
 export async function generateQuizFromPDF(pdfBuffer: Buffer): Promise<GeneratedQuiz> {
   try {
-    // Dynamic import to avoid file loading issues during startup
-    const pdfParse = (await import("pdf-parse")).default;
+    // Use require for pdf-parse as it's a CommonJS module
+    const pdfParse = require("pdf-parse");
     
     // Extract text from PDF
     const pdfData = await pdfParse(pdfBuffer);
@@ -34,6 +34,7 @@ export async function generateQuizFromPDF(pdfBuffer: Buffer): Promise<GeneratedQ
 
     return await generateQuizFromContent(content, "PDF Document");
   } catch (error) {
+    console.error("PDF processing error:", error);
     throw new Error(`Failed to process PDF: ${error.message}`);
   }
 }
