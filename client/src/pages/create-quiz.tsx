@@ -659,7 +659,7 @@ export default function CreateQuiz() {
               <Button
                 onClick={handleSubmit}
                 disabled={createQuizMutation.isPending}
-                className="abraj-primary hover:abraj-secondary text-white px-8 py-3 text-lg font-bold"
+                className="hover:bg-primary/90 h-10 abraj-primary hover:abraj-secondary px-8 py-3 text-lg font-bold bg-[#9fc54b00] text-[#ffffff]"
               >
                 {createQuizMutation.isPending ? "Creating..." : "Create Quiz"}
               </Button>
