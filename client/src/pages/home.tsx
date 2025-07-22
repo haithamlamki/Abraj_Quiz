@@ -286,7 +286,7 @@ export default function Home() {
                 </div>
                 
                 <div className="flex flex-wrap justify-center gap-4">
-                  {userQuizzes.slice(0, 4).map((quiz) => (
+                  {userQuizzes.slice(0, 3).map((quiz) => (
                     <Card key={quiz.id} className="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 card-3d w-72 flex-shrink-0">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-bold text-gray-800 line-clamp-2">
