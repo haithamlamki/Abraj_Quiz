@@ -5,7 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Leaderboard from "@/components/leaderboard";
-import { Trophy, Home, RotateCcw, Star, Award, Crown } from "lucide-react";
+import { Trophy, Home, RotateCcw, Star, Award, Crown, Download } from "lucide-react";
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 import logo from "@assets/logo.jpg";
 
@@ -41,6 +43,179 @@ export default function GameResults() {
         oscillator.stop(audioContext.currentTime + index * 0.15 + 1);
       });
     }
+  };
+
+  // PDF generation function
+  const downloadPDF = async () => {
+    if (!results) return;
+
+    const { game, players, totalQuestions } = results;
+    const sortedPlayers = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
+    
+    // Create new PDF document
+    const pdf = new jsPDF();
+    let yPosition = 20;
+
+    // Load and add logo at the top
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = logo;
+      
+      await new Promise((resolve, reject) => {
+        img.onload = () => {
+          // Add logo - centered at top
+          const logoWidth = 30;
+          const logoHeight = 15;
+          const pageWidth = pdf.internal.pageSize.getWidth();
+          const logoX = (pageWidth - logoWidth) / 2;
+          
+          pdf.addImage(img, 'JPEG', logoX, yPosition, logoWidth, logoHeight);
+          yPosition += logoHeight + 10;
+          resolve(true);
+        };
+        img.onerror = () => {
+          // Skip logo if it fails to load
+          resolve(true);
+        };
+      });
+    } catch (error) {
+      // Continue without logo if there's an error
+    }
+
+    // Title
+    pdf.setFontSize(20);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Quiz Results Report', pdf.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+    yPosition += 15;
+
+    // Quiz Information
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    const currentDate = new Date().toLocaleString();
+    
+    const quizInfo = [
+      `Quiz Title: ${game.quiz?.title || 'Untitled Quiz'}`,
+      `Quiz ID: ${game.quizId}`,
+      `Game PIN: ${game.gamePin}`,
+      `Host: ${game.host?.username || 'Unknown'}`,
+      `Date & Time: ${currentDate}`,
+      `Total Questions: ${totalQuestions}`,
+      `Total Players: ${players.length}`
+    ];
+
+    quizInfo.forEach(info => {
+      pdf.text(info, 20, yPosition);
+      yPosition += 7;
+    });
+
+    yPosition += 10;
+
+    // Questions Section
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Questions and Answers', 20, yPosition);
+    yPosition += 10;
+
+    if (game.quiz?.questions) {
+      game.quiz.questions.forEach((question: any, index: number) => {
+        // Check if we need a new page
+        if (yPosition > 250) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+
+        // Question number and text
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`Question ${index + 1}: ${question.question}`, 20, yPosition);
+        yPosition += 10;
+
+        // Answer choices
+        pdf.setFont('helvetica', 'normal');
+        question.answers.forEach((answer: string, answerIndex: number) => {
+          const isCorrect = answerIndex === question.correctAnswer;
+          const prefix = String.fromCharCode(65 + answerIndex); // A, B, C, D
+          
+          if (isCorrect) {
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(`${prefix}. ${answer} ✓ (CORRECT)`, 30, yPosition);
+          } else {
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(`${prefix}. ${answer}`, 30, yPosition);
+          }
+          yPosition += 6;
+        });
+        
+        yPosition += 5;
+      });
+    }
+
+    // Players and Scores Section
+    if (yPosition > 200) {
+      pdf.addPage();
+      yPosition = 20;
+    }
+
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Player Rankings and Scores', 20, yPosition);
+    yPosition += 15;
+
+    // Create table data for players
+    const tableData = sortedPlayers.map((player, index) => [
+      `#${index + 1}`,
+      player.name,
+      (player.score || 0).toLocaleString(),
+      index === 0 ? '🏆 Champion' : 
+      index === 1 ? '🥈 Runner-up' : 
+      index === 2 ? '🥉 Third Place' : ''
+    ]);
+
+    // Add players table
+    (pdf as any).autoTable({
+      head: [['Rank', 'Player Name', 'Score', 'Achievement']],
+      body: tableData,
+      startY: yPosition,
+      headStyles: { fillColor: [1, 158, 189] }, // Abraj blue color
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      styles: { fontSize: 10 }
+    });
+
+    // Calculate statistics
+    const totalResponses = results.responses.length;
+    const correctResponses = results.responses.filter((r: any) => r.isCorrect).length;
+    const averageScore = players.length > 0 ? Math.round(players.reduce((sum: number, p: any) => sum + (p.score || 0), 0) / players.length) : 0;
+    const accuracy = totalResponses > 0 ? Math.round((correctResponses / totalResponses) * 100) : 0;
+
+    // Add statistics section
+    const finalY = (pdf as any).lastAutoTable.finalY + 15;
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.text('Game Statistics', 20, finalY);
+    
+    pdf.setFontSize(10);
+    pdf.setFont('helvetica', 'normal');
+    const stats = [
+      `Average Score: ${averageScore.toLocaleString()}`,
+      `Overall Accuracy: ${accuracy}%`,
+      `Total Responses: ${totalResponses}`
+    ];
+    
+    let statsY = finalY + 10;
+    stats.forEach(stat => {
+      pdf.text(stat, 20, statsY);
+      statsY += 6;
+    });
+
+    // Footer
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'italic');
+    pdf.text('Generated by Abraj Quiz Platform', pdf.internal.pageSize.getWidth() / 2, pdf.internal.pageSize.getHeight() - 10, { align: 'center' });
+
+    // Save the PDF
+    const fileName = `quiz-results-${game.gamePin}-${new Date().toISOString().split('T')[0]}.pdf`;
+    pdf.save(fileName);
   };
 
   const { data: results, isLoading } = useQuery<{
@@ -394,6 +569,13 @@ export default function GameResults() {
                 <CardTitle className="text-lg text-green-700">🚀 What's Next?</CardTitle>
               </CardHeader>
               <CardContent className="p-6 space-y-3">
+                <Button 
+                  onClick={downloadPDF} 
+                  className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white transform transition-all duration-300 hover:scale-105 shadow-lg"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PDF Report
+                </Button>
                 <Button 
                   onClick={() => setLocation("/create")} 
                   className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white transform transition-all duration-300 hover:scale-105 shadow-lg"
