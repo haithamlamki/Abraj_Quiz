@@ -320,7 +320,7 @@ export default function Home() {
                 <div className="bg-white rounded-xl p-6 card-3d">
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="font-bold text-xl text-gray-800">Create New Quiz</h3>
-                    <div className="abraj-blue text-white px-3 py-1 rounded-full text-sm font-medium">
+                    <div className="abraj-blue text-white px-3 py-1 rounded-full text-sm font-medium bg-[#0baab5]">
                       Quick Start
                     </div>
                   </div>
