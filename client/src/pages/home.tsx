@@ -149,7 +149,7 @@ export default function Home() {
             
             {/* Main Content */}
             <div>
-              <h1 className="font-bold lg:text-6xl text-[59px]" style={{color: 'var(--abraj-primary)'}}>Powered by our dedicated team</h1>
+              <h1 className="font-bold lg:text-6xl text-[58px]" style={{color: 'var(--abraj-primary)'}}>Powered by our dedicated team</h1>
               <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px]">Abraj's innovative employees work tirelessly to create engaging educational experiences for learners worldwide.</p>
               
               {/* Game PIN Entry */}
