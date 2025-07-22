@@ -8,7 +8,7 @@ import Leaderboard from "@/components/leaderboard";
 import { Trophy, Home, RotateCcw, Star, Award, Crown, Download } from "lucide-react";
 import jsPDF from 'jspdf';
 
-import logo from "@assets/logo.jpg";
+import logo from "@assets/ABRJ.OM - Copy_1753146533010.png";
 
 export default function GameResults() {
   const { pin } = useParams();
@@ -55,29 +55,65 @@ export default function GameResults() {
     const pdf = new jsPDF();
     let yPosition = 20;
 
-    // Add ABRAJ branding text (simplified approach)
+    // Add ABRAJ logo
+    try {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      
+      await new Promise((resolve) => {
+        img.onload = () => {
+          canvas.width = img.width;
+          canvas.height = img.height;
+          ctx?.drawImage(img, 0, 0);
+          
+          try {
+            const dataURL = canvas.toDataURL('image/png', 0.8);
+            const logoWidth = 25;
+            const logoHeight = 20;
+            const pageWidth = pdf.internal.pageSize.getWidth();
+            const logoX = (pageWidth - logoWidth) / 2;
+            
+            pdf.addImage(dataURL, 'PNG', logoX, yPosition, logoWidth, logoHeight);
+            yPosition += logoHeight + 5;
+          } catch (error) {
+            console.warn('Could not add logo to PDF:', error);
+          }
+          resolve(true);
+        };
+        img.onerror = () => resolve(true);
+        img.src = logo;
+      });
+    } catch (error) {
+      console.warn('Logo processing failed:', error);
+    }
+
+    // Add ABRAJ QUIZ title
     pdf.setFontSize(24);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(1, 158, 189); // Abraj blue color
     pdf.text('ABRAJ QUIZ', pdf.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-    yPosition += 15;
+    yPosition += 10;
 
-    // Title
-    pdf.setFontSize(20);
+    // Quiz Results Report subtitle
+    pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(1, 158, 189); // Abraj blue color
     pdf.text('Quiz Results Report', pdf.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-    yPosition += 15;
+    yPosition += 20;
 
     // Quiz Information
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(1, 158, 189); // Abraj blue color
     const currentDate = new Date().toLocaleString();
     
     const quizInfo = [
       `Quiz Title: ${game.quiz?.title || 'Untitled Quiz'}`,
       `Quiz ID: ${game.quizId}`,
       `Game PIN: ${game.gamePin}`,
-      `Host: ${game.host?.username || 'Unknown'}`,
+      `Host: ${game.hostName || 'Unknown'}`,
       `Date & Time: ${currentDate}`,
       `Total Questions: ${totalQuestions}`,
       `Total Players: ${players.length}`
@@ -85,21 +121,22 @@ export default function GameResults() {
 
     quizInfo.forEach(info => {
       pdf.text(info, 20, yPosition);
-      yPosition += 7;
+      yPosition += 8;
     });
 
-    yPosition += 10;
+    yPosition += 15;
 
-    // Questions Section
+    // Questions and Answers Section
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(1, 158, 189); // Abraj blue color
     pdf.text('Questions and Answers', 20, yPosition);
-    yPosition += 10;
+    yPosition += 15;
 
     if (game.quiz?.questions) {
       game.quiz.questions.forEach((question: any, index: number) => {
         // Check if we need a new page
-        if (yPosition > 250) {
+        if (yPosition > 240) {
           pdf.addPage();
           yPosition = 20;
         }
@@ -107,26 +144,32 @@ export default function GameResults() {
         // Question number and text
         pdf.setFontSize(12);
         pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(0, 0, 0);
         pdf.text(`Question ${index + 1}: ${question.question}`, 20, yPosition);
-        yPosition += 10;
+        yPosition += 12;
 
-        // Answer choices
-        pdf.setFont('helvetica', 'normal');
+        // Answer choices with colors and highlighting
+        pdf.setFontSize(10);
         question.answers.forEach((answer: string, answerIndex: number) => {
           const isCorrect = answerIndex === question.correctAnswer;
           const prefix = String.fromCharCode(65 + answerIndex); // A, B, C, D
           
           if (isCorrect) {
+            // Highlight correct answer
+            pdf.setFillColor(144, 238, 144); // Light green background
+            pdf.rect(25, yPosition - 4, 140, 8, 'F');
             pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(0, 100, 0); // Dark green text
             pdf.text(`${prefix}. ${answer} ✓ (CORRECT)`, 30, yPosition);
           } else {
             pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(0, 0, 0);
             pdf.text(`${prefix}. ${answer}`, 30, yPosition);
           }
-          yPosition += 6;
+          yPosition += 8;
         });
         
-        yPosition += 5;
+        yPosition += 8;
       });
     }
 
@@ -138,6 +181,7 @@ export default function GameResults() {
 
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(1, 158, 189); // Abraj blue color
     pdf.text('Player Rankings and Scores', 20, yPosition);
     yPosition += 15;
 
@@ -190,32 +234,28 @@ export default function GameResults() {
 
     // Add statistics section
     const finalY = yPosition + 15;
-    pdf.setFontSize(14);
+    pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(1, 158, 189); // Abraj blue color
     pdf.text('Game Statistics', 20, finalY);
     
-    pdf.setFontSize(10);
+    const statsY = finalY + 15;
+    pdf.setFontSize(12);
     pdf.setFont('helvetica', 'normal');
-    const stats = [
-      `Average Score: ${averageScore.toLocaleString()}`,
-      `Overall Accuracy: ${accuracy}%`,
-      `Total Responses: ${totalResponses}`
-    ];
-    
-    let statsY = finalY + 10;
-    stats.forEach(stat => {
-      pdf.text(stat, 20, statsY);
-      statsY += 6;
-    });
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(`Average Score: ${averageScore}`, 20, statsY);
+    pdf.text(`Overall Accuracy: ${accuracy}%`, 20, statsY + 8);
+    pdf.text(`Total Responses: ${totalResponses}`, 20, statsY + 16);
 
-    // Footer
+    // Add footer
+    const pageHeight = pdf.internal.pageSize.getHeight();
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'italic');
-    pdf.text('Generated by Abraj Quiz Platform', pdf.internal.pageSize.getWidth() / 2, pdf.internal.pageSize.getHeight() - 10, { align: 'center' });
+    pdf.setTextColor(128, 128, 128);
+    pdf.text('Generated by Abraj Quiz Platform', pdf.internal.pageSize.getWidth() / 2, pageHeight - 10, { align: 'center' });
 
     // Save the PDF
-    const fileName = `quiz-results-${game.gamePin}-${new Date().toISOString().split('T')[0]}.pdf`;
-    pdf.save(fileName);
+    pdf.save(`Abraj_Quiz_${game.gamePin}_Results.pdf`);
   };
 
   const { data: results, isLoading } = useQuery<{
