@@ -9,6 +9,14 @@ import { Trophy, Home, RotateCcw, Star, Award, Crown, Download } from "lucide-re
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
 
+// Extend jsPDF type to include autoTable
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable: (options: any) => jsPDF;
+    lastAutoTable: { finalY: number };
+  }
+}
+
 import logo from "@assets/logo.jpg";
 
 export default function GameResults() {
@@ -56,32 +64,12 @@ export default function GameResults() {
     const pdf = new jsPDF();
     let yPosition = 20;
 
-    // Load and add logo at the top
-    try {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = logo;
-      
-      await new Promise((resolve, reject) => {
-        img.onload = () => {
-          // Add logo - centered at top
-          const logoWidth = 30;
-          const logoHeight = 15;
-          const pageWidth = pdf.internal.pageSize.getWidth();
-          const logoX = (pageWidth - logoWidth) / 2;
-          
-          pdf.addImage(img, 'JPEG', logoX, yPosition, logoWidth, logoHeight);
-          yPosition += logoHeight + 10;
-          resolve(true);
-        };
-        img.onerror = () => {
-          // Skip logo if it fails to load
-          resolve(true);
-        };
-      });
-    } catch (error) {
-      // Continue without logo if there's an error
-    }
+    // Add ABRAJ branding text (simplified approach)
+    pdf.setFontSize(24);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(1, 158, 189); // Abraj blue color
+    pdf.text('ABRAJ QUIZ', pdf.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+    yPosition += 15;
 
     // Title
     pdf.setFontSize(20);
@@ -173,7 +161,7 @@ export default function GameResults() {
     ]);
 
     // Add players table
-    (pdf as any).autoTable({
+    pdf.autoTable({
       head: [['Rank', 'Player Name', 'Score', 'Achievement']],
       body: tableData,
       startY: yPosition,
@@ -189,7 +177,7 @@ export default function GameResults() {
     const accuracy = totalResponses > 0 ? Math.round((correctResponses / totalResponses) * 100) : 0;
 
     // Add statistics section
-    const finalY = (pdf as any).lastAutoTable.finalY + 15;
+    const finalY = pdf.lastAutoTable.finalY + 15;
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.text('Game Statistics', 20, finalY);
