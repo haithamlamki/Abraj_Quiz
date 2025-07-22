@@ -590,7 +590,7 @@ export default function CreateQuiz() {
                             value={answer}
                             onChange={(e) => updateAnswer(currentQuestionIndex, answerIndex, e.target.value)}
                             placeholder={`Answer ${String.fromCharCode(65 + answerIndex)}`}
-                            className="w-full bg-transparent border-none text-white placeholder:text-white/70 focus:outline-none"
+                            className="w-full border-none text-white placeholder:text-white/70 focus:outline-none bg-[#ffffff]"
                           />
                           <div className="flex items-center space-x-2 mt-2">
                             <Checkbox
