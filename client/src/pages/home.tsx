@@ -149,9 +149,7 @@ export default function Home() {
             
             {/* Main Content */}
             <div>
-              <h1 className="font-bold text-5xl lg:text-6xl leading-tight" style={{color: 'var(--abraj-primary)'}}>
-                Make Learning Awesome!
-              </h1>
+              <h1 className="font-bold lg:text-6xl text-[59px]" style={{color: 'var(--abraj-primary)'}}>Powered by our dedicated team</h1>
               <p className="mt-6 text-xl text-gray-600 max-w-2xl mx-auto">
                 Create, share and play interactive quizzes in minutes.
               </p>
