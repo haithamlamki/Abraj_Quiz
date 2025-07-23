@@ -500,10 +500,7 @@ export default function GameResults() {
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Final Leaderboard */}
           <div className="lg:col-span-2 space-y-6">
-            <div className="bg-white/95 backdrop-blur-sm shadow-xl">
-              <Leaderboard players={players} showPodium={true} title="Final Results" />
-            </div>
-            
+
             {/* All Players List - Always Show */}
             <Card className="bg-white/95 backdrop-blur-sm shadow-xl border-2 border-abraj-primary">
               <CardHeader className="bg-abraj-primary text-white">
