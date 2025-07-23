@@ -8,7 +8,7 @@ export const getBackgroundImageUrl = (backgroundValue: string): string => {
   
   // Otherwise, return the theme-based background image
   const themeImages: Record<string, string> = {
-    classroom: '/attached_assets/1694_1753144153239.jpg',
+    classroom: '/attached_assets/classroom-background.jpg',
     space: '/attached_assets/space-background.jpg',
     ocean: '/attached_assets/ocean-background.jpg', 
     forest: '/attached_assets/forest-background.jpg',
