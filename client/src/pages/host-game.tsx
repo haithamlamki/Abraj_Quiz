@@ -397,7 +397,24 @@ export default function HostGame() {
   if (game.status === "active") {
     return (
       <div className="min-h-screen bg-cover bg-center bg-no-repeat p-4" style={{ backgroundImage: 'url(/attached_assets/1694_1753144153239.jpg)' }}>
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-4xl mx-auto relative">
+          {/* Next Question Button - Top Right */}
+          {showResults && (
+            <div className="absolute top-0 right-0 z-10">
+              <Button
+                onClick={() => {
+                  nextQuestionMutation.mutate();
+                  playCountdownSound(3);
+                }}
+                disabled={nextQuestionMutation.isPending}
+                className="abraj-primary hover:abraj-secondary text-white px-6 py-2 font-bold hover:scale-105 active:scale-95 transition-transform shadow-lg"
+              >
+                <SkipForward className="w-4 h-4 mr-2" />
+                {(game.currentQuestion || 0) + 1 >= questions.length ? "Finish Game" : "Next Question"}
+              </Button>
+            </div>
+          )}
+          
           {/* Header */}
           <div className="text-center mb-6">
             <Badge variant="secondary" className="mb-2 bg-[#019ebd] text-[#ffffff]">
@@ -481,22 +498,7 @@ export default function HostGame() {
             })}
           </div>
 
-          {/* Game Controls */}
-          {showResults && (
-            <div className="mt-6 text-center">
-              <Button
-                onClick={() => {
-                  nextQuestionMutation.mutate();
-                  playCountdownSound(3);
-                }}
-                disabled={nextQuestionMutation.isPending}
-                className="w-full abraj-primary hover:abraj-secondary text-white px-8 py-3 font-bold hover:scale-105 active:scale-95 transition-transform"
-              >
-                <SkipForward className="w-5 h-5 mr-2" />
-                {(game.currentQuestion || 0) + 1 >= questions.length ? "Finish Game" : "Next Question"}
-              </Button>
-            </div>
-          )}
+
 
           {/* Game Info - Matching Player Page Style */}
           <div className="mt-6">

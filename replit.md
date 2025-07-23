@@ -200,3 +200,12 @@ Preferred communication style: Simple, everyday language.
 - ✓ Auto-generated quizzes include 8-12 questions with proper Abraj formatting
 - ✓ Questions are editable after generation before finalizing quiz creation
 - ✓ Added multer middleware for secure PDF file handling with 10MB size limit
+
+**UI Enhancements and Quiz Background Feature (January 23, 2025)**
+- ✓ Updated input backgrounds to semi-transparent (#ffffff85) for better visual appeal
+- ✓ Added quiz background selection feature with 5 theme options (Classroom, Space, Ocean, Forest, City)
+- ✓ Extended database schema with background field and default "classroom" theme
+- ✓ Integrated background selection into Quiz Details section of create-quiz page
+- ✓ Repositioned "Next Question"/"Finish Game" button to top right of host game page
+- ✓ Background themes now stored in database and applied throughout entire game sessions
+- ✓ Enhanced user experience with clear instructions that backgrounds affect all game pages
