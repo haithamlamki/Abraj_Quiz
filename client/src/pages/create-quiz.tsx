@@ -548,7 +548,7 @@ export default function CreateQuiz() {
                 <CardTitle>Questions</CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
+                <div className="space-y-2">
                   {(quiz.questions && quiz.questions.length > 0) ? quiz.questions.map((q, index) => (
                     <div
                       key={index}
