@@ -362,7 +362,7 @@ export default function CreateQuiz() {
         <Tabs defaultValue="manual" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
             <TabsTrigger value="manual">Manual Creation</TabsTrigger>
-            <TabsTrigger value="generate" className="bg-[#f5f5f4]">Auto Generate</TabsTrigger>
+            <TabsTrigger value="generate" className="bg-[#f5f5f4] ml-[8px] mr-[8px]">Auto Generate</TabsTrigger>
           </TabsList>
 
           <TabsContent value="generate">
