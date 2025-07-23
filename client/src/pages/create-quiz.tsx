@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Triangle, Diamond, Circle, Square, Upload, Link as LinkIcon, Wand2 } from "lucide-react";
+import { Plus, Trash2, Triangle, Diamond, Circle, Square, Upload, Link as LinkIcon, Wand2, BookOpen } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -49,6 +49,7 @@ export default function CreateQuiz() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [topicsInput, setTopicsInput] = useState("");
 
   // All mutations and effects declared first
   const createQuizMutation = useMutation({
@@ -182,6 +183,40 @@ export default function CreateQuiz() {
       toast({
         title: "Error",
         description: error.message || "Failed to generate quiz from URL",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const generateFromTopics = useMutation({
+    mutationFn: async (topics: string) => {
+      const response = await apiRequest("POST", "/api/generate-quiz/topics", { topics });
+      return response.json();
+    },
+    onSuccess: (generatedQuiz) => {
+      // Ensure we have valid questions array before setting state
+      if (generatedQuiz && generatedQuiz.questions && Array.isArray(generatedQuiz.questions)) {
+        setQuiz({
+          title: generatedQuiz.title || "Generated Quiz",
+          description: generatedQuiz.description || "",
+          background: "classroom",
+          questions: generatedQuiz.questions
+        });
+        setTopicsInput('');
+        setIsGenerating(false);
+        toast({ 
+          title: "Success", 
+          description: `Generated ${generatedQuiz.questions.length} questions from topics. Review and edit before creating your quiz.` 
+        });
+      } else {
+        throw new Error("Invalid response format from topics generation");
+      }
+    },
+    onError: (error: any) => {
+      setIsGenerating(false);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate quiz from topics",
         variant: "destructive",
       });
     },
@@ -347,6 +382,19 @@ export default function CreateQuiz() {
     generateFromPdf.mutate(selectedFile);
   };
 
+  const handleGenerateFromTopics = () => {
+    if (!topicsInput.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter topics or subjects for the quiz.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsGenerating(true);
+    generateFromTopics.mutate(topicsInput);
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
@@ -391,9 +439,10 @@ export default function CreateQuiz() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <Tabs defaultValue="url" className="w-full">
-                  <TabsList className="grid w-full grid-cols-2">
+                  <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="url" className="data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">From URL</TabsTrigger>
                     <TabsTrigger value="pdf" className="data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">From PDF</TabsTrigger>
+                    <TabsTrigger value="topics" className="data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">From Topics</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="url" className="space-y-4">
@@ -473,6 +522,43 @@ export default function CreateQuiz() {
                             <Upload className="w-4 h-4" />
                           )}
                           Generate Quiz from PDF
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="topics" className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Enter Topics or Subjects
+                      </label>
+                      <div className="space-y-3">
+                        <Textarea
+                          placeholder="Enter topics, subjects, or keywords for your quiz (e.g., World War II, Photosynthesis, JavaScript basics, Ancient Rome)"
+                          value={topicsInput}
+                          onChange={(e) => setTopicsInput(e.target.value)}
+                          className="w-full h-32 resize-none"
+                          disabled={isGenerating}
+                        />
+                        <div className="text-xs text-gray-500">
+                          <p>💡 Tips for better results:</p>
+                          <ul className="list-disc ml-4 mt-1 space-y-1">
+                            <li>Be specific with your topics (e.g., "Mitosis cell division" instead of just "Biology")</li>
+                            <li>You can include multiple topics separated by commas</li>
+                            <li>Add context like grade level or difficulty (e.g., "High school chemistry")</li>
+                          </ul>
+                        </div>
+                        <Button 
+                          onClick={handleGenerateFromTopics}
+                          disabled={isGenerating || !topicsInput.trim()}
+                          className="w-full abraj-primary hover:abraj-secondary text-white flex items-center gap-2"
+                        >
+                          {isGenerating ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            <BookOpen className="w-4 h-4" />
+                          )}
+                          Generate Quiz from Topics
                         </Button>
                       </div>
                     </div>

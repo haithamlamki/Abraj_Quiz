@@ -90,6 +90,96 @@ export async function generateQuizFromURL(url: string): Promise<GeneratedQuiz> {
   }
 }
 
+export async function generateQuizFromTopics(topics: string): Promise<GeneratedQuiz> {
+  try {
+    if (!topics || topics.trim().length < 3) {
+      throw new Error("Topics input is too short. Please provide specific topics or subjects.");
+    }
+
+    const prompt = `Create a comprehensive educational quiz based on the following topics or subjects: "${topics.trim()}"
+
+Requirements:
+1. Generate 8-12 multiple choice questions covering the specified topics
+2. Each question should have exactly 4 answer options with only one correct answer
+3. Include a mix of difficulty levels (easy, medium, hard) appropriate for the subject matter
+4. Questions should test various aspects: definitions, concepts, applications, and factual knowledge
+5. Ensure questions are educationally valuable and accurate
+6. Generate an appropriate quiz title and description based on the topics
+7. Questions should be clear, unambiguous, and well-formatted
+8. Cover different subtopics within the main topic area when possible
+
+Respond with JSON in this exact format:
+{
+  "title": "Quiz title based on the topics",
+  "description": "Brief description of what this quiz covers",
+  "questions": [
+    {
+      "question": "Question text here?",
+      "answers": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": 0,
+      "timeLimit": 10
+    }
+  ]
+}`;
+
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert educator and quiz creator. Create engaging, educational quizzes on any topic with accurate information and well-structured questions. Always respond with valid JSON matching the exact format requested."
+        },
+        {
+          role: "user",
+          content: prompt
+        }
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 3000
+    });
+
+    const generatedContent = response.choices[0].message.content;
+    const parsedQuiz = JSON.parse(generatedContent);
+
+    // Validate the response structure
+    if (!parsedQuiz.questions || !Array.isArray(parsedQuiz.questions) || parsedQuiz.questions.length === 0) {
+      throw new Error("Generated quiz has invalid structure - no questions found");
+    }
+
+    // Validate each question
+    for (const question of parsedQuiz.questions) {
+      if (!question.question || 
+          !question.answers || 
+          !Array.isArray(question.answers) || 
+          question.answers.length !== 4 ||
+          typeof question.correctAnswer !== 'number' ||
+          question.correctAnswer < 0 || 
+          question.correctAnswer >= 4) {
+        throw new Error("Generated quiz has invalid question structure");
+      }
+    }
+
+    return {
+      title: parsedQuiz.title || `Quiz: ${topics}`,
+      description: parsedQuiz.description || `Educational quiz covering: ${topics}`,
+      questions: parsedQuiz.questions.map((q: any) => ({
+        question: q.question,
+        answers: q.answers,
+        correctAnswer: q.correctAnswer,
+        timeLimit: q.timeLimit || 10
+      }))
+    };
+
+  } catch (error) {
+    console.error("Topics quiz generation error:", error);
+    if (error.message?.includes('JSON')) {
+      throw new Error("Failed to generate properly formatted quiz. Please try again with more specific topics.");
+    }
+    throw new Error(`Failed to generate quiz from topics: ${error.message}`);
+  }
+}
+
 async function generateQuizFromContent(content: string, sourceTitle: string): Promise<GeneratedQuiz> {
   try {
     // Limit content length to avoid token limits

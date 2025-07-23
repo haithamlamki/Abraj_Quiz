@@ -6,7 +6,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import multer from "multer";
-import { generateQuizFromPDF, generateQuizFromURL } from "./openai-service";
+import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics } from "./openai-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -207,6 +207,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error generating quiz from URL:", error);
       res.status(500).json({ message: error.message || "Failed to generate quiz from URL" });
+    }
+  });
+
+  app.post("/api/generate-quiz/topics", requireAuth, async (req, res) => {
+    try {
+      const { topics } = req.body;
+      
+      if (!topics || typeof topics !== 'string' || topics.trim().length < 3) {
+        return res.status(400).json({ message: "Topics input is required and must be at least 3 characters long" });
+      }
+
+      const generatedQuiz = await generateQuizFromTopics(topics.trim());
+      res.json(generatedQuiz);
+    } catch (error) {
+      console.error("Error generating quiz from topics:", error);
+      res.status(500).json({ message: error.message || "Failed to generate quiz from topics" });
     }
   });
 
