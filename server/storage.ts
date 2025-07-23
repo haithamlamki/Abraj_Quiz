@@ -34,6 +34,9 @@ export interface IStorage {
   getGameResponses(gameId: number): Promise<GameResponse[]>;
   createGameResponse(response: InsertGameResponse): Promise<GameResponse>;
   getPlayerResponses(gameId: number, playerName: string): Promise<GameResponse[]>;
+  
+  // Latest Game Results
+  getLatestCompletedGame(): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -151,6 +154,37 @@ export class DatabaseStorage implements IStorage {
         eq(gameResponses.gameId, gameId),
         eq(gameResponses.playerName, playerName)
       ));
+  }
+
+  async getLatestCompletedGame(): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined> {
+    const { desc } = await import("drizzle-orm");
+    
+    // Get the most recent completed game
+    const [latestGame] = await db
+      .select()
+      .from(games)
+      .where(eq(games.status, "completed"))
+      .orderBy(desc(games.id))
+      .limit(1);
+
+    if (!latestGame) {
+      return undefined;
+    }
+
+    // Get the quiz to determine total questions
+    const quiz = await this.getQuiz(latestGame.quizId);
+    if (!quiz) {
+      return undefined;
+    }
+
+    const players = (latestGame.players as any[]) || [];
+    const totalQuestions = (quiz.questions as any[])?.length || 0;
+
+    return {
+      game: latestGame,
+      players: players.sort((a, b) => (b.score || 0) - (a.score || 0)),
+      totalQuestions
+    };
   }
 
   // Helper method to generate unique game PIN
@@ -396,6 +430,34 @@ export class MemStorage implements IStorage {
     return Array.from(this.gameResponses.values()).filter(
       response => response.gameId === gameId && response.playerName === playerName
     );
+  }
+
+  async getLatestCompletedGame(): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined> {
+    // Get the most recent completed game
+    const completedGames = Array.from(this.games.values())
+      .filter(game => game.status === "completed")
+      .sort((a, b) => b.id - a.id);
+
+    if (completedGames.length === 0) {
+      return undefined;
+    }
+
+    const latestGame = completedGames[0];
+    
+    // Get the quiz to determine total questions
+    const quiz = await this.getQuiz(latestGame.quizId);
+    if (!quiz) {
+      return undefined;
+    }
+
+    const players = (latestGame.players as any[]) || [];
+    const totalQuestions = (quiz.questions as any[])?.length || 0;
+
+    return {
+      game: latestGame,
+      players: players.sort((a, b) => (b.score || 0) - (a.score || 0)),
+      totalQuestions
+    };
   }
 
   // Helper method to generate unique game PIN

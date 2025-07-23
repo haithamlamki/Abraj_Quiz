@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Trophy, Clock, Image, Users, BarChart, BookOpen, Play, QrCode, X } from "lucide-react";
+import { Trophy, Clock, Image, Users, BarChart, BookOpen, Play, QrCode, X, Crown, Medal, Award } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,21 @@ interface Quiz {
   createdAt: string;
 }
 
+interface LatestResultsData {
+  hasResults: boolean;
+  game?: {
+    gamePin: string;
+    quizTitle: string;
+    completedAt: string;
+    totalQuestions: number;
+  };
+  top3Players?: Array<{
+    name: string;
+    score: number;
+    rank: number;
+  }>;
+}
+
 export default function Home() {
   const [gamePin, setGamePin] = useState("");
   const [playerName, setPlayerName] = useState("");
@@ -38,6 +53,12 @@ export default function Home() {
   const { data: userQuizzes } = useQuery<Quiz[]>({
     queryKey: ["/api/my-quizzes"],
     enabled: isAuthenticated,
+  });
+
+  // Fetch latest quiz results
+  const { data: latestResults } = useQuery<LatestResultsData>({
+    queryKey: ["/api/latest-results"],
+    refetchInterval: 30000, // Refresh every 30 seconds
   });
 
   // Auto-fill player name if user is authenticated
@@ -260,6 +281,59 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Latest Quiz Results */}
+      {latestResults?.hasResults && (
+        <section className="py-16 bg-[#ffffff00] mt-[-98px] mb-[-50px]">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-8">
+              <h2 className="font-bold text-4xl text-gray-800 mb-4 animate-fade-in-up">🏆 Latest Quiz Champions</h2>
+              <p className="text-xl text-gray-600 animate-fade-in-up-delayed opacity-0">Top 3 players from the most recent game</p>
+            </div>
+            
+            <Card className="max-w-4xl mx-auto card-3d animate-fade-in-up-card opacity-0">
+              <CardHeader className="text-center">
+                <CardTitle className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
+                  <Trophy className="w-6 h-6 text-yellow-500" />
+                  {latestResults.game?.quizTitle}
+                </CardTitle>
+                <p className="text-gray-600">
+                  Game PIN: <span className="font-mono font-bold text-abraj-primary">{latestResults.game?.gamePin}</span>
+                  <span className="mx-2">•</span>
+                  {latestResults.game?.totalQuestions} Questions
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="grid md:grid-cols-3 gap-6">
+                  {latestResults.top3Players?.map((player, index) => {
+                    const IconComponent = index === 0 ? Crown : index === 1 ? Medal : Award;
+                    const iconColor = index === 0 ? "text-yellow-500" : index === 1 ? "text-gray-400" : "text-orange-500";
+                    const bgColor = index === 0 ? "bg-gradient-to-r from-yellow-100 to-yellow-50" : index === 1 ? "bg-gradient-to-r from-gray-100 to-gray-50" : "bg-gradient-to-r from-orange-100 to-orange-50";
+                    const borderColor = index === 0 ? "border-yellow-200" : index === 1 ? "border-gray-200" : "border-orange-200";
+                    
+                    return (
+                      <div key={player.name} className={`${bgColor} ${borderColor} border-2 rounded-xl p-4 text-center transition-all duration-300 hover:scale-105`}>
+                        <div className="flex justify-center mb-3">
+                          <div className={`w-12 h-12 rounded-full ${iconColor} bg-white flex items-center justify-center shadow-lg`}>
+                            <IconComponent className="w-6 h-6" />
+                          </div>
+                        </div>
+                        <div className="font-bold text-lg text-gray-800 mb-1">#{player.rank}</div>
+                        <div className="font-semibold text-gray-700 mb-2 truncate">{player.name}</div>
+                        <div className={`text-2xl font-bold ${iconColor}`}>
+                          {player.score.toLocaleString()}
+                        </div>
+                        <div className="text-sm text-gray-500">points</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+      )}
+
       {/* Quick Actions */}
       <section className="py-16 bg-[#ffffff00] mt-[-98px] mb-[-98px]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

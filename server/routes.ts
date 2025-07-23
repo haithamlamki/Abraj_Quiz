@@ -559,6 +559,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get latest quiz results for home page
+  app.get("/api/latest-results", async (req, res) => {
+    try {
+      const result = await storage.getLatestCompletedGame();
+      
+      if (!result) {
+        return res.json({ hasResults: false });
+      }
+
+      const { game, players, totalQuestions } = result;
+      const top3Players = players.slice(0, 3);
+
+      // Get quiz details
+      const quiz = await storage.getQuiz(game.quizId);
+      
+      res.json({
+        hasResults: true,
+        game: {
+          gamePin: game.gamePin,
+          quizTitle: quiz?.title || 'Untitled Quiz',
+          completedAt: game.createdAt,
+          totalQuestions
+        },
+        top3Players: top3Players.map((player, index) => ({
+          name: player.name,
+          score: player.score || 0,
+          rank: index + 1
+        }))
+      });
+    } catch (error) {
+      console.error("Failed to get latest results:", error);
+      res.status(500).json({ message: "Failed to get latest results" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
