@@ -122,17 +122,22 @@ export default function CreateQuiz() {
       return response.json();
     },
     onSuccess: (generatedQuiz) => {
-      setQuiz({
-        title: generatedQuiz.title,
-        description: generatedQuiz.description,
-        questions: generatedQuiz.questions
-      });
-      setSelectedFile(null);
-      setIsGenerating(false);
-      toast({ 
-        title: "Success", 
-        description: `Generated ${generatedQuiz.questions.length} questions from PDF. Review and edit before creating your quiz.` 
-      });
+      // Ensure we have valid questions array before setting state
+      if (generatedQuiz && generatedQuiz.questions && Array.isArray(generatedQuiz.questions)) {
+        setQuiz({
+          title: generatedQuiz.title || "Generated Quiz",
+          description: generatedQuiz.description || "",
+          questions: generatedQuiz.questions
+        });
+        setSelectedFile(null);
+        setIsGenerating(false);
+        toast({ 
+          title: "Success", 
+          description: `Generated ${generatedQuiz.questions.length} questions from PDF. Review and edit before creating your quiz.` 
+        });
+      } else {
+        throw new Error("Invalid response format from PDF generation");
+      }
     },
     onError: (error: any) => {
       setIsGenerating(false);
@@ -146,20 +151,26 @@ export default function CreateQuiz() {
 
   const generateFromUrl = useMutation({
     mutationFn: async (url: string) => {
-      return apiRequest("POST", "/api/generate-quiz/url", { url });
+      const response = await apiRequest("POST", "/api/generate-quiz/url", { url });
+      return response.json();
     },
     onSuccess: (generatedQuiz) => {
-      setQuiz({
-        title: generatedQuiz.title,
-        description: generatedQuiz.description,
-        questions: generatedQuiz.questions
-      });
-      setUrlInput('');
-      setIsGenerating(false);
-      toast({ 
-        title: "Success", 
-        description: `Generated ${generatedQuiz.questions.length} questions from URL. Review and edit before creating your quiz.` 
-      });
+      // Ensure we have valid questions array before setting state
+      if (generatedQuiz && generatedQuiz.questions && Array.isArray(generatedQuiz.questions)) {
+        setQuiz({
+          title: generatedQuiz.title || "Generated Quiz",
+          description: generatedQuiz.description || "",
+          questions: generatedQuiz.questions
+        });
+        setUrlInput('');
+        setIsGenerating(false);
+        toast({ 
+          title: "Success", 
+          description: `Generated ${generatedQuiz.questions.length} questions from URL. Review and edit before creating your quiz.` 
+        });
+      } else {
+        throw new Error("Invalid response format from URL generation");
+      }
     },
     onError: (error: any) => {
       setIsGenerating(false);
@@ -504,7 +515,7 @@ export default function CreateQuiz() {
 
                 <div className="text-center">
                   <span className="text-sm text-gray-600">
-                    {quiz.questions.length} question{quiz.questions.length !== 1 ? 's' : ''}
+                    {(quiz.questions && quiz.questions.length) || 0} question{((quiz.questions && quiz.questions.length) || 0) !== 1 ? 's' : ''}
                   </span>
                 </div>
               </CardContent>
@@ -517,7 +528,7 @@ export default function CreateQuiz() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {quiz.questions.map((q, index) => (
+                  {(quiz.questions && quiz.questions.length > 0) ? quiz.questions.map((q, index) => (
                     <div
                       key={index}
                       className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
@@ -544,7 +555,11 @@ export default function CreateQuiz() {
                         </Button>
                       )}
                     </div>
-                  ))}
+                  )) : (
+                    <div className="text-center text-gray-500 p-4">
+                      No questions yet. Add a question to get started.
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
