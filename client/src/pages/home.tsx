@@ -149,11 +149,11 @@ export default function Home() {
             
             {/* Main Content */}
             <div>
-              <h1 className="font-bold lg:text-6xl text-[59px]" style={{color: 'var(--abraj-primary)'}}>Powered by Our Dedicated Team</h1>
-              <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px]">Abraj's innovative employees work tirelessly to create engaging educational experiences for learners worldwide.</p>
+              <h1 className="font-bold lg:text-6xl text-[59px] animate-fade-in-up hover:animate-pulse transition-all duration-300 cursor-default" style={{color: 'var(--abraj-primary)'}}>Powered by Our Dedicated Team</h1>
+              <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px] animate-fade-in-up-delayed opacity-0">Abraj's innovative employees work tirelessly to create engaging educational experiences for learners worldwide.</p>
               
               {/* Game PIN Entry */}
-              <Card className="mt-8 card-3d max-w-lg mx-auto">
+              <Card className="mt-8 card-3d max-w-lg mx-auto animate-fade-in-up-card opacity-0">
                 <CardContent className="p-8">
                   <h3 className="font-bold text-2xl text-gray-800 mb-4">Join a game</h3>
                   <div className="space-y-4">
