@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Triangle, Diamond, Circle, Square, Upload, Link as LinkIcon, Wand2, BookOpen } from "lucide-react";
+import { Plus, Trash2, Triangle, Diamond, Circle, Square, Upload, Link as LinkIcon, Wand2, BookOpen, Image, X } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -44,12 +44,57 @@ export default function CreateQuiz() {
       }
     ]
   });
+  
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [isGenerating, setIsGenerating] = useState(false);
   const [urlInput, setUrlInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [topicsInput, setTopicsInput] = useState("");
+
+  // Handle background image upload
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file type
+      if (!file.type.startsWith('image/')) {
+        toast({
+          title: "Invalid file type",
+          description: "Please select an image file (JPG, PNG, GIF, etc.)",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check file size (limit to 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image smaller than 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const dataUrl = e.target?.result as string;
+        setBackgroundImage(dataUrl);
+        setQuiz(prev => ({ ...prev, background: dataUrl }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeBackgroundImage = () => {
+    setBackgroundImage(null);
+    setQuiz(prev => ({ ...prev, background: 'classroom' }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   // All mutations and effects declared first
   const createQuizMutation = useMutation({
@@ -606,18 +651,49 @@ export default function CreateQuiz() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Game Background</label>
-                  <select
-                    value={quiz.background}
-                    onChange={(e) => setQuiz(prev => ({ ...prev, background: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-abraj-primary focus:border-abraj-primary"
-                  >
-                    <option value="classroom">Classroom Theme</option>
-                    <option value="space">Space Theme</option>
-                    <option value="ocean">Ocean Theme</option>
-                    <option value="forest">Forest Theme</option>
-                    <option value="city">City Theme</option>
-                  </select>
-                  <p className="text-xs text-gray-500 mt-1">This background will be used throughout the game session</p>
+                  
+                  {backgroundImage ? (
+                    <div className="relative">
+                      <div className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 relative overflow-hidden">
+                        <img 
+                          src={backgroundImage} 
+                          alt="Background preview" 
+                          className="w-full h-full object-cover rounded-lg"
+                        />
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          size="sm"
+                          onClick={removeBackgroundImage}
+                          className="absolute top-2 right-2 h-8 w-8 p-0"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-1">Custom background image uploaded</p>
+                    </div>
+                  ) : (
+                    <div 
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
+                    >
+                      <Image className="w-8 h-8 text-gray-400 mb-2" />
+                      <p className="text-sm text-gray-600 font-medium">Upload Background Image</p>
+                      <p className="text-xs text-gray-500">Click to select an image file</p>
+                    </div>
+                  )}
+                  
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  
+                  <p className="text-xs text-gray-500 mt-1">
+                    This background will be used throughout the game session. Maximum file size: 5MB
+                  </p>
                 </div>
 
                 <div className="text-center">

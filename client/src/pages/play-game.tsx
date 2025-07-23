@@ -8,6 +8,7 @@ import { Clock, Check, X, Trophy } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
+import { getBackgroundStyle } from "@/utils/backgrounds";
 
 export default function PlayGame() {
   const { pin } = useParams();
@@ -337,7 +338,7 @@ export default function PlayGame() {
 
   if (game.status === "waiting") {
     return (
-      <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={getBackgroundStyle(quiz?.background || 'classroom')}>
         <Card className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm">
           <CardContent className="pt-6 text-center space-y-6">
             <div className="abraj-primary text-white w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl mx-auto">
@@ -376,7 +377,7 @@ export default function PlayGame() {
 
   if (showResult && lastResult) {
     return (
-      <div className="min-h-screen bg-cover bg-center bg-no-repeat flex items-center justify-center" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
+      <div className="min-h-screen flex items-center justify-center" style={getBackgroundStyle(quiz?.background || 'classroom')}>
         <Card className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm animate-in slide-in-from-bottom-4 duration-500">
           <CardContent className="pt-6 text-center space-y-6">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${
@@ -430,7 +431,7 @@ export default function PlayGame() {
   }
 
   return (
-    <div className="min-h-screen bg-cover bg-center bg-no-repeat p-4" style={{ backgroundImage: 'url(/attached_assets/1694_1753144153239.jpg)' }}>
+    <div className="min-h-screen p-4" style={getBackgroundStyle(quiz?.background || 'classroom')}>
       <TimeUpOverlay />
       <div className="max-w-4xl mx-auto">
         {/* Header */}

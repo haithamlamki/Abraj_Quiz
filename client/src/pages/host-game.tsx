@@ -10,6 +10,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
 import QRCode from "qrcode";
+import { getBackgroundStyle } from "@/utils/backgrounds";
 
 export default function HostGame() {
   const { pin } = useParams();
@@ -241,7 +242,7 @@ export default function HostGame() {
 
   if (game.status === "waiting") {
     return (
-      <div className="min-h-screen bg-cover bg-center bg-no-repeat py-8" style={{ backgroundImage: 'url(/attached_assets/classroom-background.jpg)' }}>
+      <div className="min-h-screen py-8" style={getBackgroundStyle(quiz?.background || 'classroom')}>
         <CountdownOverlay />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
@@ -396,7 +397,7 @@ export default function HostGame() {
 
   if (game.status === "active") {
     return (
-      <div className="min-h-screen bg-cover bg-center bg-no-repeat p-4" style={{ backgroundImage: 'url(/attached_assets/1694_1753144153239.jpg)' }}>
+      <div className="min-h-screen p-4" style={getBackgroundStyle(quiz?.background || 'classroom')}>
         <div className="max-w-4xl mx-auto relative">
           {/* Next Question Button - Top Right */}
           {showResults && (

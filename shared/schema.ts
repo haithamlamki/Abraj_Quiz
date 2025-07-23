@@ -14,7 +14,7 @@ export const quizzes = pgTable("quizzes", {
   description: text("description"),
   createdBy: integer("created_by").notNull(),
   questions: jsonb("questions").notNull(),
-  background: text("background").default("classroom"),
+  background: text("background").default("classroom"), // Can store theme name or base64 data URL
   isPublic: boolean("is_public").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -56,7 +56,7 @@ export const insertQuizSchema = createInsertSchema(quizzes).pick({
 }).extend({
   title: z.string().min(1, "Quiz title is required"),
   description: z.string().optional(),
-  background: z.string().default("classroom"),
+  background: z.string().default("classroom"), // Can store theme name or base64 data URL
   isPublic: z.boolean().default(true),
 });
 
