@@ -243,6 +243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: validation.data.title,
         description: validation.data.description,
         questions: validation.data.questions,
+        background: validation.data.background,
         isPublic: validation.data.isPublic,
         createdBy: (req as any).session.userId
       });
@@ -282,6 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: validation.data.title,
         description: validation.data.description,
         questions: validation.data.questions,
+        background: validation.data.background,
         isPublic: validation.data.isPublic
       });
 
