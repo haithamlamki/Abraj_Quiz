@@ -377,8 +377,8 @@ export default function CreateQuiz() {
 
         <Tabs defaultValue="manual" className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-8">
-            <TabsTrigger value="manual" className="ml-[8px] mr-[8px]">Manual Creation</TabsTrigger>
-            <TabsTrigger value="generate" className="bg-[#f5f5f4] ml-[8px] mr-[8px]">Auto Generate</TabsTrigger>
+            <TabsTrigger value="manual" className="ml-[8px] mr-[8px] data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">Manual Creation</TabsTrigger>
+            <TabsTrigger value="generate" className="ml-[8px] mr-[8px] data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">Auto Generate</TabsTrigger>
           </TabsList>
 
           <TabsContent value="generate">
@@ -392,8 +392,8 @@ export default function CreateQuiz() {
               <CardContent className="space-y-6">
                 <Tabs defaultValue="url" className="w-full">
                   <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="url">From URL</TabsTrigger>
-                    <TabsTrigger value="pdf">From PDF</TabsTrigger>
+                    <TabsTrigger value="url" className="data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">From URL</TabsTrigger>
+                    <TabsTrigger value="pdf" className="data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">From PDF</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="url" className="space-y-4">
