@@ -170,11 +170,11 @@ export default function Home() {
             
             {/* Main Content */}
             <div>
-              <h1 className="font-bold lg:text-6xl text-[59px] animate-fade-in-up hover:animate-pulse transition-all duration-300 cursor-default" style={{color: 'var(--abraj-primary)'}}>Powered by Our Dedicated Team</h1>
-              <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px] animate-fade-in-up-delayed opacity-0">Abraj's innovative employees work tirelessly to create engaging educational experiences for learners worldwide.</p>
+              <h1 className="font-bold lg:text-6xl text-[59px]" style={{color: 'var(--abraj-primary)'}}>Powered by Our Dedicated Team</h1>
+              <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px]">Abraj's innovative employees work tirelessly to create engaging educational experiences for learners worldwide.</p>
               
               {/* Game PIN Entry */}
-              <Card className="mt-8 card-3d max-w-lg mx-auto animate-fade-in-up-card opacity-0">
+              <Card className="mt-8 card-3d max-w-lg mx-auto">
                 <CardContent className="p-8">
                   <h3 className="font-bold text-2xl text-gray-800 mb-4">Join a game</h3>
                   <div className="space-y-4">
@@ -287,11 +287,11 @@ export default function Home() {
         <section className="py-16 bg-[#ffffff00] mt-[-98px] mb-[-50px]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
-              <h2 className="font-bold text-4xl text-gray-800 mb-4 animate-fade-in-up">🏆 Latest Quiz Champions</h2>
-              <p className="text-xl text-gray-600 animate-fade-in-up-delayed opacity-0">Top 3 players from the most recent game</p>
+              <h2 className="font-bold text-4xl text-gray-800 mb-4">🏆 Latest Quiz Champions</h2>
+              <p className="text-xl text-gray-600">Top 3 players from the most recent game</p>
             </div>
             
-            <Card className="max-w-4xl mx-auto card-3d animate-fade-in-up-card opacity-0">
+            <Card className="max-w-4xl mx-auto card-3d">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
                   <Trophy className="w-6 h-6 text-yellow-500" />
