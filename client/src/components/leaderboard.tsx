@@ -85,7 +85,7 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
 
   // Regular leaderboard
   return (
-    <div className="space-y-4">
+    <>
       <h4 className="font-bold text-xl mb-4">{title}</h4>
       <div className="space-y-3">
         {sortedPlayers.map((player, index) => (
@@ -112,6 +112,6 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
           </div>
         ))}
       </div>
-    </div>
+    </>
   );
 }
