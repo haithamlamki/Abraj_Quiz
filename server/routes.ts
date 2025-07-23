@@ -39,7 +39,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication middleware
   const requireAuth = (req: any, res: any, next: any) => {
     if (!req.session.userId) {
-      return res.status(401).json({ message: "Unauthorized" });
+      console.log("Authentication failed - no session userId:", req.session);
+      return res.status(401).json({ message: "Not authenticated" });
     }
     next();
   };
@@ -172,16 +173,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to check OpenAI API availability
+  app.get("/api/debug/openai", requireAuth, async (req, res) => {
+    try {
+      const hasApiKey = !!process.env.OPENAI_API_KEY;
+      const userId = (req as any).session.userId;
+      
+      res.json({
+        hasApiKey,
+        isAuthenticated: true,
+        userId,
+        apiKeyLength: process.env.OPENAI_API_KEY?.length || 0
+      });
+    } catch (error) {
+      console.error("Debug endpoint error:", error);
+      res.status(500).json({ message: "Debug check failed" });
+    }
+  });
+
   // Auto-generation routes
   app.post("/api/generate-quiz/pdf", requireAuth, upload.single('pdf'), async (req, res) => {
     try {
+      console.log("PDF quiz generation request - User ID:", (req as any).session.userId);
+      
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ message: "OpenAI API key is not configured on the server" });
+      }
+
       if (!req.file) {
         return res.status(400).json({ message: "No PDF file uploaded" });
       }
 
       const generatedQuiz = await generateQuizFromPDF(req.file.buffer);
       res.json(generatedQuiz);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating quiz from PDF:", error);
       res.status(500).json({ message: error.message || "Failed to generate quiz from PDF" });
     }
@@ -189,6 +214,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/generate-quiz/url", requireAuth, async (req, res) => {
     try {
+      console.log("URL quiz generation request - User ID:", (req as any).session.userId);
+      
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ message: "OpenAI API key is not configured on the server" });
+      }
+
       const { url } = req.body;
       
       if (!url || typeof url !== 'string') {
@@ -204,7 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const generatedQuiz = await generateQuizFromURL(url);
       res.json(generatedQuiz);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating quiz from URL:", error);
       res.status(500).json({ message: error.message || "Failed to generate quiz from URL" });
     }
@@ -212,6 +243,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/generate-quiz/topics", requireAuth, async (req, res) => {
     try {
+      console.log("Topics quiz generation request - User ID:", (req as any).session.userId);
+      
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ message: "OpenAI API key is not configured on the server" });
+      }
+
       const { topics } = req.body;
       
       if (!topics || typeof topics !== 'string' || topics.trim().length < 3) {
@@ -220,7 +257,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const generatedQuiz = await generateQuizFromTopics(topics.trim());
       res.json(generatedQuiz);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error generating quiz from topics:", error);
       res.status(500).json({ message: error.message || "Failed to generate quiz from topics" });
     }

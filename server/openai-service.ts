@@ -4,7 +4,15 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Check if API key is available
+if (!process.env.OPENAI_API_KEY) {
+  console.error("OPENAI_API_KEY is not set in environment variables");
+}
+
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY,
+  timeout: 30000, // 30 second timeout
+});
 
 export interface QuizQuestion {
   question: string;
@@ -171,8 +179,23 @@ Respond with JSON in this exact format:
       }))
     };
 
-  } catch (error) {
+  } catch (error: any) {
     console.error("Topics quiz generation error:", error);
+    
+    // Handle specific OpenAI API errors
+    if (error.status === 401) {
+      throw new Error("OpenAI API authentication failed. Please check API key configuration.");
+    }
+    if (error.status === 429) {
+      throw new Error("OpenAI API rate limit exceeded. Please try again in a few minutes.");
+    }
+    if (error.status === 500) {
+      throw new Error("OpenAI API service is temporarily unavailable. Please try again later.");
+    }
+    if (error.code === 'insufficient_quota') {
+      throw new Error("OpenAI API quota exceeded. Please check your account usage.");
+    }
+    
     if (error.message?.includes('JSON')) {
       throw new Error("Failed to generate properly formatted quiz. Please try again with more specific topics.");
     }
@@ -261,7 +284,23 @@ Respond with JSON in this exact format:
     }
 
     return result as GeneratedQuiz;
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Content quiz generation error:", error);
+    
+    // Handle specific OpenAI API errors
+    if (error.status === 401) {
+      throw new Error("OpenAI API authentication failed. Please check API key configuration.");
+    }
+    if (error.status === 429) {
+      throw new Error("OpenAI API rate limit exceeded. Please try again in a few minutes.");
+    }
+    if (error.status === 500) {
+      throw new Error("OpenAI API service is temporarily unavailable. Please try again later.");
+    }
+    if (error.code === 'insufficient_quota') {
+      throw new Error("OpenAI API quota exceeded. Please check your account usage.");
+    }
+    
     if (error.message.includes("Invalid response format") || error.message.includes("Invalid question format")) {
       throw error;
     }
