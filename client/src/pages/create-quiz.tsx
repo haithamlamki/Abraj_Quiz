@@ -18,6 +18,7 @@ interface QuizForm {
   title: string;
   description: string;
   questions: Question[];
+  background: string;
 }
 
 const answerIcons = [Triangle, Diamond, Circle, Square];
@@ -33,6 +34,7 @@ export default function CreateQuiz() {
   const [quiz, setQuiz] = useState<QuizForm>({
     title: "",
     description: "",
+    background: "classroom",
     questions: [
       {
         question: "",
@@ -55,6 +57,7 @@ export default function CreateQuiz() {
         title: quizData.title,
         description: quizData.description,
         questions: quizData.questions,
+        background: quizData.background,
         isPublic: true
       };
       
@@ -127,6 +130,7 @@ export default function CreateQuiz() {
         setQuiz({
           title: generatedQuiz.title || "Generated Quiz",
           description: generatedQuiz.description || "",
+          background: "classroom",
           questions: generatedQuiz.questions
         });
         setSelectedFile(null);
@@ -160,6 +164,7 @@ export default function CreateQuiz() {
         setQuiz({
           title: generatedQuiz.title || "Generated Quiz",
           description: generatedQuiz.description || "",
+          background: "classroom",
           questions: generatedQuiz.questions
         });
         setUrlInput('');
@@ -511,6 +516,22 @@ export default function CreateQuiz() {
                     placeholder="Describe your quiz"
                     rows={3}
                   />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Game Background</label>
+                  <select
+                    value={quiz.background}
+                    onChange={(e) => setQuiz(prev => ({ ...prev, background: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-abraj-primary focus:border-abraj-primary"
+                  >
+                    <option value="classroom">Classroom Theme</option>
+                    <option value="space">Space Theme</option>
+                    <option value="ocean">Ocean Theme</option>
+                    <option value="forest">Forest Theme</option>
+                    <option value="city">City Theme</option>
+                  </select>
+                  <p className="text-xs text-gray-500 mt-1">This background will be used throughout the game session</p>
                 </div>
 
                 <div className="text-center">
