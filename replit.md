@@ -226,6 +226,13 @@ Preferred communication style: Simple, everyday language.
 - ✓ Added comprehensive error handling and 50-character minimum content validation
 - ✓ Users can now paste article content, study notes, or educational text directly
 
+**Background Upload Fix (January 27, 2025)**
+- ✓ Fixed critical bug where quiz creation failed when custom background images were uploaded
+- ✓ Increased Express server JSON payload limit from default 100kb to 50MB
+- ✓ Resolved "request entity too large" (HTTP 413) errors for base64-encoded image uploads
+- ✓ Background upload system now works correctly with the quiz creation flow
+- ✓ Users can successfully create quizzes with custom background images
+
 **Enhanced Sound Effects and Answer Feedback (January 27, 2025)**
 - ✓ Upgraded correct answer sound from simple chord to complex celebratory progression
 - ✓ Added triumphant C major scale ascending melody (7 notes) with harmonic ending
