@@ -536,7 +536,7 @@ export default function HostGame() {
               return (
                 <div
                   key={index}
-                  className={`${colors[index]} text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold transition-all transform hover:scale-105 cursor-pointer active:scale-95 relative overflow-hidden min-h-[80px] sm:min-h-[96px] lg:h-24 ${
+                  className={`${colors[index]} text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold transition-all transform hover:scale-105 cursor-pointer active:scale-95 relative overflow-hidden min-h-[80px] sm:min-h-[96px] h-auto ${
                     showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce shadow-lg shadow-yellow-400/50' : 
                     showResults && !isCorrect ? 'opacity-75 animate-pulse ring-2 ring-gray-400' : ''
                   }`}
@@ -555,9 +555,9 @@ export default function HostGame() {
                     }
                   }}
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full h-full gap-1 sm:gap-2">
+                  <div className="flex flex-col items-center justify-center w-full h-full gap-1 sm:gap-2">
                     <span className="text-lg sm:text-xl md:text-2xl font-black shrink-0">{String.fromCharCode(65 + index)}</span>
-                    <span className="flex-1 text-center text-xs sm:text-sm md:text-base lg:text-lg leading-tight break-words">{answer}</span>
+                    <span className="text-center text-xs sm:text-sm md:text-base lg:text-lg leading-tight break-words overflow-wrap-anywhere hyphens-auto px-1">{answer}</span>
                   </div>
                   
                   {showResults && questionResults && (

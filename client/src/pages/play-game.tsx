@@ -546,13 +546,13 @@ export default function PlayGame() {
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 disabled={isDisabled}
-                className={`${colors[index]} hover:scale-105 text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold transition-all transform min-h-[80px] sm:min-h-[96px] lg:h-24 ${
+                className={`${colors[index]} hover:scale-105 text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold transition-all transform min-h-[80px] sm:min-h-[96px] h-auto ${
                   isSelected ? 'ring-4 ring-white' : ''
                 } ${isDisabled ? 'opacity-60' : 'active:scale-95'}`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full h-full gap-1 sm:gap-2">
+                <div className="flex flex-col items-center justify-center w-full h-full gap-1 sm:gap-2">
                   <span className="text-lg sm:text-xl md:text-2xl font-black shrink-0">{String.fromCharCode(65 + index)}</span>
-                  <span className="flex-1 text-center text-xs sm:text-sm md:text-base lg:text-lg leading-tight break-words">{answer}</span>
+                  <span className="text-center text-xs sm:text-sm md:text-base lg:text-lg leading-tight break-words overflow-wrap-anywhere hyphens-auto px-1">{answer}</span>
                 </div>
               </Button>
             );
