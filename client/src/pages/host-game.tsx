@@ -358,19 +358,61 @@ export default function HostGame() {
   const playCorrectSound = () => {
     if (typeof Audio !== 'undefined') {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
       
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      // Enhanced celebratory correct answer sound
+      // Play main triumphant chord progression: C major scale ascending
+      const mainNotes = [523, 587, 659, 698, 784, 880, 988]; // C, D, E, F, G, A, B
+      mainNotes.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime + index * 0.08);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.08 + 0.3);
+        
+        oscillator.start(audioContext.currentTime + index * 0.08);
+        oscillator.stop(audioContext.currentTime + index * 0.08 + 0.3);
+      });
       
-      oscillator.frequency.value = 523; // C note
-      oscillator.type = 'sine';
-      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+      // Add harmonic chord at the end for richness
+      const harmonicChord = [523, 659, 784, 1047]; // C, E, G, C (octave)
+      harmonicChord.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'triangle';
+        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime + 0.5);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.2);
+        
+        oscillator.start(audioContext.currentTime + 0.5);
+        oscillator.stop(audioContext.currentTime + 1.2);
+      });
       
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
+      // Add sparkle effect with high-pitched bell-like tones
+      const sparkleNotes = [1318, 1567, 1760, 2093]; // E6, G6, A6, C7
+      sparkleNotes.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.08, audioContext.currentTime + 0.3 + index * 0.1);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.3 + index * 0.1 + 0.4);
+        
+        oscillator.start(audioContext.currentTime + 0.3 + index * 0.1);
+        oscillator.stop(audioContext.currentTime + 0.3 + index * 0.1 + 0.4);
+      });
     }
   };
 
