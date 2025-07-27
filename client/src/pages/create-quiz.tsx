@@ -311,14 +311,9 @@ export default function CreateQuiz() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please login to create quizzes.",
-        variant: "destructive",
-      });
-      setLocation("/login");
+      // Don't redirect immediately, let the component render the login prompt
     }
-  }, [isAuthenticated, isLoading, setLocation, toast]);
+  }, [isAuthenticated, isLoading]);
 
   // Early returns after all hooks
   if (isLoading) {
@@ -333,7 +328,48 @@ export default function CreateQuiz() {
   }
 
   if (!isAuthenticated) {
-    return null;
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <div className="mx-auto w-16 h-16 bg-abraj-primary rounded-full flex items-center justify-center mb-4">
+              <PlusCircle className="w-8 h-8 text-white" />
+            </div>
+            <CardTitle className="text-2xl">Create Quiz</CardTitle>
+            <p className="text-gray-600">You need to log in to create quizzes</p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-center text-sm text-gray-500">
+              Sign in to access the quiz creation tools and save your quizzes
+            </p>
+            <div className="flex flex-col gap-3">
+              <Button 
+                onClick={() => setLocation("/login")}
+                className="w-full abraj-primary hover:abraj-secondary text-white"
+              >
+                Log In
+              </Button>
+              <Button 
+                onClick={() => setLocation("/signup")}
+                variant="outline"
+                className="w-full"
+              >
+                Create Account
+              </Button>
+            </div>
+            <div className="text-center">
+              <Button 
+                onClick={() => setLocation("/")}
+                variant="ghost"
+                className="text-sm text-gray-500"
+              >
+                ← Back to Home
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   const addQuestion = () => {
