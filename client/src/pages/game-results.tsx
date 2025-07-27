@@ -45,15 +45,15 @@ export default function GameResults() {
     }
   };
 
-  // PDF generation function
+  // Enhanced PDF generation function with learning-style preparation format
   const downloadPDF = async () => {
     if (!results) return;
 
-    const { game, players, totalQuestions } = results;
+    const { game, players, totalQuestions, responses } = results;
     const sortedPlayers = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
     
-    // Create new PDF document
-    const pdf = new jsPDF();
+    // Create new PDF document with A4 size
+    const pdf = new jsPDF('p', 'mm', 'a4');
     let yPosition = 20;
 
     // Add ABRAJ logo
@@ -71,13 +71,13 @@ export default function GameResults() {
           
           try {
             const dataURL = canvas.toDataURL('image/png', 0.8);
-            const logoWidth = 25;
-            const logoHeight = 20;
+            const logoWidth = 30;
+            const logoHeight = 25;
             const pageWidth = pdf.internal.pageSize.getWidth();
             const logoX = (pageWidth - logoWidth) / 2;
             
             pdf.addImage(dataURL, 'PNG', logoX, yPosition, logoWidth, logoHeight);
-            yPosition += logoHeight + 5;
+            yPosition += logoHeight + 8;
           } catch (error) {
             console.warn('Could not add logo to PDF:', error);
           }
@@ -90,173 +90,296 @@ export default function GameResults() {
       console.warn('Logo processing failed:', error);
     }
 
-    // Add ABRAJ QUIZ title
-    pdf.setFontSize(24);
+    // Header Section
+    pdf.setFontSize(28);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(1, 158, 189); // Abraj blue color
     pdf.text('ABRAJ QUIZ', pdf.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-    yPosition += 10;
+    yPosition += 12;
 
-    // Quiz Results Report subtitle
-    pdf.setFontSize(16);
+    pdf.setFontSize(18);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189); // Abraj blue color
-    pdf.text('Quiz Results Report', pdf.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
+    pdf.setTextColor(1, 158, 189);
+    pdf.text('Complete Quiz Preparation & Results Report', pdf.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
     yPosition += 20;
 
-    // Quiz Information
-    pdf.setFontSize(12);
+    // Quiz Information Box
+    pdf.setDrawColor(1, 158, 189);
+    pdf.setFillColor(240, 248, 255);
+    pdf.roundedRect(15, yPosition - 5, 180, 45, 3, 3, 'FD');
+    
+    pdf.setFontSize(14);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(1, 158, 189);
+    pdf.text('Quiz Information', 20, yPosition + 5);
+    
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(1, 158, 189); // Abraj blue color
+    pdf.setTextColor(0, 0, 0);
     const currentDate = new Date().toLocaleString();
     
     const quizInfo = [
       `Quiz Title: ${game.quiz?.title || 'Untitled Quiz'}`,
-      `Quiz ID: ${game.quizId}`,
-      `Game PIN: ${game.gamePin}`,
-      `Host: ${game.hostName || 'Unknown'}`,
-      `Date & Time: ${currentDate}`,
-      `Total Questions: ${totalQuestions}`,
-      `Total Players: ${players.length}`
+      `Quiz ID: ${game.quizId}  |  Game PIN: ${game.gamePin}`,
+      `Host: ${game.hostName || 'Unknown'}  |  Date: ${currentDate}`,
+      `Total Questions: ${totalQuestions}  |  Total Players: ${players.length}`
     ];
 
-    quizInfo.forEach(info => {
-      pdf.text(info, 20, yPosition);
-      yPosition += 8;
+    quizInfo.forEach((info, index) => {
+      pdf.text(info, 20, yPosition + 15 + (index * 7));
     });
 
-    yPosition += 15;
+    yPosition += 55;
 
-    // Questions and Answers Section
-    pdf.setFontSize(16);
+    // === QUIZ PREPARATION SECTION ===
+    pdf.addPage();
+    yPosition = 20;
+    
+    pdf.setFontSize(22);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189); // Abraj blue color
-    pdf.text('Questions and Answers', 20, yPosition);
-    yPosition += 15;
+    pdf.setTextColor(1, 158, 189);
+    pdf.text('QUIZ PREPARATION - LEARNING GUIDE', 20, yPosition);
+    yPosition += 12;
+    
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text('Study all questions and answers below. Correct answers are highlighted in green.', 20, yPosition);
+    yPosition += 20;
 
     if (game.quiz?.questions) {
       game.quiz.questions.forEach((question: any, index: number) => {
-        // Check if we need a new page
-        if (yPosition > 240) {
+        // Check if we need a new page (allow more space for questions)
+        if (yPosition > 220) {
           pdf.addPage();
           yPosition = 20;
         }
 
-        // Question number and text
-        pdf.setFontSize(12);
-        pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(0, 0, 0);
-        pdf.text(`Question ${index + 1}: ${question.question}`, 20, yPosition);
-        yPosition += 12;
+        // Question Box
+        pdf.setDrawColor(70, 130, 180);
+        pdf.setFillColor(245, 250, 255);
+        pdf.roundedRect(15, yPosition - 5, 180, 15, 2, 2, 'FD');
 
-        // Answer choices with colors and highlighting
-        pdf.setFontSize(10);
+        // Question number and text
+        pdf.setFontSize(13);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(70, 130, 180);
+        const questionText = `Question ${index + 1}: ${question.question}`;
+        const splitQuestion = pdf.splitTextToSize(questionText, 170);
+        pdf.text(splitQuestion, 20, yPosition + 5);
+        
+        // Adjust yPosition based on question length
+        const questionHeight = splitQuestion.length * 5;
+        yPosition += Math.max(15, questionHeight + 5);
+
+        // Time limit indicator
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'italic');
+        pdf.setTextColor(120, 120, 120);
+        pdf.text(`Time Limit: ${question.timeLimit || 10} seconds`, 20, yPosition);
+        yPosition += 8;
+
+        // Answer choices with enhanced styling
+        pdf.setFontSize(11);
+        const answerLabels = ['A', 'B', 'C', 'D'];
+        const answerColors = [
+          [255, 99, 99],   // Red
+          [99, 149, 255],  // Blue  
+          [99, 255, 149],  // Green
+          [255, 199, 99]   // Orange
+        ];
+        
         question.answers.forEach((answer: string, answerIndex: number) => {
           const isCorrect = answerIndex === question.correctAnswer;
-          const prefix = String.fromCharCode(65 + answerIndex); // A, B, C, D
           
+          // Answer box with color coding
           if (isCorrect) {
-            // Highlight correct answer
-            pdf.setFillColor(144, 238, 144); // Light green background
-            pdf.rect(25, yPosition - 4, 140, 8, 'F');
-            pdf.setFont('helvetica', 'bold');
+            // Correct answer - prominent green highlighting
+            pdf.setDrawColor(34, 139, 34);
+            pdf.setFillColor(144, 238, 144); // Light green
+            pdf.roundedRect(18, yPosition - 3, 174, 10, 2, 2, 'FD');
             pdf.setTextColor(0, 100, 0); // Dark green text
-            pdf.text(`${prefix}. ${answer} ✓ (CORRECT)`, 30, yPosition);
+            pdf.setFont('helvetica', 'bold');
+            
+            // Add checkmark for correct answer
+            pdf.setTextColor(0, 150, 0);
+            pdf.text('✓', 185, yPosition + 3);
           } else {
+            // Incorrect answers - subtle background
+            pdf.setDrawColor(200, 200, 200);
+            pdf.setFillColor(248, 248, 248);
+            pdf.roundedRect(18, yPosition - 3, 174, 10, 2, 2, 'FD');
+            pdf.setTextColor(80, 80, 80);
             pdf.setFont('helvetica', 'normal');
-            pdf.setTextColor(0, 0, 0);
-            pdf.text(`${prefix}. ${answer}`, 30, yPosition);
           }
-          yPosition += 8;
+          
+          // Answer label with color
+          pdf.setFillColor(answerColors[answerIndex][0], answerColors[answerIndex][1], answerColors[answerIndex][2]);
+          pdf.circle(25, yPosition + 1, 3, 'F');
+          pdf.setTextColor(255, 255, 255);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(9);
+          pdf.text(answerLabels[answerIndex], 23.5, yPosition + 2);
+          
+          // Answer text
+          pdf.setFontSize(11);
+          if (isCorrect) {
+            pdf.setTextColor(0, 100, 0);
+            pdf.setFont('helvetica', 'bold');
+          } else {
+            pdf.setTextColor(80, 80, 80);
+            pdf.setFont('helvetica', 'normal');
+          }
+          
+          const answerText = pdf.splitTextToSize(answer, 155);
+          pdf.text(answerText, 32, yPosition + 3);
+          
+          yPosition += Math.max(8, answerText.length * 4);
         });
+
+        yPosition += 8; // Space between questions
         
-        yPosition += 8;
+        // Add explanation box for correct answer
+        pdf.setDrawColor(34, 139, 34);
+        pdf.setFillColor(240, 255, 240);
+        pdf.roundedRect(18, yPosition - 2, 174, 8, 1, 1, 'FD');
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'italic');
+        pdf.setTextColor(0, 120, 0);
+        pdf.text(`Correct Answer: ${answerLabels[question.correctAnswer]} - ${question.answers[question.correctAnswer]}`, 20, yPosition + 3);
+        yPosition += 12;
       });
     }
 
-    // Players and Scores Section
-    if (yPosition > 200) {
-      pdf.addPage();
-      yPosition = 20;
-    }
+    // === GAME RESULTS SECTION ===
+    pdf.addPage();
+    yPosition = 20;
 
+    pdf.setFontSize(22);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(1, 158, 189);
+    pdf.text('GAME RESULTS & PLAYER PERFORMANCE', 20, yPosition);
+    yPosition += 20;
+
+    // Final Rankings Table
     pdf.setFontSize(16);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189); // Abraj blue color
-    pdf.text('Player Rankings and Scores', 20, yPosition);
+    pdf.setTextColor(1, 158, 189);
+    pdf.text('Final Player Rankings', 20, yPosition);
     yPosition += 15;
 
-    // Add player rankings manually
-    pdf.setFontSize(12);
+    // Table headers
+    pdf.setDrawColor(1, 158, 189);
+    pdf.setFillColor(1, 158, 189);
+    pdf.rect(20, yPosition - 2, 170, 8, 'F');
+    
+    pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(0, 0, 0);
-    pdf.text('Player Rankings:', 20, yPosition);
-    yPosition += 10;
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('Rank', 25, yPosition + 3);
+    pdf.text('Player Name', 50, yPosition + 3);
+    pdf.text('Final Score', 110, yPosition + 3);
+    pdf.text('Achievement', 140, yPosition + 3);
+    yPosition += 12;
 
-    // Add table headers
-    pdf.setFontSize(10);
-    pdf.setFont('helvetica', 'bold');
-    pdf.text('Rank', 20, yPosition);
-    pdf.text('Player Name', 50, yPosition);
-    pdf.text('Score', 120, yPosition);
-    pdf.text('Achievement', 150, yPosition);
-    yPosition += 8;
-
-    // Add line under headers
-    pdf.line(20, yPosition - 2, 190, yPosition - 2);
-    yPosition += 5;
-
-    // Add player data
-    pdf.setFont('helvetica', 'normal');
+    // Player rows
     sortedPlayers.forEach((player, index) => {
-      const achievement = index === 0 ? 'Champion' : 
-                         index === 1 ? 'Runner-up' : 
-                         index === 2 ? 'Third Place' : '';
-      
       if (yPosition > 250) {
         pdf.addPage();
         yPosition = 20;
       }
 
-      pdf.text(`#${index + 1}`, 20, yPosition);
-      pdf.text(player.name, 50, yPosition);
-      pdf.text((player.score || 0).toLocaleString(), 120, yPosition);
-      pdf.text(achievement, 150, yPosition);
-      yPosition += 7;
+      // Alternating row colors
+      if (index % 2 === 0) {
+        pdf.setFillColor(248, 249, 250);
+        pdf.rect(20, yPosition - 2, 170, 8, 'F');
+      }
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      
+      // Special styling for top 3
+      if (index < 3) {
+        pdf.setFont('helvetica', 'bold');
+        if (index === 0) pdf.setTextColor(218, 165, 32); // Gold
+        else if (index === 1) pdf.setTextColor(169, 169, 169); // Silver
+        else if (index === 2) pdf.setTextColor(205, 127, 50); // Bronze
+      }
+      
+      // Rank with medal
+      let rankText = `#${index + 1}`;
+      if (index === 0) rankText = '#1 CHAMPION';
+      else if (index === 1) rankText = '#2 RUNNER-UP';
+      else if (index === 2) rankText = '#3 THIRD PLACE';
+      
+      pdf.text(rankText, 25, yPosition + 3);
+      pdf.text(player.name, 50, yPosition + 3);
+      pdf.text((player.score || 0).toLocaleString(), 110, yPosition + 3);
+      
+      let achievement = '';
+      if (index === 0) achievement = 'Champion';
+      else if (index === 1) achievement = 'Runner-up';
+      else if (index === 2) achievement = 'Third Place';
+      else achievement = 'Participant';
+      
+      pdf.text(achievement, 140, yPosition + 3);
+      yPosition += 10;
     });
 
-    yPosition += 10;
+    // === DETAILED STATISTICS ===
+    yPosition += 15;
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(1, 158, 189);
+    pdf.text('Detailed Game Statistics', 20, yPosition);
+    yPosition += 15;
 
-    // Calculate statistics
-    const totalResponses = results.responses.length;
-    const correctResponses = results.responses.filter((r: any) => r.isCorrect).length;
+    const totalResponses = responses.length;
+    const correctResponses = responses.filter((r: any) => r.isCorrect).length;
     const averageScore = players.length > 0 ? Math.round(players.reduce((sum: number, p: any) => sum + (p.score || 0), 0) / players.length) : 0;
     const accuracy = totalResponses > 0 ? Math.round((correctResponses / totalResponses) * 100) : 0;
 
-    // Add statistics section
-    const finalY = yPosition + 15;
-    pdf.setFontSize(16);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189); // Abraj blue color
-    pdf.text('Game Statistics', 20, finalY);
-    
-    const statsY = finalY + 15;
+    // Statistics in organized layout
+    const stats = [
+      { label: 'Total Players', value: `${players.length}` },
+      { label: 'Total Questions', value: `${totalQuestions}` },
+      { label: 'Total Responses', value: `${totalResponses}` },
+      { label: 'Correct Responses', value: `${correctResponses}` },
+      { label: 'Overall Accuracy', value: `${accuracy}%` },
+      { label: 'Average Score', value: `${averageScore.toLocaleString()}` },
+      { label: 'Highest Score', value: `${sortedPlayers[0]?.score || 0}` },
+      { label: 'Lowest Score', value: `${sortedPlayers[sortedPlayers.length - 1]?.score || 0}` }
+    ];
+
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(0, 0, 0);
-    pdf.text(`Average Score: ${averageScore}`, 20, statsY);
-    pdf.text(`Overall Accuracy: ${accuracy}%`, 20, statsY + 8);
-    pdf.text(`Total Responses: ${totalResponses}`, 20, statsY + 16);
 
-    // Add footer
+    stats.forEach((stat, index) => {
+      if (yPosition > 260) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+      
+      pdf.setFont('helvetica', 'bold');
+      pdf.text(`${stat.label}:`, 20, yPosition);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(stat.value, 80, yPosition);
+      yPosition += 8;
+    });
+
+    // Footer
     const pageHeight = pdf.internal.pageSize.getHeight();
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'italic');
     pdf.setTextColor(128, 128, 128);
-    pdf.text('Generated by Abraj Quiz Platform', pdf.internal.pageSize.getWidth() / 2, pageHeight - 10, { align: 'center' });
+    pdf.text(`Generated by Abraj Quiz System on ${new Date().toLocaleString()}`, 20, pageHeight - 15);
+    pdf.text('© 2025 Abraj Quiz Platform - Comprehensive Learning & Assessment Solution', 20, pageHeight - 10);
 
-    // Save the PDF
-    pdf.save(`Abraj_Quiz_${game.gamePin}_Results.pdf`);
+    // Save the PDF with descriptive name
+    const fileName = `${(game.quiz?.title || 'Quiz').replace(/[^a-zA-Z0-9]/g, '_')}_Complete_Learning_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+    pdf.save(fileName);
   };
 
   const { data: results, isLoading } = useQuery<{
