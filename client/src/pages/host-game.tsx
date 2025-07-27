@@ -192,11 +192,15 @@ export default function HostGame() {
 
   // Play correct answer sound immediately when results are shown
   useEffect(() => {
-    if (showResults && currentQuestion) {
-      // Play sound immediately when results become visible
-      playCorrectSound();
+    if (showResults && game && quiz) {
+      const questions = quiz.questions as Question[];
+      const currentQ = questions[game.currentQuestion || 0];
+      if (currentQ) {
+        // Play sound immediately when results become visible
+        playCorrectSound();
+      }
     }
-  }, [showResults, currentQuestion]);
+  }, [showResults, game, quiz]);
 
   if (gameLoading) {
     return (
