@@ -53,6 +53,7 @@ export default function CreateQuiz() {
   const [urlInput, setUrlInput] = useState("");
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [topicsInput, setTopicsInput] = useState("");
+  const [textInput, setTextInput] = useState("");
 
   // Handle background image upload
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -267,6 +268,40 @@ export default function CreateQuiz() {
     },
   });
 
+  const generateFromText = useMutation({
+    mutationFn: async (text: string) => {
+      const response = await apiRequest("POST", "/api/generate-quiz/text", { text });
+      return response.json();
+    },
+    onSuccess: (generatedQuiz) => {
+      // Ensure we have valid questions array before setting state
+      if (generatedQuiz && generatedQuiz.questions && Array.isArray(generatedQuiz.questions)) {
+        setQuiz({
+          title: generatedQuiz.title || "Generated Quiz",
+          description: generatedQuiz.description || "",
+          background: "classroom",
+          questions: generatedQuiz.questions
+        });
+        setTextInput('');
+        setIsGenerating(false);
+        toast({ 
+          title: "Success", 
+          description: `Generated ${generatedQuiz.questions.length} questions from text content. Review and edit before creating your quiz.` 
+        });
+      } else {
+        throw new Error("Invalid response format from text generation");
+      }
+    },
+    onError: (error: any) => {
+      setIsGenerating(false);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate quiz from text",
+        variant: "destructive",
+      });
+    },
+  });
+
   // Effects for authentication and bounds checking
   useEffect(() => {
     if (quiz.questions && quiz.questions.length > 0 && currentQuestionIndex >= quiz.questions.length) {
@@ -440,6 +475,19 @@ export default function CreateQuiz() {
     generateFromTopics.mutate(topicsInput);
   };
 
+  const handleGenerateFromText = () => {
+    if (!textInput.trim()) {
+      toast({
+        title: "Error",
+        description: "Please paste some text content to generate a quiz from.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsGenerating(true);
+    generateFromText.mutate(textInput);
+  };
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file && file.type === 'application/pdf') {
@@ -484,10 +532,11 @@ export default function CreateQuiz() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <Tabs defaultValue="url" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
+                  <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="url" className="data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">From URL</TabsTrigger>
                     <TabsTrigger value="pdf" className="data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">From PDF</TabsTrigger>
                     <TabsTrigger value="topics" className="data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">From Topics</TabsTrigger>
+                    <TabsTrigger value="text" className="data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">Paste Text</TabsTrigger>
                   </TabsList>
 
                   <TabsContent value="url" className="space-y-4">
@@ -604,6 +653,43 @@ export default function CreateQuiz() {
                             <BookOpen className="w-4 h-4" />
                           )}
                           Generate Quiz from Topics
+                        </Button>
+                      </div>
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="text" className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Paste Text Content  
+                      </label>
+                      <div className="space-y-3">
+                        <Textarea
+                          placeholder="Paste article content, study notes, textbook excerpts, or any educational text here..."
+                          value={textInput}
+                          onChange={(e) => setTextInput(e.target.value)}
+                          className="w-full h-40 resize-none"
+                          disabled={isGenerating}
+                        />
+                        <div className="text-xs text-gray-500">
+                          <p>💡 Tips for better results:</p>
+                          <ul className="list-disc ml-4 mt-1 space-y-1">
+                            <li>Paste substantial content (at least a few paragraphs)</li>
+                            <li>Include clear facts, concepts, and details</li>
+                            <li>Educational content works best (articles, textbooks, study guides)</li>
+                          </ul>
+                        </div>
+                        <Button 
+                          onClick={handleGenerateFromText}
+                          disabled={isGenerating || !textInput.trim()}
+                          className="w-full abraj-primary hover:abraj-secondary text-white flex items-center gap-2"
+                        >
+                          {isGenerating ? (
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          ) : (
+                            <BookOpen className="w-4 h-4" />
+                          )}
+                          Generate Quiz from Text
                         </Button>
                       </div>
                     </div>

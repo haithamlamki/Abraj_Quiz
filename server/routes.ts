@@ -6,7 +6,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import multer from "multer";
-import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics } from "./openai-service";
+import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText } from "./openai-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -263,6 +263,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.post("/api/generate-quiz/text", requireAuth, async (req, res) => {
+    try {
+      console.log("Text quiz generation request - User ID:", (req as any).session.userId);
+      
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ message: "OpenAI API key is not configured on the server" });
+      }
+
+      const { text } = req.body;
+      
+      if (!text || typeof text !== 'string' || text.trim().length < 50) {
+        return res.status(400).json({ message: "Text content is required and must be at least 50 characters long" });
+      }
+
+      const generatedQuiz = await generateQuizFromText(text.trim());
+      res.json(generatedQuiz);
+    } catch (error: any) {
+      console.error("Error generating quiz from text:", error);
+      res.status(500).json({ message: error.message || "Failed to generate quiz from text" });
+    }
+  });
+
   app.post("/api/quizzes", requireAuth, async (req, res) => {
     try {
       const validation = insertQuizSchema.safeParse(req.body);
@@ -280,6 +302,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         title: validation.data.title,
         description: validation.data.description,
         questions: validation.data.questions,
+        background: validation.data.background || "classroom",
         isPublic: validation.data.isPublic,
         createdBy: (req as any).session.userId
       });

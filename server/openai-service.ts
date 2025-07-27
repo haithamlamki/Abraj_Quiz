@@ -307,3 +307,34 @@ Respond with JSON in this exact format:
     throw new Error(`Failed to generate quiz using AI: ${error.message}`);
   }
 }
+
+export async function generateQuizFromText(text: string): Promise<GeneratedQuiz> {
+  try {
+    if (!text || text.trim().length < 50) {
+      throw new Error("Text content is too short to generate a meaningful quiz");
+    }
+
+    return await generateQuizFromContent(text, "Text Content");
+  } catch (error: any) {
+    console.error("Text quiz generation error:", error);
+    
+    // Handle specific OpenAI API errors
+    if (error.status === 401) {
+      throw new Error("OpenAI API authentication failed. Please check API key configuration.");
+    }
+    if (error.status === 429) {
+      throw new Error("OpenAI API rate limit exceeded. Please try again in a few minutes.");
+    }
+    if (error.status === 500) {
+      throw new Error("OpenAI API service is temporarily unavailable. Please try again later.");
+    }
+    if (error.code === 'insufficient_quota') {
+      throw new Error("OpenAI API quota exceeded. Please check your account usage.");
+    }
+    
+    if (error.message?.includes('Text content is too short') || error.message?.includes('Invalid response format') || error.message?.includes('Invalid question format')) {
+      throw error;
+    }
+    throw new Error(`Failed to generate quiz from text: ${error.message}`);
+  }
+}
