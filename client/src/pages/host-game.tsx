@@ -190,6 +190,14 @@ export default function HostGame() {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
+  // Play correct answer sound immediately when results are shown
+  useEffect(() => {
+    if (showResults && currentQuestion) {
+      // Play sound immediately when results become visible
+      playCorrectSound();
+    }
+  }, [showResults, currentQuestion]);
+
   if (gameLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -419,19 +427,43 @@ export default function HostGame() {
   const playWrongSound = () => {
     if (typeof Audio !== 'undefined') {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
       
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      // Enhanced wrong answer sound with dramatic discord
+      // Play dissonant chord progression for wrong answers
+      const discordantNotes = [200, 220, 170, 150]; // Dissonant low frequencies
+      discordantNotes.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'square'; // Harsh square wave for dramatic effect
+        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime + index * 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.05 + 0.6);
+        
+        oscillator.start(audioContext.currentTime + index * 0.05);
+        oscillator.stop(audioContext.currentTime + index * 0.05 + 0.6);
+      });
       
-      oscillator.frequency.value = 200; // Low note
-      oscillator.type = 'sawtooth';
-      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.8);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.8);
+      // Add declining tone for disappointment effect
+      const decliningFreqs = [300, 250, 180, 120]; // Descending sad tones
+      decliningFreqs.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sawtooth';
+        gainNode.gain.setValueAtTime(0.12, audioContext.currentTime + 0.3 + index * 0.15);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3 + index * 0.15 + 0.5);
+        
+        oscillator.start(audioContext.currentTime + 0.3 + index * 0.15);
+        oscillator.stop(audioContext.currentTime + 0.3 + index * 0.15 + 0.5);
+      });
     }
   };
 
@@ -501,7 +533,8 @@ export default function HostGame() {
                 <div
                   key={index}
                   className={`${colors[index]} text-white p-8 rounded-xl font-bold text-xl transition-all transform hover:scale-105 cursor-pointer active:scale-95 relative overflow-hidden h-24 ${
-                    showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce' : ''
+                    showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce shadow-lg shadow-yellow-400/50' : 
+                    showResults && !isCorrect ? 'opacity-75 animate-pulse ring-2 ring-gray-400' : ''
                   }`}
                   onClick={() => {
                     if (showResults) {

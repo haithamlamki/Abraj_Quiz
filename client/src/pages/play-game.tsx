@@ -152,12 +152,6 @@ export default function PlayGame() {
   useEffect(() => {
     if (timeLeft === 0 && lastResult && hasAnswered) {
       setShowResult(true);
-      // Play sound based on result
-      if (lastResult.isCorrect) {
-        playCorrectSound();
-      } else {
-        playWrongSound();
-      }
     } else if (timeLeft === 0 && !hasAnswered) {
       // Show time-up effect for players who haven't answered
       setShowTimeUpEffect(true);
@@ -169,6 +163,18 @@ export default function PlayGame() {
       }, 3000);
     }
   }, [timeLeft, lastResult, hasAnswered]);
+
+  // Play sound immediately when results are shown
+  useEffect(() => {
+    if (showResult && lastResult) {
+      // Immediate sound feedback when results become visible
+      if (lastResult.isCorrect) {
+        playCorrectSound();
+      } else {
+        playWrongSound();
+      }
+    }
+  }, [showResult, lastResult]);
 
   useEffect(() => {
     if (game?.status === "completed") {
@@ -262,19 +268,43 @@ export default function PlayGame() {
   const playWrongSound = () => {
     if (typeof Audio !== 'undefined') {
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
       
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
+      // Enhanced wrong answer sound with dramatic discord
+      // Play dissonant chord progression for wrong answers
+      const discordantNotes = [200, 220, 170, 150]; // Dissonant low frequencies
+      discordantNotes.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'square'; // Harsh square wave for dramatic effect
+        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime + index * 0.05);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.05 + 0.6);
+        
+        oscillator.start(audioContext.currentTime + index * 0.05);
+        oscillator.stop(audioContext.currentTime + index * 0.05 + 0.6);
+      });
       
-      oscillator.frequency.value = 200;
-      oscillator.type = 'sawtooth';
-      gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.4);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.4);
+      // Add declining tone for disappointment effect
+      const decliningFreqs = [300, 250, 180, 120]; // Descending sad tones
+      decliningFreqs.forEach((freq, index) => {
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.frequency.value = freq;
+        oscillator.type = 'sawtooth';
+        gainNode.gain.setValueAtTime(0.12, audioContext.currentTime + 0.3 + index * 0.15);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3 + index * 0.15 + 0.5);
+        
+        oscillator.start(audioContext.currentTime + 0.3 + index * 0.15);
+        oscillator.stop(audioContext.currentTime + 0.3 + index * 0.15 + 0.5);
+      });
     }
   };
 
@@ -415,19 +445,21 @@ export default function PlayGame() {
   if (showResult && lastResult) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={getBackgroundStyle(quiz?.background || 'classroom')}>
-        <Card className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm animate-in slide-in-from-bottom-4 duration-500">
+        <Card className={`w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm animate-in slide-in-from-bottom-4 duration-500 ${
+          !lastResult.isCorrect ? 'animate-pulse' : ''
+        }`}>
           <CardContent className="pt-6 text-center space-y-6">
             <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${
-              lastResult.isCorrect ? 'abraj-green animate-bounce' : 'abraj-red animate-pulse'
+              lastResult.isCorrect ? 'abraj-green animate-bounce shadow-lg shadow-green-500/50' : 'abraj-red animate-ping shadow-lg shadow-red-500/50'
             } text-white transform transition-all duration-500 ${
-              lastResult.isCorrect ? 'scale-110' : 'scale-100'
+              lastResult.isCorrect ? 'scale-110' : 'scale-105 animate-pulse'
             }`}>
-              {lastResult.isCorrect ? <Check className="w-10 h-10" /> : <X className="w-10 h-10" />}
+              {lastResult.isCorrect ? <Check className="w-10 h-10 animate-spin" /> : <X className="w-10 h-10 animate-bounce" />}
             </div>
             
             <div className="animate-in fade-in-50 duration-700 delay-200">
               <h3 className={`font-bold text-2xl mb-2 ${
-                lastResult.isCorrect ? 'text-green-600' : 'text-red-600'
+                lastResult.isCorrect ? 'text-green-600' : 'text-red-600 animate-pulse'
               }`}>
                 {lastResult.isCorrect ? "Correct!" : "Incorrect"}
               </h3>
@@ -437,8 +469,8 @@ export default function PlayGame() {
                 </p>
               )}
               {!lastResult.isCorrect && currentQuestion && (
-                <p className="text-gray-600 animate-in slide-in-from-bottom-2 duration-500 delay-300">
-                  Correct answer: {String.fromCharCode(65 + lastResult.correctAnswer)} - {currentQuestion.answers[lastResult.correctAnswer]}
+                <p className="text-gray-600 animate-in slide-in-from-bottom-2 duration-500 delay-300 bg-red-50 p-3 rounded-lg border-2 border-red-200 animate-bounce">
+                  <span className="text-red-600 font-bold">Correct answer:</span> {String.fromCharCode(65 + lastResult.correctAnswer)} - {currentQuestion.answers[lastResult.correctAnswer]}
                 </p>
               )}
             </div>
