@@ -520,13 +520,13 @@ export default function HostGame() {
 
           {/* Question */}
           <Card className="mb-6 hover:scale-105 transition-transform duration-200 bg-white/95 backdrop-blur-sm">
-            <CardContent className="p-4 text-center">
-              <h2 className="font-bold text-lg text-gray-800">{currentQuestion?.question}</h2>
+            <CardContent className="p-3 sm:p-4 text-center">
+              <h2 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 leading-snug">{currentQuestion?.question}</h2>
             </CardContent>
           </Card>
 
           {/* Answer Options - 2x2 Grid Layout */}
-          <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-6">
             {currentQuestion?.answers.map((answer, index) => {
               const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
               const percentage = showResults && questionResults ? questionResults.answerPercentages[index] || 0 : 0;
@@ -536,7 +536,7 @@ export default function HostGame() {
               return (
                 <div
                   key={index}
-                  className={`${colors[index]} text-white p-8 rounded-xl font-bold text-xl transition-all transform hover:scale-105 cursor-pointer active:scale-95 relative overflow-hidden h-24 ${
+                  className={`${colors[index]} text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold transition-all transform hover:scale-105 cursor-pointer active:scale-95 relative overflow-hidden min-h-[80px] sm:min-h-[96px] lg:h-24 ${
                     showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce shadow-lg shadow-yellow-400/50' : 
                     showResults && !isCorrect ? 'opacity-75 animate-pulse ring-2 ring-gray-400' : ''
                   }`}
@@ -555,20 +555,20 @@ export default function HostGame() {
                     }
                   }}
                 >
-                  <div className="flex items-center justify-between w-full">
-                    <span className="text-2xl font-black">{String.fromCharCode(65 + index)}</span>
-                    <span className="flex-1 text-center text-lg">{answer}</span>
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full h-full gap-1 sm:gap-2">
+                    <span className="text-lg sm:text-xl md:text-2xl font-black shrink-0">{String.fromCharCode(65 + index)}</span>
+                    <span className="flex-1 text-center text-xs sm:text-sm md:text-base lg:text-lg leading-tight break-words">{answer}</span>
                   </div>
                   
                   {showResults && questionResults && (
                     <>
-                      <div className="mt-3 bg-white/20 rounded-full h-2">
+                      <div className="mt-2 sm:mt-3 bg-white/20 rounded-full h-1.5 sm:h-2">
                         <div 
-                          className="bg-white rounded-full h-2 transition-all duration-1000"
+                          className="bg-white rounded-full h-1.5 sm:h-2 transition-all duration-1000"
                           style={{ width: `${percentage}%` }}
                         ></div>
                       </div>
-                      <div className="mt-2 text-sm opacity-90 text-center">
+                      <div className="mt-1 sm:mt-2 text-xs sm:text-sm opacity-90 text-center">
                         {percentage}% ({count} players)
                       </div>
                     </>

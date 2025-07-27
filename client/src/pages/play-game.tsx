@@ -528,14 +528,14 @@ export default function PlayGame() {
         </div>
 
         {/* Question */}
-        <Card className="mb-6">
-          <CardContent className="p-4 text-center">
-            <h2 className="font-bold text-lg text-gray-800">{currentQuestion?.question}</h2>
+        <Card className="mb-6 bg-white/95 backdrop-blur-sm">
+          <CardContent className="p-3 sm:p-4 text-center">
+            <h2 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 leading-snug">{currentQuestion?.question}</h2>
           </CardContent>
         </Card>
 
         {/* Answer Options - 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-6">
           {currentQuestion?.answers.map((answer, index) => {
             const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
             const isSelected = selectedAnswer === index;
@@ -546,13 +546,13 @@ export default function PlayGame() {
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 disabled={isDisabled}
-                className={`${colors[index]} hover:scale-105 text-white p-8 rounded-xl font-bold text-xl transition-all transform h-24 ${
+                className={`${colors[index]} hover:scale-105 text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold transition-all transform min-h-[80px] sm:min-h-[96px] lg:h-24 ${
                   isSelected ? 'ring-4 ring-white' : ''
                 } ${isDisabled ? 'opacity-60' : 'active:scale-95'}`}
               >
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-2xl font-black">{String.fromCharCode(65 + index)}</span>
-                  <span className="flex-1 text-center text-lg">{answer}</span>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between w-full h-full gap-1 sm:gap-2">
+                  <span className="text-lg sm:text-xl md:text-2xl font-black shrink-0">{String.fromCharCode(65 + index)}</span>
+                  <span className="flex-1 text-center text-xs sm:text-sm md:text-base lg:text-lg leading-tight break-words">{answer}</span>
                 </div>
               </Button>
             );
@@ -561,14 +561,14 @@ export default function PlayGame() {
 
         {/* Player Info */}
         <div className="mt-6 text-center">
-          <div className="bg-white rounded-lg p-4 shadow">
+          <div className="bg-white/95 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow">
             <div className="flex justify-between items-center">
-              <span className="text-gray-600">Score:</span>
-              <span className="font-bold text-abraj-primary">{(currentPlayer?.score || 0).toLocaleString()}</span>
+              <span className="text-gray-600 text-sm sm:text-base">Score:</span>
+              <span className="font-bold text-abraj-primary text-sm sm:text-base">{(currentPlayer?.score || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center mt-2">
-              <span className="text-gray-600">Rank:</span>
-              <span className="font-bold">{currentRank} of {players.length}</span>
+              <span className="text-gray-600 text-sm sm:text-base">Rank:</span>
+              <span className="font-bold text-sm sm:text-base">{currentRank} of {players.length}</span>
             </div>
           </div>
         </div>
