@@ -65,6 +65,7 @@ export default function PlayGame() {
   const [lastResult, setLastResult] = useState<any>(null);
   const [playerScore, setPlayerScore] = useState(0);
   const [showTimeUpEffect, setShowTimeUpEffect] = useState(false);
+  const [soundPlayed, setSoundPlayed] = useState(false);
 
 
   const { data: game, isLoading } = useQuery<Game>({
@@ -164,17 +165,28 @@ export default function PlayGame() {
     }
   }, [timeLeft, lastResult, hasAnswered]);
 
-  // Play sound immediately when results are shown
+  // Reset sound flag when question changes
   useEffect(() => {
-    if (showResult && lastResult) {
+    setSoundPlayed(false);
+    setShowResult(false);
+    setLastResult(null);
+    setHasAnswered(false);
+    setSelectedAnswer(null);
+    setShowTimeUpEffect(false);
+  }, [game?.currentQuestion]);
+
+  // Play sound immediately when results are shown (only once per question)
+  useEffect(() => {
+    if (showResult && lastResult && !soundPlayed) {
       // Immediate sound feedback when results become visible
       if (lastResult.isCorrect) {
         playCorrectSound();
       } else {
         playWrongSound();
       }
+      setSoundPlayed(true);
     }
-  }, [showResult, lastResult]);
+  }, [showResult, lastResult, soundPlayed]);
 
   useEffect(() => {
     if (game?.status === "completed") {

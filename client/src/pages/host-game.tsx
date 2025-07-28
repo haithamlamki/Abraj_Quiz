@@ -23,6 +23,7 @@ export default function HostGame() {
   const [showQRCode, setShowQRCode] = useState(false);
   const [gameStartCountdown, setGameStartCountdown] = useState<number | null>(null);
   const [isStartingGame, setIsStartingGame] = useState(false);
+  const [soundPlayed, setSoundPlayed] = useState(false);
 
   // Sound effects for countdown
   const playCountdownSound = (count: number) => {
@@ -190,17 +191,25 @@ export default function HostGame() {
     return () => clearInterval(timer);
   }, [timeLeft]);
 
-  // Play correct answer sound immediately when results are shown
+  // Reset sound flag when question changes
   useEffect(() => {
-    if (showResults && game && quiz) {
+    setSoundPlayed(false);
+    setShowResults(false);
+    setTimeLeft(null);
+  }, [game?.currentQuestion]);
+
+  // Play correct answer sound immediately when results are shown (only once per question)
+  useEffect(() => {
+    if (showResults && game && quiz && !soundPlayed) {
       const questions = quiz.questions as Question[];
       const currentQ = questions[game.currentQuestion || 0];
       if (currentQ) {
         // Play sound immediately when results become visible
         playCorrectSound();
+        setSoundPlayed(true);
       }
     }
-  }, [showResults, game, quiz]);
+  }, [showResults, game, quiz, soundPlayed]);
 
   if (gameLoading) {
     return (
@@ -540,20 +549,7 @@ export default function HostGame() {
                     showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce shadow-lg shadow-yellow-400/50' : 
                     showResults && !isCorrect ? 'opacity-75 animate-pulse ring-2 ring-gray-400' : ''
                   }`}
-                  onClick={() => {
-                    if (showResults) {
-                      if (isCorrect) {
-                        playCorrectSound();
-                      } else {
-                        playWrongSound();
-                      }
-                    }
-                  }}
-                  onMouseEnter={() => {
-                    if (showResults && isCorrect) {
-                      playCorrectSound();
-                    }
-                  }}
+
                 >
                   <div className="flex flex-col items-center justify-center w-full h-full gap-1 sm:gap-2">
                     <span className="text-lg sm:text-xl md:text-2xl font-black shrink-0">{String.fromCharCode(65 + index)}</span>
