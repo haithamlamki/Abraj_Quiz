@@ -1,8 +1,8 @@
-# Abraj Quiz Application
+# Interactive Presentation Platform (GenSpark-style)
 
 ## Overview
 
-This is a real-time quiz application rebranded as "Abraj Quiz", built with React (frontend) and Express.js (backend). The application allows users to create quizzes, host live quiz games with PIN-based joining, and provides real-time gameplay with leaderboards and scoring. Features a custom turquoise/teal color scheme matching the Abraj brand identity. Now integrated with PostgreSQL database for persistent data storage.
+This is an AI-powered interactive presentation platform inspired by GenSpark, built with React (frontend) and Express.js (backend). The application allows users to generate dynamic, interactive presentations from various inputs (PDFs, URLs, text, topics) using OpenAI GPT-4o, with real-time presentation capabilities, audience interaction features, and comprehensive analytics. Features a custom turquoise/teal color scheme matching the Abraj brand identity and PostgreSQL database for persistent data storage.
 
 ## User Preferences
 

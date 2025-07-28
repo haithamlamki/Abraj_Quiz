@@ -1,9 +1,9 @@
 import { 
-  users, quizzes, games, gameResponses,
+  users, presentations, presentationSessions, sessionInteractions,
   type User, type InsertUser,
-  type Quiz, type InsertQuiz,
-  type Game, type InsertGame,
-  type GameResponse, type InsertGameResponse
+  type Presentation, type InsertPresentation,
+  type PresentationSession, type InsertPresentationSession,
+  type SessionInteraction, type InsertSessionInteraction
 } from "@shared/schema";
 import { db } from "./db";
 import { eq } from "drizzle-orm";
@@ -14,30 +14,29 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
 
-  // Quizzes
-  getQuiz(id: number): Promise<Quiz | undefined>;
-  getQuizzes(): Promise<Quiz[]>;
-  getPublicQuizzes(): Promise<Quiz[]>;
-  getUserQuizzes(userId: number): Promise<Quiz[]>;
-  createQuiz(quiz: InsertQuiz): Promise<Quiz>;
-  updateQuiz(id: number, quiz: Partial<InsertQuiz>): Promise<Quiz>;
-  deleteQuiz(id: number): Promise<boolean>;
+  // Presentations
+  getPresentation(id: number): Promise<Presentation | undefined>;
+  getPresentations(): Promise<Presentation[]>;
+  getPublicPresentations(): Promise<Presentation[]>;
+  getUserPresentations(userId: number): Promise<Presentation[]>;
+  createPresentation(presentation: InsertPresentation): Promise<Presentation>;
+  updatePresentation(id: number, presentation: Partial<InsertPresentation>): Promise<Presentation>;
+  deletePresentation(id: number): Promise<boolean>;
 
-  // Games
-  getGame(id: number): Promise<Game | undefined>;
-  getGameByPin(pin: string): Promise<Game | undefined>;
-  createGame(game: InsertGame): Promise<Game>;
-  updateGame(id: number, game: Partial<Game>): Promise<Game | undefined>;
-  deleteGame(id: number): Promise<boolean>;
+  // Presentation Sessions
+  getSession(id: number): Promise<PresentationSession | undefined>;
+  getSessionByPin(pin: string): Promise<PresentationSession | undefined>;
+  createSession(session: InsertPresentationSession): Promise<PresentationSession>;
+  updateSession(id: number, session: Partial<PresentationSession>): Promise<PresentationSession | undefined>;
+  deleteSession(id: number): Promise<boolean>;
 
-  // Game Responses
-  getGameResponses(gameId: number): Promise<GameResponse[]>;
-  createGameResponse(response: InsertGameResponse): Promise<GameResponse>;
-  updateGameResponse(id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined>;
-  getPlayerResponses(gameId: number, playerName: string): Promise<GameResponse[]>;
+  // Session Interactions
+  getSessionInteractions(sessionId: number): Promise<SessionInteraction[]>;
+  createSessionInteraction(interaction: InsertSessionInteraction): Promise<SessionInteraction>;
+  getViewerInteractions(sessionId: number, viewerName: string): Promise<SessionInteraction[]>;
   
-  // Latest Game Results
-  getLatestCompletedGame(): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined>;
+  // Latest Session Results
+  getLatestCompletedSession(): Promise<{ session: PresentationSession; viewers: any[]; totalSlides: number } | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -60,18 +59,18 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  // Quizzes
-  async getQuiz(id: number): Promise<Quiz | undefined> {
-    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, id));
-    return quiz || undefined;
+  // Presentations
+  async getPresentation(id: number): Promise<Presentation | undefined> {
+    const [presentation] = await db.select().from(presentations).where(eq(presentations.id, id));
+    return presentation || undefined;
   }
 
-  async getQuizzes(): Promise<Quiz[]> {
-    return await db.select().from(quizzes);
+  async getPresentations(): Promise<Presentation[]> {
+    return await db.select().from(presentations);
   }
 
-  async getPublicQuizzes(): Promise<Quiz[]> {
-    return await db.select().from(quizzes).where(eq(quizzes.isPublic, true));
+  async getPublicPresentations(): Promise<Presentation[]> {
+    return await db.select().from(presentations).where(eq(presentations.isPublic, true));
   }
 
   async getUserQuizzes(userId: number): Promise<Quiz[]> {

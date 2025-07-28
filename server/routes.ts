@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertQuizSchema, insertGameSchema, insertGameResponseSchema, quizQuestionsSchema, insertUserSchema } from "@shared/schema";
+import { insertPresentationSchema, insertPresentationSessionSchema, insertSessionInteractionSchema, presentationSlidesSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import session from "express-session";

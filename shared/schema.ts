@@ -8,37 +8,39 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
 });
 
-export const quizzes = pgTable("quizzes", {
+export const presentations = pgTable("presentations", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
   description: text("description"),
   createdBy: integer("created_by").notNull(),
-  questions: jsonb("questions").notNull(),
-  background: text("background").default("classroom"), // Can store theme name or base64 data URL
+  slides: jsonb("slides").notNull(), // Array of slide objects
+  theme: text("theme").default("professional"), // Theme/template name
+  generatedFrom: text("generated_from"), // 'pdf', 'url', 'text', 'topics', 'manual'
+  sourceContent: text("source_content"), // Original content used for generation
   isPublic: boolean("is_public").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const games = pgTable("games", {
+export const presentationSessions = pgTable("presentation_sessions", {
   id: serial("id").primaryKey(),
-  quizId: integer("quiz_id").notNull(),
-  gamePin: text("game_pin").notNull().unique(),
+  presentationId: integer("presentation_id").notNull(),
+  sessionPin: text("session_pin").notNull().unique(),
   hostId: integer("host_id").notNull(),
   status: text("status").notNull(), // 'waiting', 'active', 'completed'
-  currentQuestion: integer("current_question").default(0),
-  players: jsonb("players").default([]),
+  currentSlide: integer("current_slide").default(0),
+  viewers: jsonb("viewers").default([]), // Array of viewer objects
+  interactions: jsonb("interactions").default([]), // Polls, Q&A, feedback
   createdAt: timestamp("created_at").defaultNow(),
 });
 
-export const gameResponses = pgTable("game_responses", {
+export const sessionInteractions = pgTable("session_interactions", {
   id: serial("id").primaryKey(),
-  gameId: integer("game_id").notNull(),
-  playerName: text("player_name").notNull(),
-  questionIndex: integer("question_index").notNull(),
-  selectedAnswer: integer("selected_answer").notNull(),
-  responseTime: integer("response_time").notNull(), // in milliseconds
-  isCorrect: boolean("is_correct").notNull(),
-  pointsEarned: integer("points_earned").notNull(),
+  sessionId: integer("session_id").notNull(),
+  viewerName: text("viewer_name").notNull(),
+  interactionType: text("interaction_type").notNull(), // 'poll', 'qa', 'feedback', 'reaction'
+  slideIndex: integer("slide_index").notNull(),
+  content: jsonb("content").notNull(), // Interaction data (poll answer, question, etc.)
+  createdAt: timestamp("created_at").defaultNow(),
 });
 
 // Zod schemas
@@ -47,58 +49,72 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
 });
 
-export const insertQuizSchema = createInsertSchema(quizzes).pick({
+export const insertPresentationSchema = createInsertSchema(presentations).pick({
   title: true,
   description: true,
-  questions: true,
-  background: true,
+  slides: true,
+  theme: true,
+  generatedFrom: true,
+  sourceContent: true,
   isPublic: true,
 }).extend({
-  title: z.string().min(1, "Quiz title is required"),
+  title: z.string().min(1, "Presentation title is required"),
   description: z.string().optional(),
-  background: z.string().default("classroom"), // Can store theme name or base64 data URL
+  theme: z.string().default("professional"),
+  generatedFrom: z.enum(["pdf", "url", "text", "topics", "manual"]).optional(),
+  sourceContent: z.string().optional(),
   isPublic: z.boolean().default(true),
 });
 
-export const insertGameSchema = createInsertSchema(games).pick({
-  quizId: true,
-  gamePin: true,
+export const insertPresentationSessionSchema = createInsertSchema(presentationSessions).pick({
+  presentationId: true,
+  sessionPin: true,
   hostId: true,
   status: true,
 });
 
-export const insertGameResponseSchema = createInsertSchema(gameResponses).pick({
-  gameId: true,
-  playerName: true,
-  questionIndex: true,
-  selectedAnswer: true,
-  responseTime: true,
-  isCorrect: true,
-  pointsEarned: true,
+export const insertSessionInteractionSchema = createInsertSchema(sessionInteractions).pick({
+  sessionId: true,
+  viewerName: true,
+  interactionType: true,
+  slideIndex: true,
+  content: true,
 });
 
-// Question schema
-export const questionSchema = z.object({
-  question: z.string().min(1, "Question text is required"),
-  answers: z.array(z.string().min(1, "Answer text is required")).length(4, "Must have exactly 4 answers"),
-  correctAnswer: z.number().min(0).max(3, "Correct answer must be between 0-3"),
-  timeLimit: z.number().min(5).max(120).default(10),
+// Slide schema
+export const slideSchema = z.object({
+  id: z.string(),
+  type: z.enum(["title", "content", "image", "video", "chart", "poll", "qa"]),
+  title: z.string().min(1, "Slide title is required"),
+  content: z.string().optional(),
+  media: z.object({
+    type: z.enum(["image", "video", "chart"]).optional(),
+    url: z.string().optional(),
+    alt: z.string().optional(),
+  }).optional(),
+  interactive: z.object({
+    type: z.enum(["poll", "qa", "feedback"]).optional(),
+    question: z.string().optional(),
+    options: z.array(z.string()).optional(),
+  }).optional(),
+  layout: z.enum(["single", "split", "grid", "full"]).default("single"),
+  animations: z.array(z.string()).default([]),
 });
 
-export const quizQuestionsSchema = z.array(questionSchema);
+export const presentationSlidesSchema = z.array(slideSchema);
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
 
-export type InsertQuiz = z.infer<typeof insertQuizSchema>;
-export type Quiz = typeof quizzes.$inferSelect;
+export type InsertPresentation = z.infer<typeof insertPresentationSchema>;
+export type Presentation = typeof presentations.$inferSelect;
 
-export type InsertGame = z.infer<typeof insertGameSchema>;
-export type Game = typeof games.$inferSelect;
+export type InsertPresentationSession = z.infer<typeof insertPresentationSessionSchema>;
+export type PresentationSession = typeof presentationSessions.$inferSelect;
 
-export type InsertGameResponse = z.infer<typeof insertGameResponseSchema>;
-export type GameResponse = typeof gameResponses.$inferSelect;
+export type InsertSessionInteraction = z.infer<typeof insertSessionInteractionSchema>;
+export type SessionInteraction = typeof sessionInteractions.$inferSelect;
 
-export type Question = z.infer<typeof questionSchema>;
-export type QuizQuestions = z.infer<typeof quizQuestionsSchema>;
+export type Slide = z.infer<typeof slideSchema>;
+export type PresentationSlides = z.infer<typeof presentationSlidesSchema>;
