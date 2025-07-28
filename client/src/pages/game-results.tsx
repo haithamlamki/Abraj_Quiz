@@ -713,14 +713,7 @@ export default function GameResults() {
               </CardContent>
             </Card>
 
-            {/* Celebration Image */}
-            <div className="animate-float">
-              <img 
-                src={logo} 
-                alt="Quiz competition celebration with trophy and confetti" 
-                className="rounded-xl shadow-lg w-full h-40 object-cover border-4 border-yellow-200 transform transition-all duration-300 hover:scale-105"
-              />
-            </div>
+            
 
             {/* Actions */}
             <Card className="bg-white/95 backdrop-blur-sm shadow-xl bg-gradient-to-br from-white to-green-50 border-2 border-green-200">
