@@ -482,14 +482,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const isCorrect = selectedAnswer === question.correctAnswer;
       
-      // Calculate points based on speed and correctness
-      let pointsEarned = 0;
-      if (isCorrect) {
-        const maxPoints = 1000;
-        const timeBonus = Math.max(0, (question.timeLimit - responseTime / 1000) / question.timeLimit);
-        pointsEarned = Math.round(maxPoints * (0.5 + 0.5 * timeBonus));
-      }
-
+      // Store response without calculating score yet
+      // Score will be calculated when host moves to next question
       const responseData = {
         gameId: game.id,
         playerName,
@@ -497,26 +491,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         selectedAnswer,
         responseTime,
         isCorrect,
-        pointsEarned
+        pointsEarned: 0 // Will be calculated later
       };
 
       await storage.createGameResponse(responseData);
 
-      // Update player score
-      const players = (game.players as any[]) || [];
-      const updatedPlayers = players.map((player: any) => {
-        if (player.name === playerName) {
-          return { ...player, score: (player.score || 0) + pointsEarned };
-        }
-        return player;
-      });
-
-      await storage.updateGame(game.id, { players: updatedPlayers });
-
+      // Don't update player score yet - will be done when question time finishes
       res.json({ 
         success: true, 
         isCorrect, 
-        pointsEarned,
+        pointsEarned: 0, // Don't reveal points yet
         correctAnswer: question.correctAnswer
       });
     } catch (error) {
@@ -539,7 +523,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const questions = quiz.questions as any[];
-      const nextQuestion = (game.currentQuestion || 0) + 1;
+      const currentQuestionIndex = game.currentQuestion || 0;
+      
+      // Calculate and award scores for the current question before moving to next
+      const currentQuestion = questions[currentQuestionIndex];
+      if (currentQuestion) {
+        const responses = await storage.getGameResponses(game.id);
+        const currentQuestionResponses = responses.filter(r => r.questionIndex === currentQuestionIndex);
+        
+        // Calculate scores for each response
+        for (const response of currentQuestionResponses) {
+          let pointsEarned = 0;
+          if (response.isCorrect) {
+            const maxPoints = 1000;
+            const timeBonus = Math.max(0, (currentQuestion.timeLimit - response.responseTime / 1000) / currentQuestion.timeLimit);
+            pointsEarned = Math.round(maxPoints * (0.5 + 0.5 * timeBonus));
+          }
+          
+          // Update the response with calculated points
+          await storage.updateGameResponse(response.id, { pointsEarned });
+        }
+        
+        // Update player scores
+        const players = (game.players as any[]) || [];
+        const updatedPlayers = players.map((player: any) => {
+          const playerResponses = currentQuestionResponses.filter(r => r.playerName === player.name);
+          const playerResponse = playerResponses[0]; // Get the first (should be only) response
+          
+          if (playerResponse && playerResponse.isCorrect) {
+            const maxPoints = 1000;
+            const timeBonus = Math.max(0, (currentQuestion.timeLimit - playerResponse.responseTime / 1000) / currentQuestion.timeLimit);
+            const pointsEarned = Math.round(maxPoints * (0.5 + 0.5 * timeBonus));
+            return { ...player, score: (player.score || 0) + pointsEarned };
+          }
+          return player;
+        });
+
+        // Update game with new player scores
+        await storage.updateGame(game.id, { players: updatedPlayers });
+      }
+
+      const nextQuestion = currentQuestionIndex + 1;
 
       if (nextQuestion >= questions.length) {
         // Game is complete

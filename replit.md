@@ -261,3 +261,13 @@ Preferred communication style: Simple, everyday language.
 - ✓ Displays quiz title, game PIN, question count, and player rankings with scores
 - ✓ Auto-refreshes every 30 seconds to show latest completed games
 - ✓ TypeScript interfaces ensure type safety for latest results data structure
+
+**Delayed Scoring System Implementation (January 28, 2025)**
+- ✓ Modified scoring system to match Kahoot-style delayed scoring experience
+- ✓ Players no longer receive scores immediately after answering questions
+- ✓ Score calculation now happens only when host moves to next question (after time finishes)
+- ✓ Updated /api/games/:pin/answer endpoint to store responses without calculating points
+- ✓ Enhanced /api/games/:pin/next-question endpoint to calculate and award scores retroactively
+- ✓ Added updateGameResponse method to storage interface for both PostgreSQL and memory implementations
+- ✓ Maintains correct/incorrect feedback for sound effects while hiding point values
+- ✓ Creates suspenseful gameplay experience where results are revealed after question time expires

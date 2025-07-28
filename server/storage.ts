@@ -33,6 +33,7 @@ export interface IStorage {
   // Game Responses
   getGameResponses(gameId: number): Promise<GameResponse[]>;
   createGameResponse(response: InsertGameResponse): Promise<GameResponse>;
+  updateGameResponse(id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined>;
   getPlayerResponses(gameId: number, playerName: string): Promise<GameResponse[]>;
   
   // Latest Game Results
@@ -143,6 +144,15 @@ export class DatabaseStorage implements IStorage {
       .values(insertResponse)
       .returning();
     return response;
+  }
+
+  async updateGameResponse(id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined> {
+    const [response] = await db
+      .update(gameResponses)
+      .set(updates)
+      .where(eq(gameResponses.id, id))
+      .returning();
+    return response || undefined;
   }
 
   async getPlayerResponses(gameId: number, playerName: string): Promise<GameResponse[]> {
@@ -424,6 +434,15 @@ export class MemStorage implements IStorage {
     const response: GameResponse = { ...insertResponse, id };
     this.gameResponses.set(id, response);
     return response;
+  }
+
+  async updateGameResponse(id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined> {
+    const response = this.gameResponses.get(id);
+    if (!response) return undefined;
+    
+    const updatedResponse = { ...response, ...updates };
+    this.gameResponses.set(id, updatedResponse);
+    return updatedResponse;
   }
 
   async getPlayerResponses(gameId: number, playerName: string): Promise<GameResponse[]> {
