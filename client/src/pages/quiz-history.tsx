@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link, useLocation } from "wouter";
-import { Clock, Users, Eye, Edit, Trash2 } from "lucide-react";
+import { Clock, Users, Eye, Edit, Trash2, FileText } from "lucide-react";
 import { useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/navigation";
@@ -139,21 +139,21 @@ export default function QuizHistory() {
                       </div>
                     </div>
                     
-                    <div className="flex gap-2">
-                      <Link href={`/quiz/${quiz.id}`}>
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Eye className="w-4 h-4 mr-2" />
-                          View
-                        </Button>
-                      </Link>
+                    <div className="flex gap-2 flex-wrap">
                       <Link href={`/edit-quiz/${quiz.id}`}>
-                        <Button variant="outline" size="sm" className="flex-1">
-                          <Edit className="w-4 h-4 mr-2" />
+                        <Button variant="outline" size="sm" className="flex-1 min-w-[80px]">
+                          <Edit className="w-4 h-4 mr-1" />
                           Edit
                         </Button>
                       </Link>
+                      <Link href={`/quiz-pdf/${quiz.id}`}>
+                        <Button variant="outline" size="sm" className="flex-1 min-w-[80px] border-[#019ebd] text-[#019ebd] hover:bg-[#019ebd] hover:text-white">
+                          <FileText className="w-4 h-4 mr-1" />
+                          PDF
+                        </Button>
+                      </Link>
                       <Link href={`/host-quiz/${quiz.id}`}>
-                        <Button size="sm" className="abraj-primary hover:abraj-secondary text-white flex-1">
+                        <Button size="sm" className="abraj-primary hover:abraj-secondary text-white flex-1 min-w-[80px]">
                           Host Game
                         </Button>
                       </Link>

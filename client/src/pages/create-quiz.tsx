@@ -8,11 +8,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Trash2, Triangle, Diamond, Circle, Square, Upload, Link as LinkIcon, Wand2, BookOpen, Image, X, PlusCircle } from "lucide-react";
+import { Plus, Trash2, Triangle, Diamond, Circle, Square, Upload, Link as LinkIcon, Wand2, BookOpen, Image, X, PlusCircle, Download, FileText } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Question } from "@shared/schema";
+import { generateQuizPDF } from "@/utils/quiz-pdf-generator";
 
 interface QuizForm {
   title: string;
@@ -537,6 +538,64 @@ export default function CreateQuiz() {
     }
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      // Validate quiz has content
+      if (!quiz.title.trim()) {
+        toast({
+          title: "Missing Quiz Title",
+          description: "Please add a title to your quiz before generating PDF.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!quiz.questions.some(q => q.question.trim())) {
+        toast({
+          title: "No Questions Found",
+          description: "Please add at least one question before generating PDF.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create a mock quiz object with proper structure for PDF generation
+      const quizForPDF = {
+        id: Date.now(), // Temporary ID for PDF generation
+        title: quiz.title,
+        description: quiz.description || null,
+        questions: quiz.questions.filter(q => q.question.trim()), // Only include questions with content
+        createdBy: 1, // Default user ID for PDF generation
+        createdAt: new Date(),
+        background: quiz.background || null,
+        isPublic: false
+      };
+
+      toast({
+        title: "Generating PDF...",
+        description: "Your quiz PDF is being created. This may take a moment.",
+      });
+
+      await generateQuizPDF(quizForPDF, {
+        includeQRCode: true,
+        includeAnswerKey: true,
+        orientation: 'portrait'
+      });
+
+      toast({
+        title: "PDF Downloaded",
+        description: "Your quiz PDF has been successfully generated and downloaded.",
+      });
+    } catch (error) {
+      console.error('PDF generation error:', error);
+      toast({
+        title: "PDF Generation Failed",
+        description: "There was an error generating your quiz PDF. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const currentQuestion = (quiz.questions && quiz.questions[currentQuestionIndex]) || {
     question: "",
     answers: ["", "", "", ""],
@@ -975,7 +1034,15 @@ export default function CreateQuiz() {
             </Card>
 
             {/* Submit */}
-            <div className="mt-8 flex justify-center">
+            <div className="mt-8 flex justify-center gap-4">
+              <Button
+                onClick={handleDownloadPDF}
+                variant="outline"
+                className="h-10 px-6 py-3 text-lg font-bold border-[#019ebd] text-[#019ebd] hover:bg-[#019ebd] hover:text-white transition-colors"
+              >
+                <Download className="w-5 h-5 mr-2" />
+                Download PDF
+              </Button>
               <Button
                 onClick={handleSubmit}
                 disabled={createQuizMutation.isPending}

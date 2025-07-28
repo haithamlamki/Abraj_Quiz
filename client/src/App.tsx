@@ -15,6 +15,7 @@ import Signup from "@/pages/signup";
 import QuizHistory from "@/pages/quiz-history";
 import HostQuizSetup from "./pages/host-quiz-setup";
 import EditQuiz from "@/pages/edit-quiz";
+import QuizPDF from "@/pages/quiz-pdf";
 import NotFound from "@/pages/not-found";
 import classroomBg from "@assets/classroom-background.jpg";
 
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/host/:pin" component={HostGame} />
       <Route path="/host-quiz/:quizId" component={HostQuizSetup} />
       <Route path="/edit-quiz/:quizId" component={EditQuiz} />
+      <Route path="/quiz-pdf/:id" component={QuizPDF} />
       <Route path="/join/:pin?" component={JoinGame} />
       <Route path="/play/:pin" component={PlayGame} />
       <Route path="/results/:pin" component={GameResults} />
