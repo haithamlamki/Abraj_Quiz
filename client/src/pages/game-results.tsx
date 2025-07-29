@@ -45,18 +45,60 @@ export default function GameResults() {
     }
   };
 
-  // Enhanced PDF generation function with learning-style preparation format
+  // Enhanced PDF generation with comprehensive interactive details and themed backgrounds
   const downloadPDF = async () => {
     if (!results) return;
 
     const { game, players, totalQuestions, responses } = results;
     const sortedPlayers = [...players].sort((a, b) => (b.score || 0) - (a.score || 0));
     
-    // Create new PDF document with A4 size
-    const pdf = new jsPDF('p', 'mm', 'a4');
+    // Create new PDF document with landscape orientation for more space
+    const pdf = new jsPDF('l', 'mm', 'a4');
     let yPosition = 20;
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
-    // Add ABRAJ logo
+    // Background Theme Colors based on quiz background
+    const backgroundThemes = {
+      classroom: { 
+        primary: [70, 130, 180], 
+        secondary: [245, 250, 255], 
+        accent: [100, 149, 237],
+        name: 'Academic Classroom' 
+      },
+      space: { 
+        primary: [75, 0, 130], 
+        secondary: [230, 230, 250], 
+        accent: [138, 43, 226],
+        name: 'Cosmic Explorer' 
+      },
+      ocean: { 
+        primary: [0, 105, 148], 
+        secondary: [240, 248, 255], 
+        accent: [64, 224, 208],
+        name: 'Ocean Depths' 
+      },
+      forest: { 
+        primary: [34, 139, 34], 
+        secondary: [240, 255, 240], 
+        accent: [46, 139, 87],
+        name: 'Forest Adventure' 
+      },
+      city: { 
+        primary: [105, 105, 105], 
+        secondary: [248, 248, 255], 
+        accent: [169, 169, 169],
+        name: 'Urban Explorer' 
+      }
+    };
+
+    const currentTheme = backgroundThemes[game.quiz?.background as keyof typeof backgroundThemes] || backgroundThemes.classroom;
+
+    // Add themed header background
+    pdf.setFillColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+    pdf.rect(0, 0, pageWidth, 40, 'F');
+
+    // Add ABRAJ logo with enhanced positioning
     try {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -71,13 +113,11 @@ export default function GameResults() {
           
           try {
             const dataURL = canvas.toDataURL('image/png', 0.8);
-            const logoWidth = 30;
-            const logoHeight = 25;
-            const pageWidth = pdf.internal.pageSize.getWidth();
-            const logoX = (pageWidth - logoWidth) / 2;
+            const logoWidth = 35;
+            const logoHeight = 30;
+            const logoX = 20;
             
             pdf.addImage(dataURL, 'PNG', logoX, yPosition, logoWidth, logoHeight);
-            yPosition += logoHeight + 8;
           } catch (error) {
             console.warn('Could not add logo to PDF:', error);
           }
@@ -90,216 +130,331 @@ export default function GameResults() {
       console.warn('Logo processing failed:', error);
     }
 
-    // Header Section
-    pdf.setFontSize(28);
+    // Enhanced Header with Theme
+    pdf.setFontSize(32);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189); // Abraj blue color
-    pdf.text('ABRAJ QUIZ', pdf.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-    yPosition += 12;
+    pdf.setTextColor(255, 255, 255);
+    pdf.text('ABRAJ QUIZ', pageWidth / 2, yPosition + 15, { align: 'center' });
+    
+    pdf.setFontSize(16);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(`${currentTheme.name} Edition - Complete Interactive Report`, pageWidth / 2, yPosition + 25, { align: 'center' });
+    
+    yPosition = 50;
 
+    // Enhanced Quiz Information Panel with Theme
+    pdf.setDrawColor(currentTheme.accent[0], currentTheme.accent[1], currentTheme.accent[2]);
+    pdf.setFillColor(currentTheme.secondary[0], currentTheme.secondary[1], currentTheme.secondary[2]);
+    pdf.roundedRect(15, yPosition, pageWidth - 30, 40, 5, 5, 'FD');
+    
     pdf.setFontSize(18);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189);
-    pdf.text('Complete Quiz Preparation & Results Report', pdf.internal.pageSize.getWidth() / 2, yPosition, { align: 'center' });
-    yPosition += 20;
-
-    // Quiz Information Box
-    pdf.setDrawColor(1, 158, 189);
-    pdf.setFillColor(240, 248, 255);
-    pdf.roundedRect(15, yPosition - 5, 180, 45, 3, 3, 'FD');
+    pdf.setTextColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+    pdf.text('📊 Quiz Session Overview', 25, yPosition + 12);
     
-    pdf.setFontSize(14);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189);
-    pdf.text('Quiz Information', 20, yPosition + 5);
-    
-    pdf.setFontSize(11);
+    pdf.setFontSize(12);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(0, 0, 0);
     const currentDate = new Date().toLocaleString();
     
-    const quizInfo = [
-      `Quiz Title: ${game.quiz?.title || 'Untitled Quiz'}`,
-      `Quiz ID: ${game.quizId}  |  Game PIN: ${game.gamePin}`,
-      `Host: ${game.hostName || 'Unknown'}  |  Date: ${currentDate}`,
-      `Total Questions: ${totalQuestions}  |  Total Players: ${players.length}`
+    const leftColumn = [
+      `📚 Quiz: ${game.quiz?.title || 'Untitled Quiz'}`,
+      `🎯 Game PIN: ${game.gamePin}`,
+      `👥 Players: ${players.length} participants`
+    ];
+    
+    const rightColumn = [
+      `🎓 Host: ${game.hostName || 'Quiz Master'}`,
+      `📅 Date: ${currentDate}`,
+      `❓ Questions: ${totalQuestions} total`
     ];
 
-    quizInfo.forEach((info, index) => {
-      pdf.text(info, 20, yPosition + 15 + (index * 7));
+    leftColumn.forEach((info, index) => {
+      pdf.text(info, 25, yPosition + 22 + (index * 6));
+    });
+    
+    rightColumn.forEach((info, index) => {
+      pdf.text(info, pageWidth / 2 + 20, yPosition + 22 + (index * 6));
     });
 
-    yPosition += 55;
+    yPosition += 50;
 
-    // === QUIZ PREPARATION SECTION ===
+    // === INTERACTIVE LEARNING SECTION ===
     pdf.addPage();
     yPosition = 20;
     
-    pdf.setFontSize(22);
-    pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189);
-    pdf.text('QUIZ PREPARATION - LEARNING GUIDE', 20, yPosition);
-    yPosition += 12;
+    // Add themed background pattern
+    pdf.setFillColor(currentTheme.secondary[0], currentTheme.secondary[1], currentTheme.secondary[2]);
+    pdf.rect(0, 0, pageWidth, pageHeight, 'F');
     
-    pdf.setFontSize(12);
+    pdf.setFontSize(28);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+    pdf.text('🎓 INTERACTIVE LEARNING GUIDE', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 15;
+    
+    pdf.setFontSize(14);
     pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(100, 100, 100);
-    pdf.text('Study all questions and answers below. Correct answers are highlighted in green.', 20, yPosition);
-    yPosition += 20;
+    pdf.setTextColor(80, 80, 80);
+    pdf.text('Complete study material with detailed explanations, interactive elements, and performance insights', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 25;
 
     if (game.quiz?.questions) {
       game.quiz.questions.forEach((question: any, index: number) => {
-        // Check if we need a new page (allow more space for questions)
-        if (yPosition > 220) {
+        // Check for page break with more generous spacing
+        if (yPosition > pageHeight - 80) {
           pdf.addPage();
-          yPosition = 20;
+          pdf.setFillColor(currentTheme.secondary[0], currentTheme.secondary[1], currentTheme.secondary[2]);
+          pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+          yPosition = 25;
         }
 
-        // Question Box
-        pdf.setDrawColor(70, 130, 180);
-        pdf.setFillColor(245, 250, 255);
-        pdf.roundedRect(15, yPosition - 5, 180, 15, 2, 2, 'FD');
+        // Enhanced Question Container with Theme
+        const questionBoxHeight = 25;
+        pdf.setDrawColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+        pdf.setFillColor(255, 255, 255);
+        pdf.roundedRect(20, yPosition, pageWidth - 40, questionBoxHeight, 4, 4, 'FD');
 
-        // Question number and text
-        pdf.setFontSize(13);
+        // Question number badge
+        pdf.setFillColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+        pdf.circle(35, yPosition + 12, 8, 'F');
+        pdf.setFontSize(14);
         pdf.setFont('helvetica', 'bold');
-        pdf.setTextColor(70, 130, 180);
-        const questionText = `Question ${index + 1}: ${question.question}`;
-        const splitQuestion = pdf.splitTextToSize(questionText, 170);
-        pdf.text(splitQuestion, 20, yPosition + 5);
+        pdf.setTextColor(255, 255, 255);
+        pdf.text(`${index + 1}`, 35, yPosition + 15, { align: 'center' });
+
+        // Question text with enhanced formatting
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+        const questionText = `🤔 ${question.question}`;
+        const splitQuestion = pdf.splitTextToSize(questionText, pageWidth - 100);
+        pdf.text(splitQuestion, 50, yPosition + 12);
         
-        // Adjust yPosition based on question length
-        const questionHeight = splitQuestion.length * 5;
-        yPosition += Math.max(15, questionHeight + 5);
-
-        // Time limit indicator
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'italic');
+        // Interactive elements: difficulty and time indicators
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(120, 120, 120);
-        pdf.text(`Time Limit: ${question.timeLimit || 10} seconds`, 20, yPosition);
-        yPosition += 8;
+        pdf.text(`⏱️ ${question.timeLimit || 10}s`, pageWidth - 60, yPosition + 8);
+        
+        const difficulty = question.timeLimit > 15 ? 'Hard' : question.timeLimit > 10 ? 'Medium' : 'Easy';
+        const difficultyColor = difficulty === 'Hard' ? [255, 99, 99] : difficulty === 'Medium' ? [255, 165, 0] : [99, 255, 99];
+        pdf.setTextColor(difficultyColor[0], difficultyColor[1], difficultyColor[2]);
+        pdf.text(`🎯 ${difficulty}`, pageWidth - 60, yPosition + 18);
+        
+        yPosition += questionBoxHeight + 5;
 
-        // Answer choices with enhanced styling
-        pdf.setFontSize(11);
+        // Enhanced Answer Grid with Interactive Design
         const answerLabels = ['A', 'B', 'C', 'D'];
         const answerColors = [
-          [255, 99, 99],   // Red
-          [99, 149, 255],  // Blue  
-          [99, 255, 149],  // Green
-          [255, 199, 99]   // Orange
+          [255, 87, 87],   // Red
+          [66, 133, 244],  // Blue  
+          [52, 168, 83],   // Green
+          [255, 152, 0]    // Orange
         ];
+        
+        const answersPerRow = 2;
+        const answerWidth = (pageWidth - 60) / answersPerRow - 10;
+        const answerHeight = 20;
         
         question.answers.forEach((answer: string, answerIndex: number) => {
           const isCorrect = answerIndex === question.correctAnswer;
+          const row = Math.floor(answerIndex / answersPerRow);
+          const col = answerIndex % answersPerRow;
+          const answerX = 25 + col * (answerWidth + 10);
+          const answerY = yPosition + row * (answerHeight + 8);
           
-          // Answer box with color coding
+          // Interactive answer box with enhanced styling
           if (isCorrect) {
-            // Correct answer - prominent green highlighting
-            pdf.setDrawColor(34, 139, 34);
-            pdf.setFillColor(144, 238, 144); // Light green
-            pdf.roundedRect(18, yPosition - 3, 174, 10, 2, 2, 'FD');
-            pdf.setTextColor(0, 100, 0); // Dark green text
-            pdf.setFont('helvetica', 'bold');
+            // Correct answer - special highlighting with success theme
+            pdf.setDrawColor(52, 168, 83);
+            pdf.setFillColor(232, 245, 233);
+            pdf.setLineWidth(2);
+            pdf.roundedRect(answerX, answerY, answerWidth, answerHeight, 3, 3, 'FD');
             
-            // Add checkmark for correct answer
-            pdf.setTextColor(0, 150, 0);
-            pdf.text('✓', 185, yPosition + 3);
+            // Success badge
+            pdf.setFillColor(52, 168, 83);
+            pdf.circle(answerX + answerWidth - 8, answerY + 6, 4, 'F');
+            pdf.setFontSize(8);
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('✓', answerX + answerWidth - 8, answerY + 8, { align: 'center' });
+            
+            // Sparkle effects for correct answer
+            pdf.setTextColor(255, 215, 0);
+            pdf.text('✨', answerX + answerWidth - 20, answerY + 8);
+            pdf.text('✨', answerX + answerWidth - 35, answerY + 15);
           } else {
-            // Incorrect answers - subtle background
+            // Regular answer styling
             pdf.setDrawColor(200, 200, 200);
-            pdf.setFillColor(248, 248, 248);
-            pdf.roundedRect(18, yPosition - 3, 174, 10, 2, 2, 'FD');
-            pdf.setTextColor(80, 80, 80);
-            pdf.setFont('helvetica', 'normal');
+            pdf.setFillColor(250, 250, 250);
+            pdf.setLineWidth(1);
+            pdf.roundedRect(answerX, answerY, answerWidth, answerHeight, 3, 3, 'FD');
           }
           
-          // Answer label with color
+          // Colored answer label with 3D effect
           pdf.setFillColor(answerColors[answerIndex][0], answerColors[answerIndex][1], answerColors[answerIndex][2]);
-          pdf.circle(25, yPosition + 1, 3, 'F');
+          pdf.circle(answerX + 12, answerY + 10, 6, 'F');
+          
+          // Add subtle shadow effect
+          pdf.setFillColor(0, 0, 0, 0.2);
+          pdf.circle(answerX + 13, answerY + 11, 6, 'F');
+          pdf.setFillColor(answerColors[answerIndex][0], answerColors[answerIndex][1], answerColors[answerIndex][2]);
+          pdf.circle(answerX + 12, answerY + 10, 6, 'F');
+          
           pdf.setTextColor(255, 255, 255);
           pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(9);
-          pdf.text(answerLabels[answerIndex], 23.5, yPosition + 2);
+          pdf.setFontSize(12);
+          pdf.text(answerLabels[answerIndex], answerX + 12, answerY + 13, { align: 'center' });
           
-          // Answer text
-          pdf.setFontSize(11);
+          // Answer text with responsive formatting
+          pdf.setFontSize(10);
           if (isCorrect) {
-            pdf.setTextColor(0, 100, 0);
+            pdf.setTextColor(21, 87, 36);
             pdf.setFont('helvetica', 'bold');
           } else {
-            pdf.setTextColor(80, 80, 80);
+            pdf.setTextColor(66, 66, 66);
             pdf.setFont('helvetica', 'normal');
           }
           
-          const answerText = pdf.splitTextToSize(answer, 155);
-          pdf.text(answerText, 32, yPosition + 3);
-          
-          yPosition += Math.max(8, answerText.length * 4);
+          const answerText = pdf.splitTextToSize(answer, answerWidth - 35);
+          pdf.text(answerText, answerX + 25, answerY + 8);
         });
 
-        yPosition += 8; // Space between questions
+        yPosition += Math.ceil(question.answers.length / answersPerRow) * (answerHeight + 8) + 10;
         
-        // Add explanation box for correct answer
-        pdf.setDrawColor(34, 139, 34);
-        pdf.setFillColor(240, 255, 240);
-        pdf.roundedRect(18, yPosition - 2, 174, 8, 1, 1, 'FD');
-        pdf.setFontSize(9);
-        pdf.setFont('helvetica', 'italic');
-        pdf.setTextColor(0, 120, 0);
-        pdf.text(`Correct Answer: ${answerLabels[question.correctAnswer]} - ${question.answers[question.correctAnswer]}`, 20, yPosition + 3);
-        yPosition += 12;
+        // Player Performance Analytics for each question
+        const questionResponses = responses?.filter(r => r.questionIndex === index) || [];
+        const correctResponses = questionResponses.filter(r => r.selectedAnswer === question.correctAnswer).length;
+        const totalResponses = questionResponses.length;
+        const accuracyRate = totalResponses > 0 ? (correctResponses / totalResponses * 100).toFixed(1) : '0';
+        
+        // Performance insights box
+        pdf.setDrawColor(currentTheme.accent[0], currentTheme.accent[1], currentTheme.accent[2]);
+        pdf.setFillColor(248, 249, 250);
+        pdf.roundedRect(25, yPosition, pageWidth - 50, 18, 2, 2, 'FD');
+        
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+        pdf.text('📈 Question Analytics:', 30, yPosition + 6);
+        pdf.text(`Accuracy: ${accuracyRate}% (${correctResponses}/${totalResponses} correct)`, 30, yPosition + 12);
+        
+        const avgResponseTime = questionResponses.length > 0 ? 
+          (questionResponses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / questionResponses.length / 1000).toFixed(1) : '0';
+        pdf.text(`Average Response Time: ${avgResponseTime}s`, pageWidth / 2, yPosition + 6);
+        
+        const fastestPlayer = questionResponses
+          .filter(r => r.selectedAnswer === question.correctAnswer)
+          .sort((a, b) => (a.responseTime || 0) - (b.responseTime || 0))[0];
+        
+        if (fastestPlayer) {
+          const playerName = players.find(p => p.id === fastestPlayer.playerId)?.name || 'Unknown';
+          pdf.text(`🚀 Fastest Correct: ${playerName}`, pageWidth / 2, yPosition + 12);
+        }
+
+        yPosition += 25;
       });
     }
 
-    // === GAME RESULTS SECTION ===
+    // === PLAYER PERFORMANCE SECTION ===
     pdf.addPage();
+    pdf.setFillColor(currentTheme.secondary[0], currentTheme.secondary[1], currentTheme.secondary[2]);
+    pdf.rect(0, 0, pageWidth, pageHeight, 'F');
     yPosition = 20;
 
-    pdf.setFontSize(22);
+    pdf.setFontSize(28);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189);
-    pdf.text('GAME RESULTS & PLAYER PERFORMANCE', 20, yPosition);
-    yPosition += 20;
+    pdf.setTextColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+    pdf.text('🏆 PLAYER PERFORMANCE & RANKINGS', pageWidth / 2, yPosition, { align: 'center' });
+    yPosition += 25;
 
-    // Final Rankings Table
-    pdf.setFontSize(16);
+    // Championship podium for top 3 players
+    if (sortedPlayers.length > 0) {
+      // Gold Medal Winner
+      pdf.setDrawColor(218, 165, 32);
+      pdf.setFillColor(255, 248, 220);
+      pdf.roundedRect(pageWidth / 2 - 60, yPosition, 120, 25, 4, 4, 'FD');
+      
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(218, 165, 32);
+      pdf.text('🥇 CHAMPION', pageWidth / 2, yPosition + 8, { align: 'center' });
+      pdf.setFontSize(14);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(sortedPlayers[0].name, pageWidth / 2, yPosition + 16, { align: 'center' });
+      pdf.text(`${(sortedPlayers[0].score || 0).toLocaleString()} points`, pageWidth / 2, yPosition + 22, { align: 'center' });
+      yPosition += 35;
+
+      // Silver and Bronze (if available)
+      if (sortedPlayers.length > 1) {
+        const secondPlace = sortedPlayers[1];
+        pdf.setDrawColor(169, 169, 169);
+        pdf.setFillColor(248, 248, 248);
+        pdf.roundedRect(40, yPosition, pageWidth / 2 - 60, 20, 3, 3, 'FD');
+        pdf.setFontSize(12);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(169, 169, 169);
+        pdf.text('🥈 RUNNER-UP', 45, yPosition + 8);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`${secondPlace.name} - ${(secondPlace.score || 0).toLocaleString()}`, 45, yPosition + 15);
+
+        if (sortedPlayers.length > 2) {
+          const thirdPlace = sortedPlayers[2];
+          pdf.setDrawColor(205, 127, 50);
+          pdf.setFillColor(245, 235, 220);
+          pdf.roundedRect(pageWidth / 2 + 20, yPosition, pageWidth / 2 - 60, 20, 3, 3, 'FD');
+          pdf.setFontSize(12);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(205, 127, 50);
+          pdf.text('🥉 THIRD PLACE', pageWidth / 2 + 25, yPosition + 8);
+          pdf.setTextColor(0, 0, 0);
+          pdf.text(`${thirdPlace.name} - ${(thirdPlace.score || 0).toLocaleString()}`, pageWidth / 2 + 25, yPosition + 15);
+        }
+        yPosition += 30;
+      }
+    }
+
+    // Complete player rankings table
+    pdf.setFontSize(18);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189);
-    pdf.text('Final Player Rankings', 20, yPosition);
+    pdf.setTextColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+    pdf.text('📊 Complete Rankings', 25, yPosition);
     yPosition += 15;
 
-    // Table headers
-    pdf.setDrawColor(1, 158, 189);
-    pdf.setFillColor(1, 158, 189);
-    pdf.rect(20, yPosition - 2, 170, 8, 'F');
+    // Table headers with theme colors
+    pdf.setDrawColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+    pdf.setFillColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+    pdf.rect(25, yPosition - 2, pageWidth - 50, 10, 'F');
     
-    pdf.setFontSize(11);
+    pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
-    pdf.text('Rank', 25, yPosition + 3);
-    pdf.text('Player Name', 50, yPosition + 3);
-    pdf.text('Final Score', 110, yPosition + 3);
-    pdf.text('Achievement', 140, yPosition + 3);
-    yPosition += 12;
+    pdf.text('Rank', 30, yPosition + 5);
+    pdf.text('Player Name', 80, yPosition + 5);
+    pdf.text('Final Score', 180, yPosition + 5);
+    pdf.text('Performance', 230, yPosition + 5);
+    yPosition += 15;
 
-    // Player rows
+    // Player performance rows
     sortedPlayers.forEach((player, index) => {
-      if (yPosition > 250) {
+      if (yPosition > pageHeight - 30) {
         pdf.addPage();
-        yPosition = 20;
+        pdf.setFillColor(currentTheme.secondary[0], currentTheme.secondary[1], currentTheme.secondary[2]);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        yPosition = 25;
       }
 
-      // Alternating row colors
+      // Alternating row colors with theme
       if (index % 2 === 0) {
-        pdf.setFillColor(248, 249, 250);
-        pdf.rect(20, yPosition - 2, 170, 8, 'F');
+        pdf.setFillColor(250, 250, 250);
+        pdf.rect(25, yPosition - 2, pageWidth - 50, 12, 'F');
       }
 
       pdf.setFont('helvetica', 'normal');
-      pdf.setFontSize(10);
+      pdf.setFontSize(11);
       pdf.setTextColor(0, 0, 0);
       
-      // Special styling for top 3
+      // Special styling for top performers
       if (index < 3) {
         pdf.setFont('helvetica', 'bold');
         if (index === 0) pdf.setTextColor(218, 165, 32); // Gold
@@ -307,78 +462,80 @@ export default function GameResults() {
         else if (index === 2) pdf.setTextColor(205, 127, 50); // Bronze
       }
       
-      // Rank with medal
-      let rankText = `#${index + 1}`;
-      if (index === 0) rankText = '#1 CHAMPION';
-      else if (index === 1) rankText = '#2 RUNNER-UP';
-      else if (index === 2) rankText = '#3 THIRD PLACE';
+      pdf.text(`#${index + 1}`, 30, yPosition + 6);
+      pdf.text(player.name, 80, yPosition + 6);
+      pdf.text((player.score || 0).toLocaleString(), 180, yPosition + 6);
       
-      pdf.text(rankText, 25, yPosition + 3);
-      pdf.text(player.name, 50, yPosition + 3);
-      pdf.text((player.score || 0).toLocaleString(), 110, yPosition + 3);
+      const performance = index === 0 ? 'Outstanding' : index < 3 ? 'Excellent' : index < 5 ? 'Good' : 'Participant';
+      pdf.text(performance, 230, yPosition + 6);
       
-      let achievement = '';
-      if (index === 0) achievement = 'Champion';
-      else if (index === 1) achievement = 'Runner-up';
-      else if (index === 2) achievement = 'Third Place';
-      else achievement = 'Participant';
-      
-      pdf.text(achievement, 140, yPosition + 3);
-      yPosition += 10;
+      yPosition += 12;
     });
 
-    // === DETAILED STATISTICS ===
-    yPosition += 15;
-    pdf.setFontSize(16);
+    // Enhanced statistics section
+    yPosition += 20;
+    pdf.setFontSize(18);
     pdf.setFont('helvetica', 'bold');
-    pdf.setTextColor(1, 158, 189);
-    pdf.text('Detailed Game Statistics', 20, yPosition);
+    pdf.setTextColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+    pdf.text('📈 Game Analytics & Insights', 25, yPosition);
     yPosition += 15;
 
-    const totalResponses = responses.length;
-    const correctResponses = responses.filter((r: any) => r.isCorrect).length;
+    const totalResponses = responses?.length || 0;
+    const correctResponses = responses?.filter((r: any) => r.isCorrect).length || 0;
     const averageScore = players.length > 0 ? Math.round(players.reduce((sum: number, p: any) => sum + (p.score || 0), 0) / players.length) : 0;
     const accuracy = totalResponses > 0 ? Math.round((correctResponses / totalResponses) * 100) : 0;
 
-    // Statistics in organized layout
-    const stats = [
-      { label: 'Total Players', value: `${players.length}` },
-      { label: 'Total Questions', value: `${totalQuestions}` },
-      { label: 'Total Responses', value: `${totalResponses}` },
-      { label: 'Correct Responses', value: `${correctResponses}` },
-      { label: 'Overall Accuracy', value: `${accuracy}%` },
-      { label: 'Average Score', value: `${averageScore.toLocaleString()}` },
-      { label: 'Highest Score', value: `${sortedPlayers[0]?.score || 0}` },
-      { label: 'Lowest Score', value: `${sortedPlayers[sortedPlayers.length - 1]?.score || 0}` }
+    const analyticsData = [
+      { icon: '👥', label: 'Total Participants', value: players.length.toString() },
+      { icon: '❓', label: 'Questions Asked', value: totalQuestions.toString() },
+      { icon: '✅', label: 'Total Responses', value: totalResponses.toString() },
+      { icon: '🎯', label: 'Correct Answers', value: correctResponses.toString() },
+      { icon: '📊', label: 'Overall Accuracy', value: `${accuracy}%` },
+      { icon: '⭐', label: 'Average Score', value: averageScore.toLocaleString() },
+      { icon: '🏆', label: 'Highest Score', value: (sortedPlayers[0]?.score || 0).toLocaleString() },
+      { icon: '📉', label: 'Score Range', value: `${(sortedPlayers[sortedPlayers.length - 1]?.score || 0).toLocaleString()} - ${(sortedPlayers[0]?.score || 0).toLocaleString()}` }
     ];
 
-    pdf.setFontSize(12);
-    pdf.setFont('helvetica', 'normal');
-    pdf.setTextColor(0, 0, 0);
+    // Display analytics in a grid
+    analyticsData.forEach((item, index) => {
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const itemX = 25 + col * (pageWidth / 2 - 25);
+      const itemY = yPosition + row * 15;
 
-    stats.forEach((stat, index) => {
-      if (yPosition > 260) {
+      if (itemY > pageHeight - 40) {
         pdf.addPage();
-        yPosition = 20;
+        pdf.setFillColor(currentTheme.secondary[0], currentTheme.secondary[1], currentTheme.secondary[2]);
+        pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        yPosition = 25;
+        return;
       }
-      
+
+      pdf.setFontSize(11);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`${stat.label}:`, 20, yPosition);
+      pdf.setTextColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+      pdf.text(`${item.icon} ${item.label}:`, itemX, itemY);
+      
       pdf.setFont('helvetica', 'normal');
-      pdf.text(stat.value, 80, yPosition);
-      yPosition += 8;
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(item.value, itemX + 80, itemY);
     });
 
-    // Footer
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    pdf.setFontSize(8);
+    // Enhanced footer with theme
+    const finalPageHeight = pdf.internal.pageSize.getHeight();
+    pdf.setDrawColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+    pdf.setLineWidth(1);
+    pdf.line(25, finalPageHeight - 25, pageWidth - 25, finalPageHeight - 25);
+    
+    pdf.setFontSize(10);
     pdf.setFont('helvetica', 'italic');
-    pdf.setTextColor(128, 128, 128);
-    pdf.text(`Generated by Abraj Quiz System on ${new Date().toLocaleString()}`, 20, pageHeight - 15);
-    pdf.text('© 2025 Abraj Quiz Platform - Comprehensive Learning & Assessment Solution', 20, pageHeight - 10);
+    pdf.setTextColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
+    pdf.text(`Generated by Abraj Quiz System - ${currentTheme.name} Theme`, 25, finalPageHeight - 18);
+    pdf.text(`${new Date().toLocaleString()} • Complete Interactive Learning Report`, 25, finalPageHeight - 12);
+    pdf.text('© 2025 Abraj Quiz Platform - Enhancing Education Through Interactive Technology', 25, finalPageHeight - 6);
 
-    // Save the PDF with descriptive name
-    const fileName = `${(game.quiz?.title || 'Quiz').replace(/[^a-zA-Z0-9]/g, '_')}_Complete_Learning_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+    // Save with enhanced filename
+    const fileName = `${(game.quiz?.title || 'Quiz').replace(/[^a-zA-Z0-9]/g, '_')}_Interactive_Complete_Report_${game.gamePin}_${new Date().toISOString().split('T')[0]}.pdf`;
     pdf.save(fileName);
   };
 
