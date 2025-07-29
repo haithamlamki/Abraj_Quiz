@@ -99,7 +99,7 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
               }`}>
                 {index + 1}
               </div>
-              <span className="font-medium text-white">{player.name}</span>
+              <span className="font-medium text-[#0a0a0a]">{player.name}</span>
             </div>
             <span className={`font-bold ${
               index === 0 ? 'text-abraj-green' :
