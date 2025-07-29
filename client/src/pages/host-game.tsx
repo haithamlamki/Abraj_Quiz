@@ -129,14 +129,23 @@ export default function HostGame() {
   });
 
   useEffect(() => {
-    if (game?.status === "active" && !showResults && quiz) {
+    if (game?.status === "active" && quiz) {
       const questions = quiz.questions as Question[];
       const currentQuestion = questions[game.currentQuestion || 0];
-      if (currentQuestion) {
+      if (currentQuestion && !showResults) {
+        console.log('Setting timer for question', game.currentQuestion, 'to', currentQuestion.timeLimit);
         setTimeLeft(currentQuestion.timeLimit);
+        
+        // Backup timer initialization after 1 second if timer doesn't start
+        setTimeout(() => {
+          if (timeLeft === null || timeLeft === currentQuestion.timeLimit) {
+            console.log('Backup timer initialization triggered');
+            setTimeLeft(currentQuestion.timeLimit);
+          }
+        }, 1000);
       }
     }
-  }, [game?.status, game?.currentQuestion, showResults, quiz]);
+  }, [game?.status, game?.currentQuestion, quiz]);
 
   // Generate QR code when game loads
   useEffect(() => {
@@ -172,11 +181,13 @@ export default function HostGame() {
   }, [gameStartCountdown, isStartingGame, startGameMutation]);
 
   useEffect(() => {
-    if (timeLeft === null || timeLeft <= 0) return;
+    if (timeLeft === null || timeLeft <= 0 || showResults) return;
 
+    console.log('Starting countdown timer from', timeLeft);
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev === null || prev <= 1) {
+          console.log('Timer reached 0, showing results');
           setShowResults(true);
           return 0;
         }
@@ -188,11 +199,15 @@ export default function HostGame() {
       });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [timeLeft]);
+    return () => {
+      console.log('Clearing countdown timer');
+      clearInterval(timer);
+    };
+  }, [timeLeft, showResults]);
 
   // Reset sound flag when question changes
   useEffect(() => {
+    console.log('Question changed to', game?.currentQuestion, 'resetting state');
     setSoundPlayed(false);
     setShowResults(false);
     setTimeLeft(null);
@@ -487,7 +502,7 @@ export default function HostGame() {
       <div className="min-h-screen p-4" style={getBackgroundStyle(quiz?.background || 'classroom')}>
         <div className="max-w-4xl mx-auto relative">
           {/* Next Question Button - Top Right */}
-          {showResults && (
+          {(showResults || timeLeft === 0) && (
             <div className="absolute top-0 right-0 z-10">
               <Button
                 onClick={() => {
@@ -499,6 +514,22 @@ export default function HostGame() {
               >
                 <SkipForward className="w-4 h-4 mr-2" />
                 {(game.currentQuestion || 0) + 1 >= questions.length ? "Finish Game" : "Next Question"}
+              </Button>
+            </div>
+          )}
+          
+          {/* Emergency Next Button - Shows after 30 seconds even if timer hasn't finished */}
+          {timeLeft !== null && timeLeft > 0 && !showResults && (
+            <div className="absolute top-16 right-0 z-10">
+              <Button
+                onClick={() => {
+                  setShowResults(true);
+                  setTimeLeft(0);
+                }}
+                variant="outline"
+                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-1 text-sm font-bold hover:scale-105 active:scale-95 transition-transform shadow-lg"
+              >
+                Skip Timer
               </Button>
             </div>
           )}

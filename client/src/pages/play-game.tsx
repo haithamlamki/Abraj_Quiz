@@ -121,11 +121,20 @@ export default function PlayGame() {
       const questions = quiz.questions as Question[];
       const currentQuestion = questions[game.currentQuestion || 0];
       if (currentQuestion) {
+        console.log('Player: Setting timer for question', game.currentQuestion, 'to', currentQuestion.timeLimit);
         setTimeLeft(currentQuestion.timeLimit);
         setShowResult(false);
         setSelectedAnswer(null);
         setHasAnswered(false);
         setShowTimeUpEffect(false);
+        
+        // Backup timer initialization after 1 second if timer doesn't start
+        setTimeout(() => {
+          if (timeLeft === null || timeLeft === currentQuestion.timeLimit) {
+            console.log('Player: Backup timer initialization triggered');
+            setTimeLeft(currentQuestion.timeLimit);
+          }
+        }, 1000);
       }
     }
   }, [game?.currentQuestion, game?.status, quiz]);
@@ -133,9 +142,11 @@ export default function PlayGame() {
   useEffect(() => {
     if (timeLeft === null || timeLeft <= 0) return;
 
+    console.log('Player: Starting countdown timer from', timeLeft);
     const timer = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev === null || prev <= 1) {
+          console.log('Player: Timer reached 0');
           return 0;
         }
         // Play urgent sound for last 3 seconds
@@ -146,7 +157,10 @@ export default function PlayGame() {
       });
     }, 1000);
 
-    return () => clearInterval(timer);
+    return () => {
+      console.log('Player: Clearing countdown timer');
+      clearInterval(timer);
+    };
   }, [timeLeft]);
 
   // Show results when timer reaches 0 AND we have a result from answering
