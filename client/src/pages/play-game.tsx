@@ -4,7 +4,7 @@ import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Check, X, Trophy } from "lucide-react";
+import { Clock, Check, X, Trophy, Triangle, Diamond, Circle, Square } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
@@ -579,6 +579,8 @@ export default function PlayGame() {
         <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-6">
           {currentQuestion?.answers.map((answer, index) => {
             const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
+            const symbols = [Triangle, Diamond, Circle, Square];
+            const SymbolIcon = symbols[index];
             const isSelected = selectedAnswer === index;
             const isDisabled = hasAnswered || timeLeft === 0;
             
@@ -591,7 +593,8 @@ export default function PlayGame() {
                   isSelected ? 'ring-4 ring-white' : ''
                 } ${isDisabled ? 'opacity-60' : 'active:scale-95'}`}
               >
-                <div className="flex items-center justify-center w-full h-full">
+                <div className="flex flex-col items-center justify-center w-full h-full gap-2">
+                  <SymbolIcon className="w-6 h-6 sm:w-8 sm:h-8 shrink-0" fill="white" strokeWidth={0} />
                   <span className="text-center text-sm sm:text-base md:text-lg lg:text-xl leading-tight break-words overflow-wrap-anywhere hyphens-auto px-2 font-semibold">{answer}</span>
                 </div>
               </Button>
