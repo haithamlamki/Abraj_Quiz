@@ -478,57 +478,64 @@ export default function PlayGame() {
 
   if (showResult && lastResult) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={getBackgroundStyle(quiz?.background || 'classroom')}>
-        <Card className={`w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm animate-in slide-in-from-bottom-4 duration-500 ${
-          !lastResult.isCorrect ? 'animate-pulse' : ''
+      <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${
+        lastResult.isCorrect ? 'bg-green-500' : 'bg-red-500'
+      } animate-in fade-in duration-300`}>
+        {/* Large Icon */}
+        <div className={`mb-8 animate-in zoom-in-50 duration-500 ${
+          lastResult.isCorrect ? '' : 'animate-bounce'
         }`}>
-          <CardContent className="pt-6 text-center space-y-6">
-            <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3 ${
-              lastResult.isCorrect ? 'abraj-green animate-bounce shadow-lg shadow-green-500/50' : 'abraj-red animate-ping shadow-lg shadow-red-500/50'
-            } text-white transform transition-all duration-500 ${
-              lastResult.isCorrect ? 'scale-110' : 'scale-105 animate-pulse'
-            }`}>
-              {lastResult.isCorrect ? <Check className="w-10 h-10 animate-spin" /> : <X className="w-10 h-10 animate-bounce" />}
-            </div>
-            
-            <div className="animate-in fade-in-50 duration-700 delay-200">
-              <h3 className={`font-bold text-2xl mb-2 ${
-                lastResult.isCorrect ? 'text-green-600' : 'text-red-600 animate-pulse'
-              }`}>
-                {lastResult.isCorrect ? "Correct!" : "Incorrect"}
-              </h3>
-              {lastResult.isCorrect && (
-                <p className="text-green-600 font-semibold animate-in zoom-in-50 duration-500 delay-300">
-                  +{lastResult.pointsEarned} points
-                </p>
+          {lastResult.isCorrect ? (
+            <Check className="w-32 h-32 text-white drop-shadow-2xl" strokeWidth={3} />
+          ) : (
+            <X className="w-32 h-32 text-white drop-shadow-2xl" strokeWidth={3} />
+          )}
+        </div>
+        
+        {/* Result Text */}
+        <h1 className="text-white text-6xl md:text-7xl font-black mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-100 drop-shadow-lg">
+          {lastResult.isCorrect ? "Correct!" : "Incorrect"}
+        </h1>
+        
+        {/* Points Earned */}
+        {lastResult.isCorrect && (
+          <div className="text-white text-3xl font-bold mb-8 animate-in zoom-in-75 duration-500 delay-200">
+            +{lastResult.pointsEarned} points
+          </div>
+        )}
+        
+        {/* Correct Answer (if incorrect) */}
+        {!lastResult.isCorrect && currentQuestion && (
+          <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-8 py-4 mb-8 animate-in slide-in-from-bottom-3 duration-500 delay-200">
+            <p className="text-white text-xl font-semibold text-center">
+              {currentQuestion.answers[lastResult.correctAnswer]}
+            </p>
+          </div>
+        )}
+        
+        {/* Score and Rank Cards */}
+        <div className="flex gap-4 mb-8 animate-in slide-in-from-bottom-2 duration-500 delay-300">
+          {/* Score Card */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-8 py-6 text-center shadow-2xl">
+            <p className="text-gray-600 text-sm mb-1">Score</p>
+            <p className="text-4xl font-black text-gray-800">{(currentPlayer?.score || 0).toLocaleString()}</p>
+          </div>
+          
+          {/* Rank Card */}
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-8 py-6 text-center shadow-2xl">
+            <p className="text-gray-600 text-sm mb-1">Rank</p>
+            <div className="flex items-center justify-center">
+              {currentRank === 1 ? (
+                <Trophy className="w-10 h-10 text-yellow-500" />
+              ) : (
+                <p className="text-4xl font-black text-gray-800">{currentRank}</p>
               )}
-              {!lastResult.isCorrect && currentQuestion && (
-                <p className="text-gray-600 animate-in slide-in-from-bottom-2 duration-500 delay-300 bg-red-50 p-3 rounded-lg border-2 border-red-200 animate-bounce">
-                  <span className="text-red-600 font-bold">Correct answer:</span> {currentQuestion.answers[lastResult.correctAnswer]}
-                </p>
-              )}
             </div>
-            
-            <div className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl p-4 text-white text-center animate-in zoom-in-75 duration-500 delay-400 shadow-lg">
-              <p className="text-sm opacity-90">Your Score</p>
-              <p className="font-bold text-2xl">{(currentPlayer?.score || 0).toLocaleString()}</p>
-            </div>
-            
-            <div className="text-center animate-in slide-in-from-bottom-3 duration-500 delay-500">
-              <p className="text-gray-600 text-sm mb-2">Current Rank</p>
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl mx-auto ${
-                currentRank === 1 ? 'abraj-green animate-pulse' :
-                currentRank === 2 ? 'bg-gray-400' :
-                currentRank === 3 ? 'bg-orange-500' :
-                'abraj-primary'
-              } text-white shadow-lg transform transition-all duration-300 hover:scale-110`}>
-                {currentRank === 1 ? <Trophy className="w-6 h-6" /> : currentRank}
-              </div>
-            </div>
-            
-            <p className="text-sm text-gray-500 animate-pulse">Waiting for next question...</p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
+        
+        {/* Waiting Message */}
+        <p className="text-white text-lg animate-pulse">Waiting for next question...</p>
       </div>
     );
   }
