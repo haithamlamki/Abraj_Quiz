@@ -269,7 +269,7 @@ export default function GameResults() {
                 Create New Quiz
               </Button>
               <Button 
-                onClick={() => setLocation(`/host-quiz-setup?quizId=${game.quizId}`)} 
+                onClick={() => setLocation(`/host-quiz-setup/${game.quizId}`)} 
                 variant="outline"
               >
                 <RotateCcw className="mr-2 h-4 w-4" />
