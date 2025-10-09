@@ -589,24 +589,23 @@ export default function HostGame() {
                   }`}
 
                 >
-                  <div className="flex flex-col items-center justify-center w-full h-full gap-1 sm:gap-2">
-                    <span className="text-lg sm:text-xl md:text-2xl font-black shrink-0">{String.fromCharCode(65 + index)}</span>
-                    <span className="text-center text-xs sm:text-sm md:text-base lg:text-lg leading-tight break-words overflow-wrap-anywhere hyphens-auto px-1">{answer}</span>
-                  </div>
+                  <div className="flex flex-col items-center justify-center w-full h-full">
+                    <span className="text-center text-sm sm:text-base md:text-lg lg:text-xl leading-tight break-words overflow-wrap-anywhere hyphens-auto px-2 font-semibold">{answer}</span>
                   
-                  {showResults && questionResults && (
-                    <>
-                      <div className="mt-2 sm:mt-3 bg-white/20 rounded-full h-1.5 sm:h-2">
-                        <div 
-                          className="bg-white rounded-full h-1.5 sm:h-2 transition-all duration-1000"
-                          style={{ width: `${percentage}%` }}
-                        ></div>
-                      </div>
-                      <div className="mt-1 sm:mt-2 text-xs sm:text-sm opacity-90 text-center">
-                        {percentage}% ({count} players)
-                      </div>
-                    </>
-                  )}
+                    {showResults && questionResults && (
+                      <>
+                        <div className="mt-2 sm:mt-3 bg-white/20 rounded-full h-1.5 sm:h-2 w-full">
+                          <div 
+                            className="bg-white rounded-full h-1.5 sm:h-2 transition-all duration-1000"
+                            style={{ width: `${percentage}%` }}
+                          ></div>
+                        </div>
+                        <div className="mt-1 sm:mt-2 text-xs sm:text-sm opacity-90 text-center">
+                          {percentage}% ({count} players)
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               );
             })}

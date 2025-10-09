@@ -504,7 +504,7 @@ export default function CreateQuiz() {
         if (!question.answers[j].trim()) {
           toast({
             title: "Error",
-            description: `Question ${i + 1}, Answer ${String.fromCharCode(65 + j)} is required.`,
+            description: `Question ${i + 1}, Answer option ${j + 1} is required.`,
             variant: "destructive",
           });
           return;
@@ -1042,14 +1042,13 @@ export default function CreateQuiz() {
                           key={answerIndex}
                           className={`${colorClass} text-white p-4 rounded-lg cursor-pointer hover:scale-105 transition-transform`}
                         >
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="font-bold">{String.fromCharCode(65 + answerIndex)}</span>
+                          <div className="flex items-center justify-end mb-2">
                             <IconComponent className="w-5 h-5" />
                           </div>
                           <Input
                             value={answer}
                             onChange={(e) => updateAnswer(currentQuestionIndex, answerIndex, e.target.value)}
-                            placeholder={`Answer ${String.fromCharCode(65 + answerIndex)}`}
+                            placeholder={`Answer option ${answerIndex + 1}`}
                             className="w-full border-none text-white placeholder:text-white/70 focus:outline-none bg-[#ffffff85]"
                           />
                           <div className="flex items-center space-x-2 mt-2">

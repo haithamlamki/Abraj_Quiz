@@ -195,7 +195,7 @@ export default function CreateQuizSimple() {
         if (!question.answers[j].trim()) {
           toast({
             title: "Error",
-            description: `Question ${i + 1}, Answer ${String.fromCharCode(65 + j)} is required.`,
+            description: `Question ${i + 1}, Answer option ${j + 1} is required.`,
             variant: "destructive",
           });
           return;
@@ -403,18 +403,10 @@ export default function CreateQuizSimple() {
                     {currentQuestion.answers.map((answer, answerIndex) => (
                       <div key={answerIndex} className="space-y-2">
                         <div className="flex items-center space-x-2">
-                          <Badge 
-                            variant={currentQuestion.correctAnswer === answerIndex ? "default" : "secondary"}
-                            className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                              currentQuestion.correctAnswer === answerIndex ? 'bg-green-500' : ''
-                            }`}
-                          >
-                            {String.fromCharCode(65 + answerIndex)}
-                          </Badge>
                           <Input
                             value={answer}
                             onChange={(e) => updateAnswer(currentQuestionIndex, answerIndex, e.target.value)}
-                            placeholder={`Answer ${String.fromCharCode(65 + answerIndex)}`}
+                            placeholder={`Answer option ${answerIndex + 1}`}
                             className="flex-1"
                           />
                         </div>

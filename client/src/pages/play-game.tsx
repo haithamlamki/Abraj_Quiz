@@ -504,7 +504,7 @@ export default function PlayGame() {
               )}
               {!lastResult.isCorrect && currentQuestion && (
                 <p className="text-gray-600 animate-in slide-in-from-bottom-2 duration-500 delay-300 bg-red-50 p-3 rounded-lg border-2 border-red-200 animate-bounce">
-                  <span className="text-red-600 font-bold">Correct answer:</span> {String.fromCharCode(65 + lastResult.correctAnswer)} - {currentQuestion.answers[lastResult.correctAnswer]}
+                  <span className="text-red-600 font-bold">Correct answer:</span> {currentQuestion.answers[lastResult.correctAnswer]}
                 </p>
               )}
             </div>
@@ -584,9 +584,8 @@ export default function PlayGame() {
                   isSelected ? 'ring-4 ring-white' : ''
                 } ${isDisabled ? 'opacity-60' : 'active:scale-95'}`}
               >
-                <div className="flex flex-col items-center justify-center w-full h-full gap-1 sm:gap-2">
-                  <span className="text-lg sm:text-xl md:text-2xl font-black shrink-0">{String.fromCharCode(65 + index)}</span>
-                  <span className="text-center text-xs sm:text-sm md:text-base lg:text-lg leading-tight break-words overflow-wrap-anywhere hyphens-auto px-1">{answer}</span>
+                <div className="flex items-center justify-center w-full h-full">
+                  <span className="text-center text-sm sm:text-base md:text-lg lg:text-xl leading-tight break-words overflow-wrap-anywhere hyphens-auto px-2 font-semibold">{answer}</span>
                 </div>
               </Button>
             );
