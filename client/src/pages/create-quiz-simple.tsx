@@ -9,12 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, X, Image, ChevronLeft, ChevronRight } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import type { Question } from "@shared/schema";
 
 export default function CreateQuizSimple() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [quiz, setQuiz] = useState({
@@ -79,8 +81,17 @@ export default function CreateQuizSimple() {
 
   const createQuizMutation = useMutation({
     mutationFn: async (data: typeof quiz) => {
-      console.log("Sending quiz data:", data);
-      const response = await apiRequest("POST", "/api/quizzes", data);
+      if (!user?.id) {
+        throw new Error("You must be logged in to create a quiz");
+      }
+      
+      const payload = {
+        ...data,
+        createdBy: user.id
+      };
+      
+      console.log("Sending quiz data:", payload);
+      const response = await apiRequest("POST", "/api/quizzes", payload);
       return response.json();
     },
     onSuccess: (data) => {

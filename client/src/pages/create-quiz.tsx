@@ -29,7 +29,7 @@ export default function CreateQuiz() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   // All hooks must be called before any conditional returns
   const [quiz, setQuiz] = useState<QuizForm>({
@@ -102,11 +102,16 @@ export default function CreateQuiz() {
   // All mutations and effects declared first
   const createQuizMutation = useMutation({
     mutationFn: async (quizData: QuizForm) => {
+      if (!user?.id) {
+        throw new Error("You must be logged in to create a quiz");
+      }
+      
       const payload = {
         title: quizData.title,
         description: quizData.description,
         questions: quizData.questions,
         background: quizData.background,
+        createdBy: user.id,
         isPublic: true
       };
       
