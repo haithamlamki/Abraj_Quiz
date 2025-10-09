@@ -9,6 +9,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
 import { getBackgroundStyle } from "@/utils/backgrounds";
+import { useGameWebSocket } from "@/hooks/use-game-websocket";
 
 export default function PlayGame() {
   const { pin } = useParams();
@@ -68,9 +69,16 @@ export default function PlayGame() {
   const [soundPlayed, setSoundPlayed] = useState(false);
 
 
+  // Use WebSocket for real-time updates
+  useGameWebSocket({
+    gamePin: pin || "",
+    playerName,
+    isHost: false,
+    enabled: !!pin && !!playerName
+  });
+
   const { data: game, isLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
-    refetchInterval: 2000,
     enabled: !!pin
   });
 

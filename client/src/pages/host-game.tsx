@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
 import QRCode from "qrcode";
 import { getBackgroundStyle } from "@/utils/backgrounds";
+import { useGameWebSocket } from "@/hooks/use-game-websocket";
 
 export default function HostGame() {
   const { pin } = useParams();
@@ -81,9 +82,15 @@ export default function HostGame() {
     }
   };
 
+  // Use WebSocket for real-time updates
+  useGameWebSocket({
+    gamePin: pin || "",
+    isHost: true,
+    enabled: !!pin
+  });
+
   const { data: game, isLoading: gameLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
-    refetchInterval: (query) => query.state.data?.status === "waiting" ? 2000 : false,
     enabled: !!pin
   });
 
@@ -95,7 +102,7 @@ export default function HostGame() {
   const { data: questionResults } = useQuery<{answerPercentages: number[], answerCounts: number[]}>({
     queryKey: ["/api/games", pin, "question-results", game?.currentQuestion],
     enabled: !!pin && !!game && showResults && game.status === "active",
-    refetchInterval: showResults ? 1000 : false
+    refetchInterval: showResults ? 500 : false
   });
 
   const startGameMutation = useMutation({

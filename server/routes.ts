@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 import session from "express-session";
 import multer from "multer";
 import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText } from "./openai-service";
+import { gameWS } from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -429,6 +430,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedPlayers = [...players, { name: playerName, score: 0 }];
       const updatedGame = await storage.updateGame(game.id, { players: updatedPlayers });
 
+      // Broadcast player joined to all clients in this game
+      gameWS.broadcastToGame(pin, {
+        type: "game_updated",
+        game: updatedGame
+      });
+
       res.json({ success: true, game: updatedGame });
     } catch (error) {
       res.status(500).json({ message: "Failed to join game" });
@@ -451,6 +458,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedGame = await storage.updateGame(game.id, { 
         status: "active",
         currentQuestion: 0
+      });
+
+      // Broadcast game started to all clients
+      gameWS.broadcastToGame(pin, {
+        type: "game_started",
+        game: updatedGame
       });
 
       res.json(updatedGame);
@@ -568,9 +581,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (nextQuestion >= questions.length) {
         // Game is complete
         const updatedGame = await storage.updateGame(game.id, { status: "completed" });
+        
+        // Broadcast game completed to all clients
+        gameWS.broadcastToGame(pin, {
+          type: "game_completed",
+          game: updatedGame
+        });
+        
         res.json({ gameComplete: true, game: updatedGame });
       } else {
         const updatedGame = await storage.updateGame(game.id, { currentQuestion: nextQuestion });
+        
+        // Broadcast next question to all clients
+        gameWS.broadcastToGame(pin, {
+          type: "next_question",
+          game: updatedGame
+        });
+        
         res.json({ gameComplete: false, game: updatedGame });
       }
     } catch (error) {
@@ -679,5 +706,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  
+  // Initialize WebSocket server
+  gameWS.initialize(httpServer);
+  
   return httpServer;
 }
