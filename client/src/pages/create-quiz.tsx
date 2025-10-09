@@ -55,6 +55,7 @@ export default function CreateQuiz() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [topicsInput, setTopicsInput] = useState("");
   const [textInput, setTextInput] = useState("");
+  const [activeTab, setActiveTab] = useState("manual");
 
   // Handle background image upload
   const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -183,6 +184,7 @@ export default function CreateQuiz() {
         });
         setSelectedFile(null);
         setIsGenerating(false);
+        setActiveTab("manual");
         toast({ 
           title: "Success", 
           description: `Generated ${generatedQuiz.questions.length} questions from PDF. Review and edit before creating your quiz.` 
@@ -217,6 +219,7 @@ export default function CreateQuiz() {
         });
         setUrlInput('');
         setIsGenerating(false);
+        setActiveTab("manual");
         toast({ 
           title: "Success", 
           description: `Generated ${generatedQuiz.questions.length} questions from URL. Review and edit before creating your quiz.` 
@@ -251,6 +254,7 @@ export default function CreateQuiz() {
         });
         setTopicsInput('');
         setIsGenerating(false);
+        setActiveTab("manual");
         toast({ 
           title: "Success", 
           description: `Generated ${generatedQuiz.questions.length} questions from topics. Review and edit before creating your quiz.` 
@@ -285,6 +289,7 @@ export default function CreateQuiz() {
         });
         setTextInput('');
         setIsGenerating(false);
+        setActiveTab("manual");
         toast({ 
           title: "Success", 
           description: `Generated ${generatedQuiz.questions.length} questions from text content. Review and edit before creating your quiz.` 
@@ -611,7 +616,7 @@ export default function CreateQuiz() {
           <p className="text-xl text-gray-600">Build engaging quizzes manually or auto-generate from content</p>
         </div>
 
-        <Tabs defaultValue="manual" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 mt-[21px] mb-[21px] pt-[0px] pb-[0px]">
             <TabsTrigger value="manual" className="ml-[8px] mr-[8px] data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">Manual Creation</TabsTrigger>
             <TabsTrigger value="generate" className="ml-[8px] mr-[8px] pt-[5px] pb-[5px] data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">Auto Generate</TabsTrigger>
