@@ -53,6 +53,7 @@ export const insertQuizSchema = createInsertSchema(quizzes).pick({
   questions: true,
   background: true,
   isPublic: true,
+  createdBy: true,
 }).extend({
   title: z.string().min(1, "Quiz title is required"),
   description: z.string().optional(),

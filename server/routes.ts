@@ -19,7 +19,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (file.mimetype === 'application/pdf') {
         cb(null, true);
       } else {
-        cb(new Error('Only PDF files are allowed'), false);
+        cb(new Error('Only PDF files are allowed'));
       }
     }
   });
