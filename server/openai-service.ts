@@ -338,3 +338,62 @@ export async function generateQuizFromText(text: string): Promise<GeneratedQuiz>
     throw new Error(`Failed to generate quiz from text: ${error.message}`);
   }
 }
+
+export async function generateBackgroundImage(title: string, description: string): Promise<string> {
+  try {
+    if (!title || title.trim().length < 3) {
+      throw new Error("Quiz title is required to generate a background");
+    }
+
+    // Limit description length to prevent prompt injection
+    const maxDescLength = 200;
+    const safeDescription = description && description.trim().length > 0 
+      ? description.trim().substring(0, maxDescLength) 
+      : '';
+
+    // Create a descriptive prompt for DALL-E
+    const prompt = `Educational quiz background image for a quiz titled "${title.trim()}"${safeDescription ? `, about: ${safeDescription}` : ''}. Create a vibrant, colorful classroom or learning environment background that is visually appealing and suitable for an educational quiz game. The style should be modern, friendly, and engaging for students. Include educational elements like books, desks, or learning materials. The image should work well as a background with text overlaid on top. No text or words in the image.`;
+
+    console.log("Generating background image with DALL-E");
+
+    const response = await openai.images.generate({
+      model: "dall-e-3",
+      prompt: prompt,
+      n: 1,
+      size: "1024x1024",
+      quality: "standard",
+      response_format: "b64_json"
+    });
+
+    if (!response.data || !response.data[0] || !response.data[0].b64_json) {
+      throw new Error("Invalid response from image generation API");
+    }
+
+    // Convert base64 to data URL
+    const base64Image = response.data[0].b64_json;
+    const dataUrl = `data:image/png;base64,${base64Image}`;
+
+    return dataUrl;
+  } catch (error: any) {
+    console.error("Background image generation error:", error);
+    
+    // Handle specific OpenAI API errors
+    if (error.status === 401) {
+      throw new Error("Authentication failed. Please contact support.");
+    }
+    if (error.status === 429) {
+      throw new Error("Service busy. Please try again in a few minutes.");
+    }
+    if (error.status === 500) {
+      throw new Error("Service temporarily unavailable. Please try again later.");
+    }
+    if (error.code === 'insufficient_quota') {
+      throw new Error("Service quota exceeded. Please try again later.");
+    }
+    if (error.response?.status === 400 && error.response?.data?.error?.message?.includes('content_policy')) {
+      throw new Error("Content policy violation. Please try with different quiz details.");
+    }
+    
+    throw new Error("Failed to generate background image. Please try again.");
+  }
+}

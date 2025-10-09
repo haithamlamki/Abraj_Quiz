@@ -308,6 +308,51 @@ export default function CreateQuiz() {
     },
   });
 
+  const generateBackgroundMutation = useMutation({
+    mutationFn: async () => {
+      if (!quiz.title || quiz.title.trim().length < 3) {
+        throw new Error("Please enter a quiz title before generating a background");
+      }
+      const response = await apiRequest("POST", "/api/generate-background", { 
+        title: quiz.title, 
+        description: quiz.description 
+      });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      if (data && data.backgroundUrl) {
+        setBackgroundImage(data.backgroundUrl);
+        setQuiz(prev => ({ ...prev, background: data.backgroundUrl }));
+        toast({ 
+          title: "Success", 
+          description: "AI-generated background created successfully!" 
+        });
+      } else {
+        throw new Error("Invalid response format from background generation");
+      }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to generate background image",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Handler for generating background
+  const handleGenerateBackground = () => {
+    if (!quiz.title || quiz.title.trim().length < 3) {
+      toast({
+        title: "Error",
+        description: "Please enter a quiz title before generating a background",
+        variant: "destructive",
+      });
+      return;
+    }
+    generateBackgroundMutation.mutate();
+  };
+
   // Effects for authentication and bounds checking
   useEffect(() => {
     if (quiz.questions && quiz.questions.length > 0 && currentQuestionIndex >= quiz.questions.length) {
@@ -852,21 +897,45 @@ export default function CreateQuiz() {
                           size="sm"
                           onClick={removeBackgroundImage}
                           className="absolute top-2 right-2 h-8 w-8 p-0"
+                          data-testid="button-remove-background"
                         >
                           <X className="w-4 h-4" />
                         </Button>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">Custom background image uploaded</p>
+                      <p className="text-xs text-gray-500 mt-1">Custom background image</p>
                     </div>
                   ) : (
-                    <div 
-                      onClick={() => fileInputRef.current?.click()}
-                      className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
-                    >
-                      <Image className="w-8 h-8 text-gray-400 mb-2" />
-                      <p className="text-sm text-gray-600 font-medium">Upload Background Image</p>
-                      <p className="text-xs text-gray-500">Click to select an image file</p>
-                    </div>
+                    <>
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors mb-3"
+                        data-testid="button-upload-background"
+                      >
+                        <Upload className="w-8 h-8 text-gray-400 mb-2" />
+                        <p className="text-sm text-gray-600 font-medium">Upload Background Image</p>
+                        <p className="text-xs text-gray-500">Click to select an image file</p>
+                      </div>
+                      
+                      <Button
+                        type="button"
+                        onClick={handleGenerateBackground}
+                        disabled={generateBackgroundMutation.isPending || !quiz.title || quiz.title.trim().length < 3}
+                        className="w-full abraj-primary hover:abraj-secondary text-white"
+                        data-testid="button-generate-background"
+                      >
+                        {generateBackgroundMutation.isPending ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="w-4 h-4 mr-2" />
+                            Generate Background with AI
+                          </>
+                        )}
+                      </Button>
+                    </>
                   )}
                   
                   <input
@@ -877,8 +946,10 @@ export default function CreateQuiz() {
                     className="hidden"
                   />
                   
-                  <p className="text-xs text-gray-500 mt-1">
-                    This background will be used throughout the game session. Maximum file size: 5MB
+                  <p className="text-xs text-gray-500 mt-2">
+                    {backgroundImage 
+                      ? "Background will be used throughout the game session" 
+                      : "Upload an image or generate one with AI based on your quiz title"}
                   </p>
                 </div>
 

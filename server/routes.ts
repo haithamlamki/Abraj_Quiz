@@ -6,7 +6,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import session from "express-session";
 import multer from "multer";
-import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText } from "./openai-service";
+import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText, generateBackgroundImage } from "./openai-service";
 import { gameWS } from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -283,6 +283,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error: any) {
       console.error("Error generating quiz from text:", error);
       res.status(500).json({ message: error.message || "Failed to generate quiz from text" });
+    }
+  });
+
+  app.post("/api/generate-background", requireAuth, async (req, res) => {
+    try {
+      console.log("Background image generation request - User ID:", (req as any).session.userId);
+      
+      if (!process.env.OPENAI_API_KEY) {
+        return res.status(500).json({ message: "Service not configured" });
+      }
+
+      const { title, description } = req.body;
+      
+      // Validate title
+      if (!title || typeof title !== 'string' || title.trim().length < 3) {
+        return res.status(400).json({ message: "Quiz title is required and must be at least 3 characters long" });
+      }
+
+      if (title.trim().length > 100) {
+        return res.status(400).json({ message: "Quiz title must be less than 100 characters" });
+      }
+
+      // Validate description length
+      if (description && typeof description === 'string' && description.trim().length > 500) {
+        return res.status(400).json({ message: "Description must be less than 500 characters" });
+      }
+
+      const backgroundDataUrl = await generateBackgroundImage(
+        title.trim(), 
+        description && typeof description === 'string' ? description.trim() : ""
+      );
+      res.json({ backgroundUrl: backgroundDataUrl });
+    } catch (error: any) {
+      console.error("Error generating background image:", error);
+      // Return user-friendly error message without leaking internals
+      const userMessage = error.message?.includes('OpenAI') || error.message?.includes('API') 
+        ? "Service temporarily unavailable. Please try again later."
+        : error.message || "Failed to generate background image";
+      res.status(500).json({ message: userMessage });
     }
   });
 
