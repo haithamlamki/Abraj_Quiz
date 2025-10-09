@@ -365,8 +365,9 @@ export default function HostQuizSetup() {
                     </Button>
                     <Button
                       variant="ghost"
-                      onClick={() => setLocation(`/create`)}
+                      onClick={() => setLocation(`/edit-quiz/${quizId}`)}
                       className="w-full"
+                      data-testid="button-edit-quiz"
                     >
                       Edit Quiz
                     </Button>
