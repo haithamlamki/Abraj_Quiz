@@ -232,7 +232,7 @@ export class MemStorage implements IStorage {
     const sampleUser: User = {
       id: 1,
       username: "demo_user",
-      password: "password123"
+      password: ""
     };
     this.users.set(1, sampleUser);
     this.currentUserId = 2;
