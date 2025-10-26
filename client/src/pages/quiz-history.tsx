@@ -48,11 +48,15 @@ export default function QuizHistory() {
 
   if (isLoading || quizzesLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading your quizzes...</p>
+      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-pulse card-3d-enhanced glass p-8 rounded-2xl">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading your quizzes...</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -74,12 +78,12 @@ export default function QuizHistory() {
   };
 
   return (
-    <div>
+    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">
+          <div className="text-center mb-8 animate-scale-in">
+            <h1 className="text-4xl font-bold gradient-text mb-4">
               My Quiz History
             </h1>
             <p className="text-xl text-gray-600">
@@ -89,17 +93,17 @@ export default function QuizHistory() {
 
           {!quizzes || quizzes.length === 0 ? (
             <div className="text-center py-12">
-              <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md mx-auto">
+              <div className="card-3d-enhanced glass p-8 max-w-md mx-auto">
                 <div className="mb-6">
                   <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto flex items-center justify-center mb-4">
                     <Clock className="w-12 h-12 text-gray-400" />
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-800 mb-2">No Quizzes Yet</h3>
+                  <h3 className="text-xl font-semibold gradient-text mb-2">No Quizzes Yet</h3>
                   <p className="text-gray-600 mb-6">
                     You haven't created any quizzes yet. Start building your first quiz to engage your audience!
                   </p>
                   <Link href="/create-quiz">
-                    <Button className="abraj-primary hover:abraj-secondary text-white font-medium">
+                    <Button className="abraj-primary hover:abraj-secondary text-white font-medium btn-glow">
                       Create Your First Quiz
                     </Button>
                   </Link>
@@ -109,7 +113,7 @@ export default function QuizHistory() {
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {quizzes.map((quiz) => (
-                <Card key={quiz.id} className="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300">
+                <Card key={quiz.id} className="card-3d-enhanced glass hover:shadow-xl transition-shadow duration-300">
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
                       <Badge variant={quiz.isPublic ? "default" : "secondary"} className="mb-2">
@@ -153,7 +157,7 @@ export default function QuizHistory() {
                         </Button>
                       </Link>
                       <Link href={`/host-quiz/${quiz.id}`}>
-                        <Button size="sm" className="abraj-primary hover:abraj-secondary text-white flex-1 min-w-[80px]">
+                        <Button size="sm" className="abraj-primary hover:abraj-secondary text-white flex-1 min-w-[80px] btn-glow">
                           Host Game
                         </Button>
                       </Link>
@@ -166,7 +170,7 @@ export default function QuizHistory() {
           
           <div className="text-center mt-12">
             <Link href="/create-quiz">
-              <Button className="abraj-primary hover:abraj-secondary text-white font-medium px-8 py-3">
+              <Button className="abraj-primary hover:abraj-secondary text-white font-medium px-8 py-3 btn-glow">
                 Create New Quiz
               </Button>
             </Link>

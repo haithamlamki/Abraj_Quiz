@@ -84,10 +84,10 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-abraj-primary/10 to-abraj-secondary/10 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md card-3d-enhanced glass animate-scale-in">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-abraj-primary">
+          <CardTitle className="text-2xl font-bold gradient-text">
             Join Abraj Quiz
           </CardTitle>
           <p className="text-gray-600">Create your account to start creating quizzes</p>
@@ -104,6 +104,8 @@ export default function Signup() {
                 onChange={handleInputChange}
                 placeholder="Choose a username"
                 disabled={signupMutation.isPending}
+                className="shimmer"
+                data-testid="input-username"
               />
             </div>
             <div className="space-y-2">
@@ -116,6 +118,8 @@ export default function Signup() {
                 onChange={handleInputChange}
                 placeholder="Enter a password (min 6 characters)"
                 disabled={signupMutation.isPending}
+                className="shimmer"
+                data-testid="input-password"
               />
             </div>
             <div className="space-y-2">
@@ -128,12 +132,15 @@ export default function Signup() {
                 onChange={handleInputChange}
                 placeholder="Confirm your password"
                 disabled={signupMutation.isPending}
+                className="shimmer"
+                data-testid="input-confirm-password"
               />
             </div>
             <Button 
               type="submit" 
-              className="w-full abraj-primary hover:abraj-secondary"
+              className="w-full abraj-primary hover:abraj-secondary btn-glow"
               disabled={signupMutation.isPending}
+              data-testid="button-create-account"
             >
               {signupMutation.isPending ? "Creating Account..." : "Create Account"}
             </Button>

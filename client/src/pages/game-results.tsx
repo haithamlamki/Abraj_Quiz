@@ -110,10 +110,12 @@ export default function GameResults() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading results...</p>
+          <div className="animate-pulse card-3d-enhanced glass p-8 rounded-2xl">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
+            <p className="text-lg text-gray-600">Loading results...</p>
+          </div>
         </div>
       </div>
     );
@@ -121,11 +123,11 @@ export default function GameResults() {
 
   if (!results) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Card className="w-full max-w-md mx-4">
+      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
+        <Card className="w-full max-w-md mx-4 card-3d-enhanced glass">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">Results not found</p>
-            <Button onClick={() => setLocation("/")} className="abraj-primary">
+            <Button onClick={() => setLocation("/")} className="abraj-primary btn-glow">
               Go Home
             </Button>
           </CardContent>
@@ -149,24 +151,24 @@ export default function GameResults() {
     const playerRank = sortedPlayers.findIndex((p: any) => p.name === playerName) + 1;
     
     return (
-      <div className="min-h-screen py-8" style={getBackgroundStyle(game.quiz?.background || 'classroom')}>
+      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8">
         {showCelebration && <ConfettiParticles />}
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-8 animate-in slide-in-from-top-4 duration-700">
-            <div className="backdrop-blur-md bg-white/90 rounded-2xl p-8 shadow-2xl border border-white/20">
+          <div className="text-center mb-8 animate-scale-in">
+            <div className="card-3d-enhanced glass p-8">
               <div className="flex justify-center mb-4">
                 {playerRank === 1 ? (
-                  <Crown className="h-16 w-16 text-yellow-500 animate-bounce" />
+                  <Crown className="h-16 w-16 text-yellow-500 animate-bounce pulse-ring" />
                 ) : playerRank === 2 ? (
-                  <Award className="h-16 w-16 text-gray-400 animate-pulse" />
+                  <Award className="h-16 w-16 text-gray-400 animate-pulse pulse-ring" />
                 ) : playerRank === 3 ? (
-                  <Trophy className="h-16 w-16 text-amber-600 animate-pulse" />
+                  <Trophy className="h-16 w-16 text-amber-600 animate-pulse pulse-ring" />
                 ) : (
-                  <Star className="h-16 w-16 text-blue-500" />
+                  <Star className="h-16 w-16 text-blue-500 pulse-ring" />
                 )}
               </div>
               
-              <h1 className="text-4xl font-bold text-gray-900 mb-2">
+              <h1 className="text-4xl font-bold gradient-text mb-2">
                 {playerRank === 1 ? "🎉 Champion!" : 
                  playerRank === 2 ? "🥈 Runner-up!" :
                  playerRank === 3 ? "🥉 Third Place!" :
@@ -198,10 +200,10 @@ export default function GameResults() {
             </div>
           </div>
 
-          <Card className="backdrop-blur-md bg-white/90 border-white/20">
+          <Card className="card-3d-enhanced glass">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
+              <CardTitle className="flex items-center gap-2 gradient-text">
+                <Trophy className="h-5 w-5 pulse-ring" />
                 Leaderboard
               </CardTitle>
             </CardHeader>
@@ -231,13 +233,13 @@ export default function GameResults() {
 
   // Host view
   return (
-    <div className="min-h-screen py-8" style={getBackgroundStyle(game.quiz?.background || 'classroom')}>
+    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8">
       {showCelebration && <ConfettiParticles />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8 animate-in slide-in-from-top-4 duration-700">
-          <div className="backdrop-blur-md bg-white/90 rounded-2xl p-8 shadow-2xl border border-white/20">
-            <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4 animate-bounce" />
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Quiz Complete!</h1>
+        <div className="text-center mb-8 animate-scale-in">
+          <div className="card-3d-enhanced glass p-8">
+            <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4 animate-bounce pulse-ring" />
+            <h1 className="text-4xl font-bold gradient-text mb-2">Quiz Complete!</h1>
             <p className="text-xl text-gray-600 mb-6">{game.quiz?.title || 'Untitled Quiz'}</p>
             
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
@@ -260,7 +262,7 @@ export default function GameResults() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button onClick={downloadPDF} className="abraj-primary">
+              <Button onClick={downloadPDF} className="abraj-primary btn-glow">
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF Report
               </Button>
@@ -283,10 +285,10 @@ export default function GameResults() {
         {/* Winner's Podium */}
         {sortedPlayers.length > 0 && (
           <div className="mb-8">
-            <Card className="backdrop-blur-md bg-white/90 border-white/20">
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
-                <CardTitle className="text-center flex items-center justify-center gap-2">
-                  <Crown className="h-6 w-6 text-yellow-500" />
+                <CardTitle className="text-center flex items-center justify-center gap-2 gradient-text">
+                  <Crown className="h-6 w-6 text-yellow-500 pulse-ring" />
                   Winner's Podium
                 </CardTitle>
               </CardHeader>
@@ -338,10 +340,10 @@ export default function GameResults() {
         )}
 
         {/* Full Leaderboard */}
-        <Card className="backdrop-blur-md bg-white/90 border-white/20">
+        <Card className="card-3d-enhanced glass">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="h-5 w-5" />
+            <CardTitle className="flex items-center gap-2 gradient-text">
+              <Trophy className="h-5 w-5 pulse-ring" />
               Final Leaderboard
             </CardTitle>
           </CardHeader>

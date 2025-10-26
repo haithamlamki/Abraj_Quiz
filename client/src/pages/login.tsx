@@ -60,10 +60,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-abraj-primary/10 to-abraj-secondary/10 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md card-3d-enhanced glass animate-scale-in">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-abraj-primary">
+          <CardTitle className="text-2xl font-bold gradient-text">
             Welcome Back
           </CardTitle>
           <p className="text-gray-600">Sign in to your Abraj Quiz account</p>
@@ -80,6 +80,8 @@ export default function Login() {
                 onChange={handleInputChange}
                 placeholder="Enter your username"
                 disabled={loginMutation.isPending}
+                className="shimmer"
+                data-testid="input-username"
               />
             </div>
             <div className="space-y-2">
@@ -92,12 +94,15 @@ export default function Login() {
                 onChange={handleInputChange}
                 placeholder="Enter your password"
                 disabled={loginMutation.isPending}
+                className="shimmer"
+                data-testid="input-password"
               />
             </div>
             <Button 
               type="submit" 
-              className="w-full abraj-primary hover:abraj-secondary"
+              className="w-full abraj-primary hover:abraj-secondary btn-glow"
               disabled={loginMutation.isPending}
+              data-testid="button-signin"
             >
               {loginMutation.isPending ? "Signing in..." : "Sign In"}
             </Button>

@@ -86,12 +86,12 @@ export default function JoinGame() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center py-8">
-      <div className="max-w-md w-full mx-4">
+    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center py-8">
+      <div className="max-w-md w-full mx-4 animate-scale-in">
         {step === "pin" ? (
-          <Card className="shadow-2xl">
+          <Card className="card-3d-enhanced glass">
             <CardHeader>
-              <CardTitle className="text-center text-2xl">Join a Game</CardTitle>
+              <CardTitle className="text-center text-2xl gradient-text">Join a Game</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">
@@ -111,16 +111,18 @@ export default function JoinGame() {
                   value={gamePin}
                   onChange={(e) => setGamePin(e.target.value)}
                   placeholder="Enter Game PIN"
-                  className="text-center text-2xl font-bold"
+                  className="text-center text-2xl font-bold shimmer"
                   onKeyPress={(e) => e.key === 'Enter' && handlePinSubmit()}
                   autoFocus
+                  data-testid="input-game-pin"
                 />
               </div>
               
               <Button
                 onClick={handlePinSubmit}
                 disabled={checkGameMutation.isPending}
-                className="w-full abraj-primary hover:abraj-secondary text-white font-bold text-lg py-3"
+                className="w-full abraj-primary hover:abraj-secondary text-white font-bold text-lg py-3 btn-glow"
+                data-testid="button-continue"
               >
                 {checkGameMutation.isPending ? "Checking..." : "Continue"}
               </Button>
@@ -137,9 +139,9 @@ export default function JoinGame() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="shadow-2xl">
+          <Card className="card-3d-enhanced glass">
             <CardHeader>
-              <CardTitle className="text-center text-2xl">Enter Your Name</CardTitle>
+              <CardTitle className="text-center text-2xl gradient-text">Enter Your Name</CardTitle>
               <p className="text-center text-gray-600">Game PIN: {gamePin}</p>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -163,10 +165,11 @@ export default function JoinGame() {
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder={isAuthenticated && user ? user.username : "Enter your name"}
-                  className="text-center text-xl font-medium"
+                  className="text-center text-xl font-medium shimmer"
                   maxLength={20}
                   onKeyPress={(e) => e.key === 'Enter' && handleNameSubmit()}
                   autoFocus
+                  data-testid="input-player-name"
                 />
                 {!isAuthenticated && (
                   <p className="text-xs text-gray-500 mt-2 text-center">
@@ -185,7 +188,8 @@ export default function JoinGame() {
               <Button
                 onClick={handleNameSubmit}
                 disabled={joinGameMutation.isPending}
-                className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3"
+                className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3 btn-glow"
+                data-testid="button-join-game"
               >
                 {joinGameMutation.isPending ? "Joining..." : "Join Game"}
               </Button>

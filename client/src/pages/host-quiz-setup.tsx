@@ -122,11 +122,15 @@ export default function HostQuizSetup() {
 
   if (isLoading || quizLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-            <p className="text-gray-600">Loading quiz...</p>
+      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex items-center justify-center min-h-[400px]">
+            <div className="text-center">
+              <div className="animate-pulse card-3d-enhanced glass p-8 rounded-2xl">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading quiz...</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -139,13 +143,17 @@ export default function HostQuizSetup() {
 
   if (!quiz) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center py-12">
-          <h1 className="text-2xl font-bold text-gray-800 mb-4">Quiz Not Found</h1>
-          <p className="text-gray-600 mb-6">The quiz you're looking for doesn't exist.</p>
-          <Button onClick={() => setLocation("/")} className="abraj-primary hover:abraj-secondary text-white">
-            Go Home
-          </Button>
+      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+        <div className="container mx-auto px-4 py-8">
+          <div className="text-center py-12 animate-scale-in">
+            <div className="card-3d-enhanced glass p-8 max-w-md mx-auto">
+              <h1 className="text-2xl font-bold gradient-text mb-4">Quiz Not Found</h1>
+              <p className="text-gray-600 mb-6">The quiz you're looking for doesn't exist.</p>
+              <Button onClick={() => setLocation("/")} className="abraj-primary hover:abraj-secondary text-white btn-glow">
+                Go Home
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -155,12 +163,12 @@ export default function HostQuizSetup() {
   const estimatedTime = Math.ceil(quiz.questions.reduce((acc, q) => acc + q.timeLimit, 0) / 60);
 
   return (
-    <div>
+    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">
+          <div className="text-center mb-8 animate-scale-in">
+            <h1 className="text-4xl font-bold gradient-text mb-4">
               Ready to Host Your Quiz?
             </h1>
             <p className="text-xl text-gray-600">
@@ -170,9 +178,9 @@ export default function HostQuizSetup() {
 
           <div className="grid gap-8 md:grid-cols-2">
             {/* Quiz Details */}
-            <Card className="bg-white shadow-lg">
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
-                <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <CardTitle className="text-2xl font-bold gradient-text flex items-center gap-2">
                   <Settings className="w-6 h-6 text-abraj-primary" />
                   Quiz Details
                 </CardTitle>
@@ -222,9 +230,9 @@ export default function HostQuizSetup() {
             </Card>
 
             {/* Host Game */}
-            <Card className="bg-white shadow-lg">
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
-                <CardTitle className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                <CardTitle className="text-2xl font-bold gradient-text flex items-center gap-2">
                   <Play className="w-6 h-6 text-abraj-primary" />
                   Start Game
                 </CardTitle>
@@ -240,7 +248,8 @@ export default function HostQuizSetup() {
                     <Button
                       onClick={() => createGameMutation.mutate()}
                       disabled={createGameMutation.isPending}
-                      className="w-full abraj-primary hover:abraj-secondary text-white font-medium py-3 text-lg"
+                      className="w-full abraj-primary hover:abraj-secondary text-white font-medium py-3 text-lg btn-glow"
+                      data-testid="button-create-game"
                     >
                       {createGameMutation.isPending ? (
                         <>
@@ -343,7 +352,8 @@ export default function HostQuizSetup() {
                     {/* Start Hosting */}
                     <Button
                       onClick={() => setLocation(`/host/${createdGame.gamePin}`)}
-                      className="w-full abraj-green hover:bg-green-600 text-white font-medium py-3 text-lg"
+                      className="w-full abraj-green hover:bg-green-600 text-white font-medium py-3 text-lg btn-glow"
+                      data-testid="button-start-hosting"
                     >
                       <Play className="w-5 h-5 mr-2" />
                       Start Hosting
