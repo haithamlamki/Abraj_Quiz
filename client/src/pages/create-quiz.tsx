@@ -659,10 +659,10 @@ export default function CreateQuiz() {
   };
 
   return (
-    <div className="min-h-screen py-8">
+    <div className="min-h-screen py-8 bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 animate-gradient">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h1 className="font-bold text-4xl text-gray-800 mb-4">Create Your Quiz</h1>
+        <div className="text-center mb-8 animate-scale-in">
+          <h1 className="font-bold text-4xl gradient-text mb-4">Create Your Quiz</h1>
           <p className="text-xl text-gray-600">Build engaging quizzes manually or auto-generate from content</p>
         </div>
 
@@ -672,8 +672,8 @@ export default function CreateQuiz() {
             <TabsTrigger value="generate" className="ml-[8px] mr-[8px] pt-[5px] pb-[5px] data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">Auto Generate</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="generate">
-            <Card className="mb-8">
+          <TabsContent value="generate" className="animate-scale-in">
+            <Card className="mb-8 card-3d-enhanced glass">
               <CardHeader>
                 <CardTitle className="text-2xl text-center text-gray-800 flex items-center justify-center gap-2">
                   <Wand2 className="w-6 h-6" />
@@ -860,8 +860,8 @@ export default function CreateQuiz() {
           <TabsContent value="manual">
             <div className="grid lg:grid-cols-3 gap-8">
               {/* Quiz Details */}
-              <div className="lg:col-span-1 space-y-6">
-            <Card>
+              <div className="lg:col-span-1 space-y-6 animate-scale-in">
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
                 <CardTitle>Quiz Details</CardTitle>
               </CardHeader>
@@ -872,6 +872,7 @@ export default function CreateQuiz() {
                     value={quiz.title}
                     onChange={(e) => setQuiz(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Enter quiz title"
+                    className="shimmer focus:ring-2 focus:ring-abraj-primary transition-all"
                   />
                 </div>
                 
@@ -882,6 +883,7 @@ export default function CreateQuiz() {
                     onChange={(e) => setQuiz(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Describe your quiz"
                     rows={3}
+                    className="shimmer focus:ring-2 focus:ring-abraj-primary transition-all"
                   />
                 </div>
 
@@ -890,7 +892,7 @@ export default function CreateQuiz() {
                   
                   {backgroundImage ? (
                     <div className="relative">
-                      <div className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 relative overflow-hidden">
+                      <div className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 relative overflow-hidden card-3d-enhanced">
                         <img 
                           src={backgroundImage} 
                           alt="Background preview" 
@@ -913,7 +915,7 @@ export default function CreateQuiz() {
                     <>
                       <div 
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors mb-3"
+                        className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-all hover:scale-105 mb-3 glass card-3d-enhanced"
                         data-testid="button-upload-background"
                       >
                         <Upload className="w-8 h-8 text-gray-400 mb-2" />
@@ -967,7 +969,7 @@ export default function CreateQuiz() {
             </Card>
 
             {/* Question Navigation */}
-            <Card>
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
                 <CardTitle>Questions</CardTitle>
               </CardHeader>
@@ -976,9 +978,9 @@ export default function CreateQuiz() {
                   {(quiz.questions && quiz.questions.length > 0) ? quiz.questions.map((q, index) => (
                     <div
                       key={index}
-                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
+                      className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-all hover:scale-105 player-card-float ${
                         index === currentQuestionIndex 
-                          ? 'bg-teal-100 border-2 border-abraj-primary' 
+                          ? 'bg-teal-100 border-2 border-abraj-primary card-3d-enhanced' 
                           : 'bg-gray-50 hover:bg-gray-100'
                       }`}
                       onClick={() => setCurrentQuestionIndex(index)}
@@ -994,7 +996,7 @@ export default function CreateQuiz() {
                             e.stopPropagation();
                             removeQuestion(index);
                           }}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-red-500 hover:text-red-700 hover:scale-110 transition-transform"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -1011,8 +1013,8 @@ export default function CreateQuiz() {
           </div>
 
           {/* Question Editor */}
-          <div className="lg:col-span-2">
-            <Card>
+          <div className="lg:col-span-2 animate-scale-in">
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Question {currentQuestionIndex + 1} of {quiz.questions.length}</CardTitle>
@@ -1026,7 +1028,7 @@ export default function CreateQuiz() {
                     value={currentQuestion.question}
                     onChange={(e) => updateQuestion(currentQuestionIndex, 'question', e.target.value)}
                     placeholder="Enter your question"
-                    className="text-lg"
+                    className="text-lg shimmer focus:ring-2 focus:ring-abraj-primary transition-all"
                   />
                 </div>
 
@@ -1040,7 +1042,7 @@ export default function CreateQuiz() {
                       return (
                         <div
                           key={answerIndex}
-                          className={`${colorClass} text-white p-4 rounded-lg cursor-pointer hover:scale-105 transition-transform`}
+                          className={`${colorClass} text-white p-4 rounded-lg cursor-pointer hover:scale-105 transition-transform card-3d-enhanced`}
                         >
                           <div className="flex items-center justify-end mb-2">
                             <IconComponent className="w-5 h-5" />
@@ -1049,7 +1051,7 @@ export default function CreateQuiz() {
                             value={answer}
                             onChange={(e) => updateAnswer(currentQuestionIndex, answerIndex, e.target.value)}
                             placeholder={`Answer option ${answerIndex + 1}`}
-                            className="w-full border-none text-white placeholder:text-white/70 focus:outline-none bg-[#ffffff85]"
+                            className="w-full border-none text-white placeholder:text-white/70 focus:outline-none bg-[#ffffff85] shimmer"
                           />
                           <div className="flex items-center space-x-2 mt-2">
                             <Checkbox
@@ -1075,7 +1077,7 @@ export default function CreateQuiz() {
                     <select
                       value={currentQuestion.timeLimit}
                       onChange={(e) => updateQuestion(currentQuestionIndex, 'timeLimit', parseInt(e.target.value))}
-                      className="border border-gray-300 rounded-md px-3 py-1"
+                      className="border border-gray-300 rounded-md px-3 py-1 glass focus:ring-2 focus:ring-abraj-primary transition-all"
                     >
                       <option value={5}>5 seconds</option>
                       <option value={10}>10 seconds</option>
@@ -1105,7 +1107,7 @@ export default function CreateQuiz() {
                 </div>
 
                 <div className="flex justify-center mt-4">
-                  <Button onClick={addQuestion} size="sm" className="abraj-primary">
+                  <Button onClick={addQuestion} size="sm" className="abraj-primary btn-glow">
                     <Plus className="w-4 h-4 mr-1" />
                     Add Question
                   </Button>
@@ -1126,7 +1128,7 @@ export default function CreateQuiz() {
               <Button
                 onClick={handleSubmit}
                 disabled={createQuizMutation.isPending}
-                className="hover:bg-primary/90 h-10 abraj-primary hover:abraj-secondary px-8 py-3 text-lg font-bold bg-[#22c55e] text-[#ffffff]"
+                className="hover:bg-primary/90 h-10 abraj-primary hover:abraj-secondary px-8 py-3 text-lg font-bold bg-[#22c55e] text-[#ffffff] btn-glow shimmer"
               >
                 {createQuizMutation.isPending ? "Creating..." : "Create Quiz"}
               </Button>

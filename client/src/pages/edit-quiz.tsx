@@ -176,11 +176,11 @@ export default function EditQuiz() {
   }
 
   return (
-    <div>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 animate-gradient">
       
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <div className="flex items-center gap-4 mb-8">
+          <div className="flex items-center gap-4 mb-8 animate-scale-in">
             <Button
               variant="outline"
               onClick={() => setLocation("/my-quizzes")}
@@ -190,14 +190,14 @@ export default function EditQuiz() {
               Back to My Quizzes
             </Button>
             <div>
-              <h1 className="text-3xl font-bold text-gray-800">Edit Quiz</h1>
+              <h1 className="text-3xl font-bold gradient-text">Edit Quiz</h1>
               <p className="text-gray-600">Update your quiz details and questions</p>
             </div>
           </div>
 
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              <Card className="bg-white shadow-lg">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8 animate-scale-in">
+              <Card className="bg-white shadow-lg card-3d-enhanced glass">
                 <CardHeader>
                   <CardTitle>Quiz Details</CardTitle>
                 </CardHeader>
@@ -209,7 +209,7 @@ export default function EditQuiz() {
                       <FormItem>
                         <FormLabel>Quiz Title</FormLabel>
                         <FormControl>
-                          <Input placeholder="Enter quiz title" {...field} />
+                          <Input placeholder="Enter quiz title" {...field} className="shimmer focus:ring-2 focus:ring-abraj-primary transition-all" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -223,7 +223,7 @@ export default function EditQuiz() {
                       <FormItem>
                         <FormLabel>Description (Optional)</FormLabel>
                         <FormControl>
-                          <Textarea placeholder="Describe your quiz" {...field} value={field.value || ""} />
+                          <Textarea placeholder="Describe your quiz" {...field} value={field.value || ""} className="shimmer focus:ring-2 focus:ring-abraj-primary transition-all" />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -252,13 +252,13 @@ export default function EditQuiz() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-white shadow-lg">
+              <Card className="bg-white shadow-lg card-3d-enhanced glass">
                 <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle>Questions ({fields.length})</CardTitle>
                   <Button
                     type="button"
                     onClick={addQuestion}
-                    className="abraj-primary hover:abraj-secondary text-white"
+                    className="abraj-primary hover:abraj-secondary text-white btn-glow"
                   >
                     <Plus className="w-4 h-4 mr-2" />
                     Add Question
@@ -281,7 +281,7 @@ export default function EditQuiz() {
                   )}
 
                   {fields.map((field, questionIndex) => (
-                    <Card key={field.id} className="p-6 border-2 border-gray-200">
+                    <Card key={field.id} className="p-6 border-2 border-gray-200 card-3d-enhanced player-card-float">
                       <div className="flex items-center justify-between mb-4">
                         <Badge variant="outline" className="text-abraj-primary border-abraj-primary">
                           Question {questionIndex + 1}
@@ -291,7 +291,7 @@ export default function EditQuiz() {
                           variant="ghost"
                           size="sm"
                           onClick={() => remove(questionIndex)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="text-red-600 hover:text-red-700 hover:bg-red-50 hover:scale-110 transition-transform"
                         >
                           <Trash2 className="w-4 h-4" />
                         </Button>
@@ -305,7 +305,7 @@ export default function EditQuiz() {
                             <FormItem>
                               <FormLabel>Question</FormLabel>
                               <FormControl>
-                                <Textarea placeholder="Enter your question" {...field} />
+                                <Textarea placeholder="Enter your question" {...field} className="shimmer focus:ring-2 focus:ring-abraj-primary transition-all" />
                               </FormControl>
                               <FormMessage />
                             </FormItem>
@@ -319,10 +319,10 @@ export default function EditQuiz() {
                               control={form.control}
                               name={`questions.${questionIndex}.answers.${answerIndex}`}
                               render={({ field }) => (
-                                <FormItem>
+                                <FormItem className="card-3d-enhanced">
                                   <FormLabel>Answer {answerIndex + 1}</FormLabel>
                                   <FormControl>
-                                    <Input placeholder={`Answer ${answerIndex + 1}`} {...field} />
+                                    <Input placeholder={`Answer ${answerIndex + 1}`} {...field} className="shimmer focus:ring-2 focus:ring-abraj-primary transition-all" />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -331,7 +331,7 @@ export default function EditQuiz() {
                           ))}
                         </div>
 
-                        <div className="flex gap-4">
+                        <div className="flex gap-4 glass p-4 rounded-lg">
                           <FormField
                             control={form.control}
                             name={`questions.${questionIndex}.correctAnswer`}
@@ -340,7 +340,7 @@ export default function EditQuiz() {
                                 <FormLabel>Correct Answer</FormLabel>
                                 <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
                                   <FormControl>
-                                    <SelectTrigger>
+                                    <SelectTrigger className="focus:ring-2 focus:ring-abraj-primary transition-all">
                                       <SelectValue placeholder="Select correct answer" />
                                     </SelectTrigger>
                                   </FormControl>
@@ -373,6 +373,7 @@ export default function EditQuiz() {
                                     placeholder="10"
                                     {...field}
                                     onChange={(e) => field.onChange(parseInt(e.target.value) || 10)}
+                                    className="shimmer focus:ring-2 focus:ring-abraj-primary transition-all"
                                   />
                                 </FormControl>
                                 <FormMessage />
@@ -397,7 +398,7 @@ export default function EditQuiz() {
                 <Button
                   type="submit"
                   disabled={updateQuizMutation.isPending || fields.length === 0}
-                  className="abraj-primary hover:abraj-secondary text-white"
+                  className="abraj-primary hover:abraj-secondary text-white btn-glow shimmer"
                 >
                   {updateQuizMutation.isPending ? (
                     <>

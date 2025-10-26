@@ -225,17 +225,17 @@ export default function CreateQuizSimple() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 animate-gradient py-8">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Your Quiz</h1>
+        <div className="text-center mb-8 animate-scale-in">
+          <h1 className="text-3xl font-bold gradient-text mb-2">Create Your Quiz</h1>
           <p className="text-gray-600">Build engaging quizzes with custom backgrounds</p>
         </div>
 
         <div className="grid lg:grid-cols-3 gap-8">
           {/* Quiz Details */}
-          <div className="lg:col-span-1 space-y-6">
-            <Card>
+          <div className="lg:col-span-1 space-y-6 animate-scale-in">
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
                 <CardTitle>Quiz Details</CardTitle>
               </CardHeader>
@@ -246,6 +246,7 @@ export default function CreateQuizSimple() {
                     value={quiz.title}
                     onChange={(e) => setQuiz(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="Enter quiz title"
+                    className="shimmer focus:ring-2 focus:ring-abraj-primary transition-all"
                   />
                 </div>
                 
@@ -256,6 +257,7 @@ export default function CreateQuizSimple() {
                     onChange={(e) => setQuiz(prev => ({ ...prev, description: e.target.value }))}
                     placeholder="Enter quiz description"
                     rows={3}
+                    className="shimmer focus:ring-2 focus:ring-abraj-primary transition-all"
                   />
                 </div>
 
@@ -264,7 +266,7 @@ export default function CreateQuizSimple() {
                   
                   {backgroundImage ? (
                     <div className="relative">
-                      <div className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 relative overflow-hidden">
+                      <div className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 relative overflow-hidden card-3d-enhanced">
                         <img 
                           src={backgroundImage} 
                           alt="Background preview" 
@@ -285,7 +287,7 @@ export default function CreateQuizSimple() {
                   ) : (
                     <div 
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-colors"
+                      className="w-full h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex flex-col items-center justify-center cursor-pointer hover:bg-gray-50 transition-all hover:scale-105 glass card-3d-enhanced"
                     >
                       <Image className="w-8 h-8 text-gray-400 mb-2" />
                       <p className="text-sm text-gray-600 font-medium">Upload Background Image</p>
@@ -308,7 +310,7 @@ export default function CreateQuizSimple() {
               </CardContent>
             </Card>
 
-            <Card>
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
                 <CardTitle>Questions Summary</CardTitle>
               </CardHeader>
@@ -318,9 +320,9 @@ export default function CreateQuizSimple() {
                     <div
                       key={index}
                       onClick={() => setCurrentQuestionIndex(index)}
-                      className={`p-3 rounded-lg cursor-pointer transition-colors ${
+                      className={`p-3 rounded-lg cursor-pointer transition-all hover:scale-105 player-card-float ${
                         index === currentQuestionIndex
-                          ? "bg-[#019ebd] text-white"
+                          ? "bg-[#019ebd] text-white card-3d-enhanced"
                           : "bg-gray-100 hover:bg-gray-200"
                       }`}
                     >
@@ -351,7 +353,7 @@ export default function CreateQuizSimple() {
                 <Button
                   onClick={addQuestion}
                   variant="outline"
-                  className="w-full mt-4"
+                  className="w-full mt-4 btn-glow"
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add Question
@@ -361,8 +363,8 @@ export default function CreateQuizSimple() {
           </div>
 
           {/* Question Editor */}
-          <div className="lg:col-span-2">
-            <Card>
+          <div className="lg:col-span-2 animate-scale-in">
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle>Question {currentQuestionIndex + 1} of {quiz.questions.length}</CardTitle>
@@ -394,6 +396,7 @@ export default function CreateQuizSimple() {
                     onChange={(e) => updateQuestion(currentQuestionIndex, "question", e.target.value)}
                     placeholder="Enter your question here..."
                     rows={3}
+                    className="shimmer focus:ring-2 focus:ring-abraj-primary transition-all"
                   />
                 </div>
 
@@ -401,13 +404,13 @@ export default function CreateQuizSimple() {
                   <label className="block text-sm font-medium text-gray-700 mb-3">Answer Options</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {currentQuestion.answers.map((answer, answerIndex) => (
-                      <div key={answerIndex} className="space-y-2">
+                      <div key={answerIndex} className="space-y-2 card-3d-enhanced">
                         <div className="flex items-center space-x-2">
                           <Input
                             value={answer}
                             onChange={(e) => updateAnswer(currentQuestionIndex, answerIndex, e.target.value)}
                             placeholder={`Answer option ${answerIndex + 1}`}
-                            className="flex-1"
+                            className="flex-1 shimmer focus:ring-2 focus:ring-abraj-primary transition-all"
                           />
                         </div>
                         <div className="ml-10">
@@ -429,14 +432,14 @@ export default function CreateQuizSimple() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Time Limit (seconds)</label>
-                  <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-4 glass p-4 rounded-lg">
                     <Input
                       type="number"
                       min="5"
                       max="120"
                       value={currentQuestion.timeLimit}
                       onChange={(e) => updateQuestion(currentQuestionIndex, "timeLimit", parseInt(e.target.value) || 10)}
-                      className="w-24"
+                      className="w-24 shimmer focus:ring-2 focus:ring-abraj-primary transition-all"
                     />
                     <div className="flex space-x-2">
                       {[5, 10, 15, 20, 30, 60].map((time) => (
@@ -466,7 +469,7 @@ export default function CreateQuizSimple() {
               <Button
                 onClick={handleSubmit}
                 disabled={createQuizMutation.isPending}
-                className="abraj-primary hover:abraj-secondary text-white"
+                className="abraj-primary hover:abraj-secondary text-white btn-glow shimmer"
               >
                 {createQuizMutation.isPending ? "Creating..." : "Create Quiz"}
               </Button>
