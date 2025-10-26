@@ -173,7 +173,7 @@ export default function Home() {
             
             {/* Main Content */}
             <div className="animate-scale-in">
-              <h1 className="font-bold lg:text-6xl text-[59px] gradient-text">Powered by Our Dedicated Team</h1>
+              <h1 className="font-bold text-4xl sm:text-5xl lg:text-6xl gradient-text whitespace-nowrap">Powered by Our Dedicated Team</h1>
               <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px]">Abraj's innovative employees work tirelessly to create engaging educational experiences for learners worldwide.</p>
               
               {/* Game PIN Entry */}
