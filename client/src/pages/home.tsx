@@ -162,19 +162,22 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen relative">
+      {/* Background Gradient Overlay */}
+      <div className="fixed inset-0 -z-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 animate-gradient"></div>
+      
       {/* Hero Section */}
       <section className="relative overflow-hidden py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             
             {/* Main Content */}
-            <div>
-              <h1 className="font-bold lg:text-6xl text-[59px]" style={{color: 'var(--abraj-primary)'}}>Powered by Our Dedicated Team</h1>
+            <div className="animate-scale-in">
+              <h1 className="font-bold lg:text-6xl text-[59px] gradient-text">Powered by Our Dedicated Team</h1>
               <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px]">Abraj's innovative employees work tirelessly to create engaging educational experiences for learners worldwide.</p>
               
               {/* Game PIN Entry */}
-              <Card className="mt-8 card-3d max-w-lg mx-auto">
+              <Card className="mt-8 card-3d-enhanced glass max-w-lg mx-auto">
                 <CardContent className="p-8">
                   <h3 className="font-bold text-2xl text-gray-800 mb-4">Join a game</h3>
                   <div className="space-y-4">
@@ -184,7 +187,7 @@ export default function Home() {
                         placeholder="Game PIN"
                         value={gamePin}
                         onChange={(e) => setGamePin(e.target.value)}
-                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d"
+                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d shimmer"
                         onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                       />
                       <Dialog open={showScanner} onOpenChange={setShowScanner}>
@@ -250,13 +253,13 @@ export default function Home() {
                         placeholder={isAuthenticated && user ? user.username : "Player name"}
                         value={playerName}
                         onChange={(e) => setPlayerName(e.target.value)}
-                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d"
+                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d shimmer"
                         maxLength={20}
                         onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                       />
                       <Button 
                         onClick={handleJoinGame}
-                        className="abraj-primary hover:abraj-secondary text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg"
+                        className="abraj-primary hover:abraj-secondary text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg btn-glow"
                       >
                         Join Game
                       </Button>
@@ -291,7 +294,7 @@ export default function Home() {
               <p className="text-xl text-gray-600">Top 3 players from the most recent game</p>
             </div>
             
-            <Card className="max-w-4xl mx-auto card-3d">
+            <Card className="max-w-4xl mx-auto card-3d-enhanced">
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl font-bold text-gray-800 flex items-center justify-center gap-2">
                   <Trophy className="w-6 h-6 text-yellow-500" />
@@ -312,9 +315,9 @@ export default function Home() {
                     const borderColor = index === 0 ? "border-yellow-200" : index === 1 ? "border-gray-200" : "border-orange-200";
                     
                     return (
-                      <div key={player.name} className={`${bgColor} ${borderColor} border-2 rounded-xl p-4 text-center transition-all duration-300 hover:scale-105`}>
+                      <div key={player.name} className={`${bgColor} ${borderColor} border-2 rounded-xl p-4 text-center transition-all duration-300 card-3d-enhanced animate-float`}>
                         <div className="flex justify-center mb-3">
-                          <div className={`w-12 h-12 rounded-full ${iconColor} bg-white flex items-center justify-center shadow-lg`}>
+                          <div className={`w-12 h-12 rounded-full ${iconColor} bg-white flex items-center justify-center shadow-lg pulse-ring`}>
                             <IconComponent className="w-6 h-6" />
                           </div>
                         </div>
@@ -357,7 +360,7 @@ export default function Home() {
                 
                 <div className="flex flex-wrap justify-center gap-4">
                   {userQuizzes.slice(0, 3).map((quiz) => (
-                    <Card key={quiz.id} className="bg-white shadow-lg hover:shadow-xl transition-shadow duration-300 card-3d w-72 flex-shrink-0">
+                    <Card key={quiz.id} className="bg-white shadow-lg hover:shadow-xl transition-all duration-300 card-3d-enhanced player-card-float w-72 flex-shrink-0 hover:scale-105">
                       <CardHeader className="pb-3">
                         <CardTitle className="text-lg font-bold text-gray-800 line-clamp-2">
                           {quiz.title}
@@ -431,25 +434,25 @@ export default function Home() {
             {/* Features Grid - Horizontal */}
             <div className="max-w-6xl mx-auto">
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-transparent p-6 rounded-xl text-center card-3d text-[#019ebd]">
+                <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.1s' }}>
                   <Clock className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Time Limits</h4>
                   <p className="text-sm opacity-90">Set custom timers</p>
                 </div>
                 
-                <div className="bg-transparent p-6 rounded-xl text-center card-3d text-[#019ebd]">
+                <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.2s' }}>
                   <Image className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Rich Media</h4>
                   <p className="text-sm opacity-90">Add images & videos</p>
                 </div>
                 
-                <div className="bg-transparent p-6 rounded-xl text-center card-3d text-[#019ebd]">
+                <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.3s' }}>
                   <Users className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Team Mode</h4>
                   <p className="text-sm opacity-90">Collaborative play</p>
                 </div>
                 
-                <div className="bg-transparent p-6 rounded-xl text-center card-3d text-[#019ebd]">
+                <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.4s' }}>
                   <BarChart className="w-8 h-8 mb-2 mx-auto" />
                   <h4 className="font-bold">Analytics</h4>
                   <p className="text-sm opacity-90">Track performance</p>
