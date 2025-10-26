@@ -348,20 +348,10 @@ export default function HostGame() {
 
             <Card className="card-3d-enhanced glass">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  <span>Share Game</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowQRCode(!showQRCode)}
-                    className="p-2"
-                  >
-                    <QrCode className="w-4 h-4" />
-                  </Button>
-                </CardTitle>
+                <CardTitle>Share Game</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {showQRCode && qrCodeUrl && (
+                {qrCodeUrl && (
                   <div className="text-center space-y-2">
                     <img src={qrCodeUrl} alt="QR Code to join game" className="w-32 h-32 mx-auto" />
                     <p className="text-xs text-gray-500">Players can scan to join</p>
