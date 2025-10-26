@@ -669,8 +669,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Sort players by score
       const sortedPlayers = players.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
 
+      // Attach quiz data to game object for PDF generation
+      const gameWithQuiz = {
+        ...game,
+        quiz
+      };
+
       res.json({ 
-        game, 
+        game: gameWithQuiz, 
         players: sortedPlayers, 
         responses,
         totalQuestions: Array.isArray(quiz?.questions) ? (quiz.questions as any[]).length : 0

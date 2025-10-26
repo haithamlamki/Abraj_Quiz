@@ -203,7 +203,7 @@ export const generateEnhancedPDF = async (data: PdfData) => {
   yPosition += 15;
 
   // Questions with modern card design
-  if (game.quiz?.questions && Array.isArray(game.quiz.questions)) {
+  if (game.quiz?.questions && Array.isArray(game.quiz.questions) && game.quiz.questions.length > 0) {
     game.quiz.questions.forEach((question: any, index: number) => {
       // Pre-calculate all content sizes first
       const questionLines = pdf.splitTextToSize(question.question, pageWidth - 70);
