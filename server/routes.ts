@@ -5,6 +5,8 @@ import { insertQuizSchema, insertGameSchema, insertGameResponseSchema, quizQuest
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { pool } from "./db";
 import multer from "multer";
 import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText, generateBackgroundImage } from "./openai-service";
 import { gameWS } from "./websocket";
@@ -25,8 +27,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Session configuration
+  // Session configuration with PostgreSQL store
+  const PgSession = connectPgSimple(session);
+  
   app.use(session({
+    store: new PgSession({
+      pool: pool,
+      tableName: 'session',
+      createTableIfMissing: false
+    }),
     secret: process.env.SESSION_SECRET || 'abraj-quiz-secret-dev',
     resave: false,
     saveUninitialized: false,
