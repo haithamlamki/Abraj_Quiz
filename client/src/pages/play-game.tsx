@@ -216,6 +216,27 @@ export default function PlayGame() {
     }
   }, [game?.status, pin, playerName, setLocation]);
 
+  // Warn before leaving if player is in an active game
+  useEffect(() => {
+    if (!game || !playerName) return;
+    
+    const shouldWarn = game.status === "waiting" || game.status === "active";
+    
+    if (shouldWarn) {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      };
+      
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      
+      return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
+    }
+  }, [game?.status, playerName]);
+
   // Sound effects
   const playClickSound = () => {
     if (typeof Audio !== 'undefined') {
