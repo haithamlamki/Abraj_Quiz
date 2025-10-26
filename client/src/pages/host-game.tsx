@@ -306,13 +306,13 @@ export default function HostGame() {
 
   if (game.status === "waiting") {
     return (
-      <div className="min-h-screen py-8" style={getBackgroundStyle(quiz?.background || 'classroom')}>
+      <div className="min-h-screen py-8 animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50" style={getBackgroundStyle(quiz?.background || 'classroom')}>
         <CountdownOverlay />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8">
-            <h1 className="font-bold text-4xl text-gray-800 mb-4">Game Lobby</h1>
+            <h1 className="font-bold text-4xl mb-4 gradient-text">Game Lobby</h1>
             <div className="flex justify-center items-center space-x-4 mb-6">
-              <Badge variant="secondary" className="inline-flex items-center rounded-full border font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 text-lg px-4 py-2 bg-[#019ebd] text-[#ffffff]">
+              <Badge variant="secondary" className="inline-flex items-center rounded-full border font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 text-lg px-4 py-2 bg-[#019ebd] text-[#ffffff] pulse-ring">
                 PIN: {game.gamePin}
               </Badge>
               <Badge className="text-lg px-4 py-2 bg-[#019ebd] text-[#ffffff]">
@@ -322,7 +322,7 @@ export default function HostGame() {
           </div>
 
           <div className="grid lg:grid-cols-2 gap-8">
-            <Card className="bg-white/95 backdrop-blur-sm">
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Users className="w-5 h-5" />
@@ -337,7 +337,7 @@ export default function HostGame() {
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
                     {players.map((player, index) => (
-                      <div key={index} className="bg-gray-100 rounded-lg p-3 text-center">
+                      <div key={index} className="player-card-float card-3d-enhanced bg-gray-100 rounded-lg p-3 text-center">
                         <span className="font-medium">{player.name}</span>
                       </div>
                     ))}
@@ -346,7 +346,7 @@ export default function HostGame() {
               </CardContent>
             </Card>
 
-            <Card className="bg-white/95 backdrop-blur-sm">
+            <Card className="card-3d-enhanced glass">
               <CardHeader>
                 <CardTitle className="flex items-center justify-between">
                   <span>Share Game</span>
@@ -372,7 +372,7 @@ export default function HostGame() {
                   <Button
                     variant="outline"
                     onClick={() => copyToClipboard(game.gamePin, "Game PIN")}
-                    className="w-full"
+                    className="w-full btn-glow"
                   >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy PIN ({game.gamePin})
@@ -381,7 +381,7 @@ export default function HostGame() {
                   <Button
                     variant="outline"
                     onClick={() => copyToClipboard(`${window.location.origin}/join/${game.gamePin}`, "Join link")}
-                    className="w-full"
+                    className="w-full btn-glow"
                   >
                     <Share2 className="w-4 h-4 mr-2" />
                     Copy Join Link
@@ -403,7 +403,7 @@ export default function HostGame() {
                       setGameStartCountdown(3);
                     }}
                     disabled={players.length === 0 || startGameMutation.isPending || isStartingGame}
-                    className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3"
+                    className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3 btn-glow shimmer"
                   >
                     <Play className="w-5 h-5 mr-2" />
                     {isStartingGame ? `Starting in ${gameStartCountdown}...` : 'Start Game'}
