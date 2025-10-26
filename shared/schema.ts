@@ -41,6 +41,12 @@ export const gameResponses = pgTable("game_responses", {
   pointsEarned: integer("points_earned").notNull(),
 });
 
+export const sessions = pgTable("session", {
+  sid: text("sid").primaryKey(),
+  sess: jsonb("sess").notNull(),
+  expire: timestamp("expire").notNull(),
+});
+
 // Zod schemas
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
