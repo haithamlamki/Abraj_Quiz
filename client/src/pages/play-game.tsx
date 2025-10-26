@@ -574,6 +574,8 @@ export default function PlayGame() {
           {timeLeft !== null && timeLeft > 0 && !hasAnswered && (
             <div 
               className={`text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 hover:scale-110 transition-transform cursor-pointer ${
+                timeLeft <= 10 ? 'pulse-ring' : ''
+              } ${
                 timeLeft <= 3 ? 'bg-red-600 animate-ping shadow-lg shadow-red-500/50' : 
                 timeLeft <= 5 ? 'bg-orange-500 animate-bounce' : 
                 'abraj-red animate-pulse'
@@ -590,7 +592,7 @@ export default function PlayGame() {
         </div>
 
         {/* Question */}
-        <Card className="mb-6 bg-white/95 backdrop-blur-sm">
+        <Card className="mb-6 glass card-3d-enhanced">
           <CardContent className="p-3 sm:p-4 text-center">
             <h2 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 leading-snug">{currentQuestion?.question}</h2>
           </CardContent>
@@ -610,9 +612,9 @@ export default function PlayGame() {
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 disabled={isDisabled}
-                className={`${colors[index]} hover:scale-105 text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold transition-all transform min-h-[80px] sm:min-h-[96px] h-auto ${
-                  isSelected ? 'ring-4 ring-white' : ''
-                } ${isDisabled ? 'opacity-60' : 'active:scale-95'}`}
+                className={`${colors[index]} text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold card-3d-enhanced min-h-[80px] sm:min-h-[96px] h-auto ${
+                  isSelected ? 'ring-4 ring-white animate-pulse' : ''
+                } ${isDisabled ? 'opacity-60' : ''}`}
               >
                 <div className="flex flex-col items-center justify-center w-full h-full gap-2">
                   <SymbolIcon className="w-6 h-6 sm:w-8 sm:h-8 shrink-0" fill="white" strokeWidth={0} />
@@ -625,10 +627,10 @@ export default function PlayGame() {
 
         {/* Player Info */}
         <div className="mt-6 text-center">
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg p-3 sm:p-4 shadow">
+          <div className="glass card-3d-enhanced rounded-lg p-3 sm:p-4">
             <div className="flex justify-between items-center">
               <span className="text-gray-600 text-sm sm:text-base">Score:</span>
-              <span className="font-bold text-abraj-primary text-sm sm:text-base">{(currentPlayer?.score || 0).toLocaleString()}</span>
+              <span className="font-bold gradient-text text-sm sm:text-base text-xl">{(currentPlayer?.score || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center mt-2">
               <span className="text-gray-600 text-sm sm:text-base">Rank:</span>

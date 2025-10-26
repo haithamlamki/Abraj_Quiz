@@ -538,7 +538,7 @@ export default function HostGame() {
                   playCountdownSound(3);
                 }}
                 disabled={nextQuestionMutation.isPending}
-                className="abraj-primary hover:abraj-secondary text-white px-6 py-2 font-bold hover:scale-105 active:scale-95 transition-transform shadow-lg"
+                className="abraj-primary hover:abraj-secondary text-white px-6 py-2 font-bold btn-glow shimmer shadow-lg"
               >
                 <SkipForward className="w-4 h-4 mr-2" />
                 {(game.currentQuestion || 0) + 1 >= questions.length ? "Finish Game" : "Next Question"}
@@ -571,6 +571,8 @@ export default function HostGame() {
             {timeLeft !== null && timeLeft > 0 && !showResults && (
               <div 
                 className={`text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 hover:scale-110 transition-transform cursor-pointer ${
+                  timeLeft <= 10 ? 'pulse-ring' : ''
+                } ${
                   timeLeft <= 3 ? 'bg-red-600 animate-ping shadow-lg shadow-red-500/50' : 
                   timeLeft <= 5 ? 'bg-orange-500 animate-bounce' : 
                   'abraj-red animate-pulse'
@@ -587,7 +589,7 @@ export default function HostGame() {
           </div>
 
           {/* Question */}
-          <Card className="mb-6 hover:scale-105 transition-transform duration-200 bg-white/95 backdrop-blur-sm">
+          <Card className="mb-6 glass card-3d-enhanced">
             <CardContent className="p-3 sm:p-4 text-center">
               <h2 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 leading-snug">{currentQuestion?.question}</h2>
             </CardContent>
@@ -606,7 +608,7 @@ export default function HostGame() {
               return (
                 <div
                   key={index}
-                  className={`${colors[index]} text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold transition-all transform hover:scale-105 cursor-pointer active:scale-95 relative overflow-hidden min-h-[80px] sm:min-h-[96px] h-auto ${
+                  className={`${colors[index]} text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold card-3d-enhanced cursor-pointer relative overflow-hidden min-h-[80px] sm:min-h-[96px] h-auto ${
                     showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce shadow-lg shadow-yellow-400/50' : 
                     showResults && !isCorrect ? 'opacity-75 animate-pulse ring-2 ring-gray-400' : ''
                   }`}
@@ -639,7 +641,7 @@ export default function HostGame() {
 
           {/* Game Info - Matching Player Page Style */}
           <div className="mt-6">
-            <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow hover:scale-105 transition-transform">
+            <div className="glass card-3d-enhanced rounded-lg p-4">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-gray-600">PIN:</span>
                 <span className="font-bold text-[#019ebd]">{game.gamePin}</span>
@@ -657,7 +659,7 @@ export default function HostGame() {
 
           {/* Leaderboard Preview */}
           <div className="mt-6">
-            <Card className="bg-white/95 backdrop-blur-sm hover:scale-105 transition-transform">
+            <Card className="glass card-3d-enhanced">
               <CardHeader>
                 <CardTitle className="text-center">Top Players</CardTitle>
               </CardHeader>
