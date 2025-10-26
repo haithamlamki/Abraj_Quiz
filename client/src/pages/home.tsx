@@ -169,7 +169,7 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative overflow-hidden py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
+          <div className="max-w-6xl mx-auto text-center">
             
             {/* Main Content */}
             <div className="animate-scale-in">
