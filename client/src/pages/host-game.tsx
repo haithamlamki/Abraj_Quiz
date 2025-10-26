@@ -233,6 +233,27 @@ export default function HostGame() {
     }
   }, [showResults, game, quiz, soundPlayed]);
 
+  // Warn before leaving if game is active
+  useEffect(() => {
+    if (!game) return;
+    
+    const shouldWarn = game.status === "waiting" || game.status === "active";
+    
+    if (shouldWarn) {
+      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = "";
+        return "";
+      };
+      
+      window.addEventListener("beforeunload", handleBeforeUnload);
+      
+      return () => {
+        window.removeEventListener("beforeunload", handleBeforeUnload);
+      };
+    }
+  }, [game?.status]);
+
   if (gameLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
