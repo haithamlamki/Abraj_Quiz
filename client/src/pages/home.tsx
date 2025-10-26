@@ -162,12 +162,12 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen relative">
+    <div className="h-screen overflow-y-auto relative">
       {/* Background Gradient Overlay */}
       <div className="fixed inset-0 -z-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 animate-gradient"></div>
       
       {/* Hero Section */}
-      <section className="relative overflow-hidden py-16">
+      <section className="relative overflow-hidden py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             
@@ -287,7 +287,7 @@ export default function Home() {
 
       {/* Latest Quiz Results */}
       {latestResults?.hasResults && (
-        <section className="py-16 bg-[#ffffff00] mt-[-98px] mb-[-50px]">
+        <section className="py-8 bg-[#ffffff00]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
               <h2 className="font-bold text-4xl text-gray-800 mb-4">🏆 Latest Quiz Champions</h2>
@@ -338,7 +338,7 @@ export default function Home() {
       )}
 
       {/* Quick Actions */}
-      <section className="py-16 bg-[#ffffff00] mt-[-98px] mb-[-98px]">
+      <section className="py-8 bg-[#ffffff00]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="font-bold text-4xl text-gray-800 mb-4">Get Started</h2>

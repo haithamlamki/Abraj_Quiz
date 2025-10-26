@@ -306,9 +306,9 @@ export default function HostGame() {
 
   if (game.status === "waiting") {
     return (
-      <div className="min-h-screen py-8 animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50" style={getBackgroundStyle(quiz?.background || 'classroom')}>
+      <div className="h-screen overflow-y-auto py-8 animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50" style={getBackgroundStyle(quiz?.background || 'classroom')}>
         <CountdownOverlay />
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col">
           <div className="text-center mb-8">
             <h1 className="font-bold text-4xl mb-4 gradient-text">Game Lobby</h1>
             <div className="flex justify-center items-center space-x-4 mb-6">
@@ -321,15 +321,15 @@ export default function HostGame() {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-8">
-            <Card className="card-3d-enhanced glass">
-              <CardHeader>
+          <div className="grid lg:grid-cols-2 gap-4 flex-1 min-h-0">
+            <Card className="card-3d-enhanced glass flex flex-col">
+              <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center space-x-2">
                   <Users className="w-5 h-5" />
                   <span>Players ({players.length})</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="flex-1 overflow-y-auto">
                 {players.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
                     Waiting for players to join...
@@ -346,15 +346,15 @@ export default function HostGame() {
               </CardContent>
             </Card>
 
-            <Card className="card-3d-enhanced glass">
-              <CardHeader>
+            <Card className="card-3d-enhanced glass flex flex-col">
+              <CardHeader className="flex-shrink-0">
                 <CardTitle>Share Game</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-3 flex-shrink-0">
                 {qrCodeUrl && (
-                  <div className="text-center space-y-2">
-                    <img src={qrCodeUrl} alt="QR Code to join game" className="w-32 h-32 mx-auto" />
-                    <p className="text-xs text-gray-500">Players can scan to join</p>
+                  <div className="text-center space-y-1">
+                    <img src={qrCodeUrl} alt="QR Code to join game" className="w-24 h-24 mx-auto" />
+                    <p className="text-xs text-gray-500">Scan to join</p>
                   </div>
                 )}
                 
@@ -362,7 +362,7 @@ export default function HostGame() {
                   <Button
                     variant="outline"
                     onClick={() => copyToClipboard(game.gamePin, "Game PIN")}
-                    className="w-full btn-glow"
+                    className="w-full btn-glow py-2"
                   >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy PIN ({game.gamePin})
@@ -371,17 +371,17 @@ export default function HostGame() {
                   <Button
                     variant="outline"
                     onClick={() => copyToClipboard(`${window.location.origin}/join/${game.gamePin}`, "Join link")}
-                    className="w-full btn-glow"
+                    className="w-full btn-glow py-2"
                   >
                     <Share2 className="w-4 h-4 mr-2" />
                     Copy Join Link
                   </Button>
                 </div>
 
-                <div className="pt-4 border-t">
-                  <div className="text-center space-y-2 mb-4">
-                    <h3 className="font-bold text-lg">{quiz.title}</h3>
-                    <p className="text-sm text-gray-500">
+                <div className="pt-2 border-t">
+                  <div className="text-center space-y-1 mb-3">
+                    <h3 className="font-bold text-base">{quiz.title}</h3>
+                    <p className="text-xs text-gray-500">
                       {questions.length} questions • Multiple Choice
                     </p>
                   </div>
@@ -393,9 +393,9 @@ export default function HostGame() {
                       setGameStartCountdown(3);
                     }}
                     disabled={players.length === 0 || startGameMutation.isPending || isStartingGame}
-                    className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3 btn-glow shimmer"
+                    className="w-full abraj-green hover:bg-green-600 text-white font-bold text-base py-2 btn-glow shimmer"
                   >
-                    <Play className="w-5 h-5 mr-2" />
+                    <Play className="w-4 h-4 mr-2" />
                     {isStartingGame ? `Starting in ${gameStartCountdown}...` : 'Start Game'}
                   </Button>
                 </div>
@@ -517,8 +517,8 @@ export default function HostGame() {
 
   if (game.status === "active") {
     return (
-      <div className="min-h-screen p-4" style={getBackgroundStyle(quiz?.background || 'classroom')}>
-        <div className="max-w-4xl mx-auto relative">
+      <div className="h-screen overflow-hidden flex flex-col p-4" style={getBackgroundStyle(quiz?.background || 'classroom')}>
+        <div className="max-w-4xl mx-auto relative flex-1 flex flex-col min-h-0">
           {/* Next Question Button - Top Right */}
           {(showResults || timeLeft === 0) && (
             <div className="absolute top-0 right-0 z-10">
@@ -553,14 +553,14 @@ export default function HostGame() {
           )}
           
           {/* Header */}
-          <div className="text-center mb-6">
-            <Badge variant="secondary" className="mb-2 bg-[#019ebd] text-[#ffffff]">
+          <div className="text-center mb-3 flex-shrink-0">
+            <Badge variant="secondary" className="mb-1 bg-[#019ebd] text-[#ffffff]">
               Question {(game.currentQuestion || 0) + 1} of {questions.length}
             </Badge>
             
             {timeLeft !== null && timeLeft > 0 && !showResults && (
               <div 
-                className={`text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 hover:scale-110 transition-transform cursor-pointer ${
+                className={`text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl mx-auto mb-1 hover:scale-110 transition-transform cursor-pointer ${
                   timeLeft <= 10 ? 'pulse-ring' : ''
                 } ${
                   timeLeft <= 3 ? 'bg-red-600 animate-ping shadow-lg shadow-red-500/50' : 
@@ -573,20 +573,20 @@ export default function HostGame() {
               </div>
             )}
             
-            <p className="text-gray-600 text-sm">
+            <p className="text-gray-600 text-xs">
               {showResults ? "Results displayed!" : timeLeft === 0 ? "Time's up!" : "seconds left"}
             </p>
           </div>
 
           {/* Question */}
-          <Card className="mb-6 glass card-3d-enhanced">
-            <CardContent className="p-3 sm:p-4 text-center">
-              <h2 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 leading-snug">{currentQuestion?.question}</h2>
+          <Card className="mb-3 glass card-3d-enhanced flex-shrink-0">
+            <CardContent className="p-2 sm:p-3 text-center">
+              <h2 className="font-bold text-sm sm:text-base md:text-lg text-gray-800 leading-snug">{currentQuestion?.question}</h2>
             </CardContent>
           </Card>
 
           {/* Answer Options - 2x2 Grid Layout */}
-          <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-6">
+          <div className="grid grid-cols-2 gap-2 mb-3 flex-1 min-h-0">
             {currentQuestion?.answers.map((answer, index) => {
               const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
               const symbols = [Triangle, Diamond, Circle, Square];
@@ -598,26 +598,26 @@ export default function HostGame() {
               return (
                 <div
                   key={index}
-                  className={`${colors[index]} text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold card-3d-enhanced cursor-pointer relative overflow-hidden min-h-[80px] sm:min-h-[96px] h-auto ${
+                  className={`${colors[index]} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced cursor-pointer relative overflow-hidden h-full flex ${
                     showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce shadow-lg shadow-yellow-400/50' : 
                     showResults && !isCorrect ? 'opacity-75 animate-pulse ring-2 ring-gray-400' : ''
                   }`}
 
                 >
-                  <div className="flex flex-col items-center justify-center w-full h-full gap-2">
-                    <SymbolIcon className="w-6 h-6 sm:w-8 sm:h-8 shrink-0" fill="white" strokeWidth={0} />
-                    <span className="text-center text-sm sm:text-base md:text-lg lg:text-xl leading-tight break-words overflow-wrap-anywhere hyphens-auto px-2 font-semibold">{answer}</span>
+                  <div className="flex flex-col items-center justify-center w-full gap-1">
+                    <SymbolIcon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="white" strokeWidth={0} />
+                    <span className="text-center text-xs sm:text-sm md:text-base leading-tight break-words overflow-wrap-anywhere hyphens-auto px-1 font-semibold">{answer}</span>
                   
                     {showResults && questionResults && (
                       <>
-                        <div className="mt-2 sm:mt-3 bg-white/20 rounded-full h-1.5 sm:h-2 w-full">
+                        <div className="mt-1 bg-white/20 rounded-full h-1 w-full">
                           <div 
-                            className="bg-white rounded-full h-1.5 sm:h-2 transition-all duration-1000"
+                            className="bg-white rounded-full h-1 transition-all duration-1000"
                             style={{ width: `${percentage}%` }}
                           ></div>
                         </div>
-                        <div className="mt-1 sm:mt-2 text-xs sm:text-sm opacity-90 text-center">
-                          {percentage}% ({count} players)
+                        <div className="text-[10px] sm:text-xs opacity-90 text-center">
+                          {percentage}% ({count})
                         </div>
                       </>
                     )}
@@ -627,36 +627,34 @@ export default function HostGame() {
             })}
           </div>
 
-
-
-          {/* Game Info - Matching Player Page Style */}
-          <div className="mt-6">
-            <div className="glass card-3d-enhanced rounded-lg p-4">
-              <div className="flex justify-between items-center mb-2">
+          {/* Game Info & Leaderboard in Compact Row */}
+          <div className="grid grid-cols-2 gap-2 flex-shrink-0">
+            <div className="glass card-3d-enhanced rounded-lg p-2">
+              <div className="flex justify-between items-center text-xs mb-1">
                 <span className="text-gray-600">PIN:</span>
                 <span className="font-bold text-[#019ebd]">{game.gamePin}</span>
               </div>
-              <div className="flex justify-between items-center mb-2">
+              <div className="flex justify-between items-center text-xs mb-1">
                 <span className="text-gray-600">Players:</span>
                 <span className="font-bold">{players.length}</span>
               </div>
-              <div className="flex justify-between items-center">
+              <div className="flex justify-between items-center text-xs">
                 <span className="text-gray-600">Progress:</span>
                 <span className="font-bold">{(game.currentQuestion || 0) + 1}/{questions.length}</span>
               </div>
             </div>
-          </div>
 
-          {/* Leaderboard Preview */}
-          <div className="mt-6">
-            <Card className="glass card-3d-enhanced">
-              <CardHeader>
-                <CardTitle className="text-center">Top Players</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Leaderboard players={players.slice(0, 3)} />
-              </CardContent>
-            </Card>
+            <div className="glass card-3d-enhanced rounded-lg p-2">
+              <div className="text-center text-xs font-bold mb-1">Top 3</div>
+              <div className="space-y-1">
+                {players.slice(0, 3).map((player, idx) => (
+                  <div key={idx} className="flex justify-between items-center text-[10px]">
+                    <span className="truncate">{player.name}</span>
+                    <span className="font-bold ml-1">{player.score || 0}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

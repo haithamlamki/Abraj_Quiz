@@ -562,18 +562,18 @@ export default function PlayGame() {
   }
 
   return (
-    <div className="min-h-screen p-4" style={getBackgroundStyle(quiz?.background || 'classroom')}>
+    <div className="h-screen overflow-hidden flex flex-col p-4" style={getBackgroundStyle(quiz?.background || 'classroom')}>
       <TimeUpOverlay />
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-4xl mx-auto flex-1 flex flex-col min-h-0">
         {/* Header */}
-        <div className="text-center mb-6">
-          <Badge variant="secondary" className="mb-2">
+        <div className="text-center mb-3 flex-shrink-0">
+          <Badge variant="secondary" className="mb-1">
             Question {(game.currentQuestion || 0) + 1} of {questions.length}
           </Badge>
           
           {timeLeft !== null && timeLeft > 0 && !hasAnswered && (
             <div 
-              className={`text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 hover:scale-110 transition-transform cursor-pointer ${
+              className={`text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl mx-auto mb-1 hover:scale-110 transition-transform cursor-pointer ${
                 timeLeft <= 10 ? 'pulse-ring' : ''
               } ${
                 timeLeft <= 3 ? 'bg-red-600 animate-ping shadow-lg shadow-red-500/50' : 
@@ -586,20 +586,20 @@ export default function PlayGame() {
             </div>
           )}
           
-          <p className="text-gray-600 text-sm">
+          <p className="text-gray-600 text-xs">
             {hasAnswered ? "Answer submitted!" : timeLeft === 0 ? "Time's up!" : "seconds left"}
           </p>
         </div>
 
         {/* Question */}
-        <Card className="mb-6 glass card-3d-enhanced">
-          <CardContent className="p-3 sm:p-4 text-center">
-            <h2 className="font-bold text-base sm:text-lg md:text-xl text-gray-800 leading-snug">{currentQuestion?.question}</h2>
+        <Card className="mb-3 glass card-3d-enhanced flex-shrink-0">
+          <CardContent className="p-2 sm:p-3 text-center">
+            <h2 className="font-bold text-sm sm:text-base md:text-lg text-gray-800 leading-snug">{currentQuestion?.question}</h2>
           </CardContent>
         </Card>
 
         {/* Answer Options - 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-2 sm:gap-4 mb-6">
+        <div className="grid grid-cols-2 gap-2 mb-3 flex-1 min-h-0">
           {currentQuestion?.answers.map((answer, index) => {
             const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
             const symbols = [Triangle, Diamond, Circle, Square];
@@ -612,13 +612,13 @@ export default function PlayGame() {
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 disabled={isDisabled}
-                className={`${colors[index]} text-white p-2 sm:p-4 md:p-6 lg:p-8 rounded-xl font-bold card-3d-enhanced min-h-[80px] sm:min-h-[96px] h-auto ${
+                className={`${colors[index]} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced h-full flex ${
                   isSelected ? 'ring-4 ring-white animate-pulse' : ''
                 } ${isDisabled ? 'opacity-60' : ''}`}
               >
-                <div className="flex flex-col items-center justify-center w-full h-full gap-2">
-                  <SymbolIcon className="w-6 h-6 sm:w-8 sm:h-8 shrink-0" fill="white" strokeWidth={0} />
-                  <span className="text-center text-sm sm:text-base md:text-lg lg:text-xl leading-tight break-words overflow-wrap-anywhere hyphens-auto px-2 font-semibold">{answer}</span>
+                <div className="flex flex-col items-center justify-center w-full gap-1">
+                  <SymbolIcon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="white" strokeWidth={0} />
+                  <span className="text-center text-xs sm:text-sm md:text-base leading-tight break-words overflow-wrap-anywhere hyphens-auto px-1 font-semibold">{answer}</span>
                 </div>
               </Button>
             );
@@ -626,15 +626,15 @@ export default function PlayGame() {
         </div>
 
         {/* Player Info */}
-        <div className="mt-6 text-center">
-          <div className="glass card-3d-enhanced rounded-lg p-3 sm:p-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-600 text-sm sm:text-base">Score:</span>
-              <span className="font-bold gradient-text text-sm sm:text-base text-xl">{(currentPlayer?.score || 0).toLocaleString()}</span>
+        <div className="flex-shrink-0">
+          <div className="glass card-3d-enhanced rounded-lg p-2">
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-gray-600">Score:</span>
+              <span className="font-bold gradient-text text-sm">{(currentPlayer?.score || 0).toLocaleString()}</span>
             </div>
-            <div className="flex justify-between items-center mt-2">
-              <span className="text-gray-600 text-sm sm:text-base">Rank:</span>
-              <span className="font-bold text-sm sm:text-base">{currentRank} of {players.length}</span>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-gray-600">Rank:</span>
+              <span className="font-bold">{currentRank} of {players.length}</span>
             </div>
           </div>
         </div>

@@ -233,40 +233,40 @@ export default function GameResults() {
 
   // Host view
   return (
-    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8">
+    <div className="h-screen overflow-y-auto animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-6">
       {showCelebration && <ConfettiParticles />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-8 animate-scale-in">
-          <div className="card-3d-enhanced glass p-8">
-            <Trophy className="h-16 w-16 text-yellow-500 mx-auto mb-4 animate-bounce pulse-ring" />
-            <h1 className="text-4xl font-bold gradient-text mb-2">Quiz Complete!</h1>
-            <p className="text-xl text-gray-600 mb-6">{game.quiz?.title || 'Untitled Quiz'}</p>
+        <div className="text-center mb-6 animate-scale-in">
+          <div className="card-3d-enhanced glass p-6">
+            <Trophy className="h-12 w-12 text-yellow-500 mx-auto mb-3 animate-bounce pulse-ring" />
+            <h1 className="text-3xl font-bold gradient-text mb-1">Quiz Complete!</h1>
+            <p className="text-lg text-gray-600 mb-4">{game.quiz?.title || 'Untitled Quiz'}</p>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-abraj-primary">{players.length}</div>
-                <div className="text-sm text-gray-600">Players</div>
+                <div className="text-xl font-bold text-abraj-primary">{players.length}</div>
+                <div className="text-xs text-gray-600">Players</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-abraj-primary">{totalQuestions}</div>
-                <div className="text-sm text-gray-600">Questions</div>
+                <div className="text-xl font-bold text-abraj-primary">{totalQuestions}</div>
+                <div className="text-xs text-gray-600">Questions</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-abraj-primary">{accuracy}%</div>
-                <div className="text-sm text-gray-600">Accuracy</div>
+                <div className="text-xl font-bold text-abraj-primary">{accuracy}%</div>
+                <div className="text-xs text-gray-600">Accuracy</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-abraj-primary">{averageScore.toLocaleString()}</div>
-                <div className="text-sm text-gray-600">Avg Score</div>
+                <div className="text-xl font-bold text-abraj-primary">{averageScore.toLocaleString()}</div>
+                <div className="text-xs text-gray-600">Avg Score</div>
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button onClick={downloadPDF} className="abraj-primary btn-glow">
+            <div className="flex flex-col sm:flex-row gap-2 justify-center">
+              <Button onClick={downloadPDF} className="abraj-primary btn-glow py-2">
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF Report
               </Button>
-              <Button onClick={() => setLocation("/")} variant="outline">
+              <Button onClick={() => setLocation("/")} variant="outline" className="py-2">
                 <Home className="mr-2 h-4 w-4" />
                 Create New Quiz
               </Button>
@@ -274,6 +274,7 @@ export default function GameResults() {
                 onClick={() => setLocation(`/host-quiz/${game.quizId}`)} 
                 variant="outline"
                 data-testid="button-host-again"
+                className="py-2"
               >
                 <RotateCcw className="mr-2 h-4 w-4" />
                 Host Again
