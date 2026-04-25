@@ -1,0 +1,873 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kahoot Clone - Interactive Learning Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'montserrat': ['Montserrat', 'sans-serif'],
+                        'inter': ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        kahoot: {
+                            purple: '#6366f1',
+                            blue: '#3b82f6',
+                            red: '#ef4444',
+                            green: '#22c55e',
+                            orange: '#f97316',
+                            pink: '#ec4899',
+                        }
+                    },
+                    animation: {
+                        'bounce-gentle': 'bounce 2s infinite',
+                        'pulse-slow': 'pulse 3s infinite',
+                        'wiggle': 'wiggle 1s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        wiggle: {
+                            '0%, 100%': { transform: 'rotate(-3deg)' },
+                            '50%': { transform: 'rotate(3deg)' },
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+</head>
+<body class="bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 min-h-screen font-inter">
+    
+    <!-- Navigation -->
+    <!-- @COMPONENT: Navigation [responsive header with logo and navigation] -->
+    <nav class="bg-white shadow-lg border-b-4 border-kahoot-purple sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex-shrink-0">
+                        <div class="bg-kahoot-purple text-white w-10 h-10 rounded-xl flex items-center justify-center font-montserrat font-bold text-xl">
+                            K
+                        </div>
+                    </div>
+                    <h1 class="font-montserrat font-bold text-2xl text-gray-800">Kahoot!</h1>
+                </div>
+                
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#" class="text-gray-700 hover:text-kahoot-purple px-3 py-2 rounded-md text-sm font-medium transition-colors">Create</a>
+                        <a href="#" class="text-gray-700 hover:text-kahoot-purple px-3 py-2 rounded-md text-sm font-medium transition-colors">Play</a>
+                        <a href="#" class="text-gray-700 hover:text-kahoot-purple px-3 py-2 rounded-md text-sm font-medium transition-colors">Discover</a>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <button class="bg-kahoot-purple hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-medium transition-all transform hover:scale-105">
+                        Sign up
+                    </button>
+                    <button class="text-kahoot-purple border border-kahoot-purple hover:bg-kahoot-purple hover:text-white px-4 py-2 rounded-lg font-medium transition-all">
+                        Log in
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <!-- @END_COMPONENT: Navigation -->
+
+    <!-- Hero Section -->
+    <!-- @COMPONENT: HeroSection [main landing area with game join functionality] -->
+    <section class="relative overflow-hidden py-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                
+                <!-- Left Content -->
+                <div class="text-center lg:text-left">
+                    <h1 class="font-montserrat font-bold text-5xl lg:text-6xl text-gray-800 leading-tight">
+                        Make Learning
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-kahoot-purple to-kahoot-blue">
+                            Awesome!
+                        </span>
+                    </h1>
+                    <p class="mt-6 text-xl text-gray-600 max-w-lg">
+                        Kahoot! makes it easy to create, share and play learning games or trivia quizzes in minutes.
+                    </p>
+                    
+                    <!-- Game PIN Entry -->
+                    <div class="mt-8 bg-white rounded-2xl shadow-xl p-8 border border-gray-100">
+                        <h3 class="font-montserrat font-bold text-2xl text-gray-800 mb-4">Join a game</h3>
+                        <div class="flex flex-col sm:flex-row gap-3">
+                            <input 
+                                type="text" 
+                                placeholder="Game PIN" 
+                                class="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-lg font-medium text-center focus:border-kahoot-purple focus:outline-none transition-colors"
+                                data-mock="true"
+                            >
+                            <button class="bg-kahoot-purple hover:bg-purple-600 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all transform hover:scale-105 shadow-lg">
+                                Enter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Content - Featured Image -->
+                <div class="relative">
+                    <!-- Quiz competition scene with students engaged in learning -->
+                    <img 
+                        src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=600" 
+                        alt="Students engaged in interactive quiz competition" 
+                        class="rounded-2xl shadow-2xl w-full h-auto transform rotate-2 hover:rotate-0 transition-transform duration-300"
+                    >
+                    <div class="absolute -top-4 -right-4 bg-kahoot-green text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl animate-bounce-gentle">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: HeroSection -->
+
+    <!-- Quiz Creation Section -->
+    <!-- @COMPONENT: QuizCreation [quiz builder interface] -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat font-bold text-4xl text-gray-800 mb-4">Create Your Quiz</h2>
+                <p class="text-xl text-gray-600">Build engaging quizzes in minutes with our intuitive editor</p>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Quiz Builder Interface -->
+                <div class="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 shadow-xl">
+                    <div class="bg-white rounded-xl p-6 shadow-lg">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-montserrat font-bold text-xl text-gray-800">Question 1 of 5</h3>
+                            <div class="bg-kahoot-blue text-white px-3 py-1 rounded-full text-sm font-medium">
+                                Multiple Choice
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Question</label>
+                            <input 
+                                type="text" 
+                                placeholder="What is the capital of France?" 
+                                class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:border-kahoot-purple focus:outline-none"
+                                data-mock="true"
+                            >
+                        </div>
+                        
+                        <!-- Answer Options -->
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-kahoot-red text-white p-4 rounded-lg cursor-pointer hover:scale-105 transition-transform">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold">A</span>
+                                    <i class="fas fa-triangle"></i>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Paris" 
+                                    class="w-full bg-transparent border-none text-white placeholder-red-200 focus:outline-none mt-2"
+                                    data-mock="true"
+                                >
+                            </div>
+                            
+                            <div class="bg-kahoot-blue text-white p-4 rounded-lg cursor-pointer hover:scale-105 transition-transform">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold">B</span>
+                                    <i class="fas fa-diamond"></i>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="London" 
+                                    class="w-full bg-transparent border-none text-white placeholder-blue-200 focus:outline-none mt-2"
+                                    data-mock="true"
+                                >
+                            </div>
+                            
+                            <div class="bg-kahoot-green text-white p-4 rounded-lg cursor-pointer hover:scale-105 transition-transform">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold">C</span>
+                                    <i class="fas fa-circle"></i>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Madrid" 
+                                    class="w-full bg-transparent border-none text-white placeholder-green-200 focus:outline-none mt-2"
+                                    data-mock="true"
+                                >
+                            </div>
+                            
+                            <div class="bg-kahoot-orange text-white p-4 rounded-lg cursor-pointer hover:scale-105 transition-transform">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-bold">D</span>
+                                    <i class="fas fa-square"></i>
+                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Berlin" 
+                                    class="w-full bg-transparent border-none text-white placeholder-orange-200 focus:outline-none mt-2"
+                                    data-mock="true"
+                                >
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-between items-center">
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" class="w-4 h-4 text-kahoot-purple" data-mock="true">
+                                <span class="text-sm text-gray-600">Correct answer</span>
+                            </div>
+                            <button class="bg-kahoot-purple hover:bg-purple-600 text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                                Next Question
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Preview & Features -->
+                <div class="space-y-6">
+                    <!-- Colorful UI elements and design showcase -->
+                    <img 
+                        src="https://images.unsplash.com/photo-1611224923853-80b023f02d71?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=400" 
+                        alt="Colorful user interface elements and design components" 
+                        class="rounded-xl shadow-lg w-full h-48 object-cover"
+                    >
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gradient-to-br from-kahoot-purple to-purple-600 text-white p-6 rounded-xl">
+                            <i class="fas fa-clock text-3xl mb-2"></i>
+                            <h4 class="font-bold">Time Limits</h4>
+                            <p class="text-sm opacity-90">Set custom timers</p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-kahoot-green to-green-600 text-white p-6 rounded-xl">
+                            <i class="fas fa-image text-3xl mb-2"></i>
+                            <h4 class="font-bold">Rich Media</h4>
+                            <p class="text-sm opacity-90">Add images & videos</p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-kahoot-blue to-blue-600 text-white p-6 rounded-xl">
+                            <i class="fas fa-users text-3xl mb-2"></i>
+                            <h4 class="font-bold">Team Mode</h4>
+                            <p class="text-sm opacity-90">Collaborative play</p>
+                        </div>
+                        
+                        <div class="bg-gradient-to-br from-kahoot-red to-red-600 text-white p-6 rounded-xl">
+                            <i class="fas fa-chart-bar text-3xl mb-2"></i>
+                            <h4 class="font-bold">Analytics</h4>
+                            <p class="text-sm opacity-90">Track performance</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: QuizCreation -->
+
+    <!-- Live Game Dashboard -->
+    <!-- @COMPONENT: GameDashboard [host view during active game] -->
+    <section class="py-16 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat font-bold text-4xl mb-4">Game Dashboard</h2>
+                <p class="text-xl opacity-90">Monitor your live quiz session</p>
+            </div>
+            
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Current Question Display -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+                        <div class="flex items-center justify-between mb-6">
+                            <h3 class="font-montserrat font-bold text-2xl">Question 3 of 10</h3>
+                            <div class="bg-kahoot-red text-white px-4 py-2 rounded-full font-bold text-lg animate-pulse">
+                                <i class="fas fa-clock mr-2"></i>
+                                <span data-bind="timer">15s</span>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-white rounded-xl p-6 text-gray-800 mb-6">
+                            <h4 class="font-montserrat font-bold text-2xl mb-4" data-mock="true">
+                                Which planet is known as the Red Planet?
+                            </h4>
+                            <!-- Students using mobile devices to participate in quiz -->
+                            <img 
+                                src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=300" 
+                                alt="Students actively using mobile devices to participate in quiz" 
+                                class="rounded-lg w-full h-48 object-cover"
+                            >
+                        </div>
+                        
+                        <!-- Answer Options Results -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-kahoot-red rounded-xl p-4 relative overflow-hidden">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-bold text-lg">A. Venus</span>
+                                    <i class="fas fa-triangle text-2xl"></i>
+                                </div>
+                                <div class="bg-white/20 rounded-full h-2 mb-2">
+                                    <div class="bg-white rounded-full h-2 w-1/4 transition-all duration-1000"></div>
+                                </div>
+                                <span class="text-sm opacity-90" data-mock="true">25% (12 players)</span>
+                            </div>
+                            
+                            <div class="bg-kahoot-blue rounded-xl p-4 relative overflow-hidden">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-bold text-lg">B. Mars</span>
+                                    <i class="fas fa-diamond text-2xl"></i>
+                                </div>
+                                <div class="bg-white/20 rounded-full h-2 mb-2">
+                                    <div class="bg-white rounded-full h-2 w-3/4 transition-all duration-1000"></div>
+                                </div>
+                                <span class="text-sm opacity-90" data-mock="true">65% (31 players)</span>
+                            </div>
+                            
+                            <div class="bg-kahoot-green rounded-xl p-4 relative overflow-hidden">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-bold text-lg">C. Jupiter</span>
+                                    <i class="fas fa-circle text-2xl"></i>
+                                </div>
+                                <div class="bg-white/20 rounded-full h-2 mb-2">
+                                    <div class="bg-white rounded-full h-2 w-1/12 transition-all duration-1000"></div>
+                                </div>
+                                <span class="text-sm opacity-90" data-mock="true">8% (4 players)</span>
+                            </div>
+                            
+                            <div class="bg-kahoot-orange rounded-xl p-4 relative overflow-hidden">
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="font-bold text-lg">D. Earth</span>
+                                    <i class="fas fa-square text-2xl"></i>
+                                </div>
+                                <div class="bg-white/20 rounded-full h-2 mb-2">
+                                    <div class="bg-white rounded-full h-2 w-1/50 transition-all duration-1000"></div>
+                                </div>
+                                <span class="text-sm opacity-90" data-mock="true">2% (1 player)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Game Stats & Leaderboard -->
+                <div class="space-y-6">
+                    <!-- Game Info -->
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                        <h4 class="font-montserrat font-bold text-xl mb-4">Game Info</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="opacity-90">Players:</span>
+                                <span class="font-bold" data-mock="true">48</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="opacity-90">Game PIN:</span>
+                                <span class="font-bold text-kahoot-blue" data-mock="true">123456</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="opacity-90">Questions:</span>
+                                <span class="font-bold" data-mock="true">3/10</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Top Players -->
+                    <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+                        <h4 class="font-montserrat font-bold text-xl mb-4">Leaderboard</h4>
+                        <div class="space-y-3">
+                            <!-- @MAP: topPlayers.map(player => ( -->
+                            <div class="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-kahoot-green text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                                        1
+                                    </div>
+                                    <span class="font-medium" data-mock="true">Alex_Quiz_Pro</span>
+                                </div>
+                                <span class="font-bold text-kahoot-green" data-mock="true">2,850</span>
+                            </div>
+                            <div class="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-gray-400 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                                        2
+                                    </div>
+                                    <span class="font-medium" data-mock="true">SmartStudent22</span>
+                                </div>
+                                <span class="font-bold text-gray-300" data-mock="true">2,650</span>
+                            </div>
+                            <div class="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                                <div class="flex items-center space-x-3">
+                                    <div class="bg-orange-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm">
+                                        3
+                                    </div>
+                                    <span class="font-medium" data-mock="true">BrainMaster</span>
+                                </div>
+                                <span class="font-bold text-orange-300" data-mock="true">2,400</span>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: GameDashboard -->
+
+    <!-- Player Experience Section -->
+    <!-- @COMPONENT: PlayerExperience [mobile player view] -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat font-bold text-4xl text-gray-800 mb-4">Player Experience</h2>
+                <p class="text-xl text-gray-600">Seamless gameplay on any device</p>
+            </div>
+            
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <!-- Mobile Mockups -->
+                <div class="flex justify-center space-x-4">
+                    <!-- Phone 1 - Question View -->
+                    <div class="bg-gray-800 rounded-3xl p-2 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform">
+                        <div class="bg-white rounded-3xl p-4 w-64 h-96 overflow-hidden">
+                            <div class="text-center mb-4">
+                                <div class="bg-kahoot-purple text-white px-3 py-1 rounded-full text-sm font-bold inline-block">
+                                    Question 3
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mb-6">
+                                <div class="bg-kahoot-red text-white w-16 h-16 rounded-full flex items-center justify-center font-bold text-2xl mx-auto mb-2 animate-pulse">
+                                    12
+                                </div>
+                                <p class="text-gray-600 text-sm">seconds left</p>
+                            </div>
+                            
+                            <div class="space-y-3">
+                                <button class="w-full bg-kahoot-red hover:bg-red-600 text-white p-4 rounded-xl font-bold text-lg transition-all transform active:scale-95">
+                                    <i class="fas fa-triangle mr-2"></i> Venus
+                                </button>
+                                <button class="w-full bg-kahoot-blue hover:bg-blue-600 text-white p-4 rounded-xl font-bold text-lg transition-all transform active:scale-95">
+                                    <i class="fas fa-diamond mr-2"></i> Mars
+                                </button>
+                                <button class="w-full bg-kahoot-green hover:bg-green-600 text-white p-4 rounded-xl font-bold text-lg transition-all transform active:scale-95">
+                                    <i class="fas fa-circle mr-2"></i> Jupiter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Phone 2 - Results View -->
+                    <div class="bg-gray-800 rounded-3xl p-2 shadow-2xl transform -rotate-3 hover:rotate-0 transition-transform">
+                        <div class="bg-white rounded-3xl p-4 w-64 h-96 overflow-hidden">
+                            <div class="text-center mb-6">
+                                <div class="bg-kahoot-green text-white w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <i class="fas fa-check text-3xl"></i>
+                                </div>
+                                <h3 class="font-montserrat font-bold text-xl text-gray-800">Correct!</h3>
+                                <p class="text-gray-600">+850 points</p>
+                            </div>
+                            
+                            <div class="bg-gradient-to-r from-kahoot-purple to-kahoot-blue rounded-xl p-4 text-white text-center mb-4">
+                                <p class="text-sm opacity-90">Your Score</p>
+                                <p class="font-bold text-2xl" data-mock="true">2,850</p>
+                            </div>
+                            
+                            <div class="text-center">
+                                <p class="text-gray-600 text-sm mb-2">Current Rank</p>
+                                <div class="bg-kahoot-green text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl mx-auto">
+                                    1
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Features List -->
+                <div class="space-y-6">
+                    <!-- Students collaborating with tablets and laptops in classroom -->
+                    <img 
+                        src="https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=300" 
+                        alt="Students collaborating with tablets and laptops in modern classroom" 
+                        class="rounded-xl shadow-lg w-full h-48 object-cover"
+                    >
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-4">
+                            <div class="bg-kahoot-purple text-white w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-mobile-alt"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-montserrat font-bold text-lg text-gray-800">Mobile Optimized</h4>
+                                <p class="text-gray-600">Perfect gameplay experience on smartphones and tablets</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="bg-kahoot-green text-white w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-montserrat font-bold text-lg text-gray-800">Real-time Feedback</h4>
+                                <p class="text-gray-600">Instant results and scoring with engaging animations</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-start space-x-4">
+                            <div class="bg-kahoot-blue text-white w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="fas fa-wifi"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-montserrat font-bold text-lg text-gray-800">No Downloads</h4>
+                                <p class="text-gray-600">Join instantly through any web browser</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: PlayerExperience -->
+
+    <!-- Results & Analytics -->
+    <!-- @COMPONENT: ResultsAnalytics [post-game analysis] -->
+    <section class="py-16 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat font-bold text-4xl text-gray-800 mb-4">Game Results</h2>
+                <p class="text-xl text-gray-600">Comprehensive analytics for learning insights</p>
+            </div>
+            
+            <div class="grid lg:grid-cols-3 gap-8">
+                <!-- Final Leaderboard -->
+                <div class="lg:col-span-2">
+                    <div class="bg-white rounded-2xl shadow-xl p-8">
+                        <h3 class="font-montserrat font-bold text-2xl text-gray-800 mb-6">Final Leaderboard</h3>
+                        
+                        <!-- Podium Winners -->
+                        <div class="flex justify-center items-end space-x-4 mb-8">
+                            <!-- 2nd Place -->
+                            <div class="text-center">
+                                <div class="bg-gray-300 text-gray-700 w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl mb-2">
+                                    2
+                                </div>
+                                <div class="bg-gray-300 h-20 w-20 rounded-t-lg flex items-center justify-center">
+                                    <span class="font-bold text-gray-700" data-mock="true">Sarah_M</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-2" data-mock="true">8,450 pts</p>
+                            </div>
+                            
+                            <!-- 1st Place -->
+                            <div class="text-center">
+                                <div class="bg-yellow-400 text-yellow-900 w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl mb-2 animate-bounce-gentle">
+                                    1
+                                </div>
+                                <div class="bg-yellow-400 h-32 w-24 rounded-t-lg flex items-center justify-center">
+                                    <span class="font-bold text-yellow-900" data-mock="true">Alex_Pro</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-2" data-mock="true">9,750 pts</p>
+                            </div>
+                            
+                            <!-- 3rd Place -->
+                            <div class="text-center">
+                                <div class="bg-orange-400 text-orange-900 w-16 h-16 rounded-full flex items-center justify-center font-bold text-xl mb-2">
+                                    3
+                                </div>
+                                <div class="bg-orange-400 h-16 w-20 rounded-t-lg flex items-center justify-center">
+                                    <span class="font-bold text-orange-900" data-mock="true">Mike_K</span>
+                                </div>
+                                <p class="text-sm text-gray-600 mt-2" data-mock="true">7,200 pts</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Full Rankings -->
+                        <div class="space-y-2">
+                            <!-- @MAP: allPlayers.map((player, index) => ( -->
+                            <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center space-x-3">
+                                    <span class="w-8 h-8 bg-kahoot-purple text-white rounded-full flex items-center justify-center font-bold text-sm">4</span>
+                                    <span class="font-medium" data-mock="true">Jessica_L</span>
+                                </div>
+                                <span class="font-bold text-gray-700" data-mock="true">6,850</span>
+                            </div>
+                            <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
+                                <div class="flex items-center space-x-3">
+                                    <span class="w-8 h-8 bg-kahoot-purple text-white rounded-full flex items-center justify-center font-bold text-sm">5</span>
+                                    <span class="font-medium" data-mock="true">David_R</span>
+                                </div>
+                                <span class="font-bold text-gray-700" data-mock="true">6,200</span>
+                            </div>
+                            <!-- @END_MAP )) -->
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analytics Panel -->
+                <div class="space-y-6">
+                    <!-- Quiz competition celebration with trophy and confetti -->
+                    <img 
+                        src="https://images.unsplash.com/photo-1551601651-2a8555f1a136?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=300" 
+                        alt="Quiz competition celebration with trophy and confetti" 
+                        class="rounded-xl shadow-lg w-full h-40 object-cover"
+                    >
+                    
+                    <!-- Game Statistics -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h4 class="font-montserrat font-bold text-lg text-gray-800 mb-4">Game Statistics</h4>
+                        <div class="space-y-4">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Total Players</span>
+                                <span class="font-bold text-kahoot-purple" data-mock="true">48</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Questions</span>
+                                <span class="font-bold text-kahoot-blue" data-mock="true">10</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Average Score</span>
+                                <span class="font-bold text-kahoot-green" data-mock="true">5,420</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-600">Accuracy</span>
+                                <span class="font-bold text-kahoot-orange" data-mock="true">78%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Question Breakdown -->
+                    <div class="bg-white rounded-xl shadow-lg p-6">
+                        <h4 class="font-montserrat font-bold text-lg text-gray-800 mb-4">Hardest Questions</h4>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600" data-mock="true">Q7: Physics Formula</span>
+                                <span class="text-sm font-bold text-kahoot-red" data-mock="true">45% correct</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600" data-mock="true">Q3: History Date</span>
+                                <span class="text-sm font-bold text-kahoot-orange" data-mock="true">62% correct</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600" data-mock="true">Q9: Math Problem</span>
+                                <span class="text-sm font-bold text-kahoot-green" data-mock="true">71% correct</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: ResultsAnalytics -->
+
+    <!-- Popular Quizzes Section -->
+    <!-- @COMPONENT: PopularQuizzes [discover existing quizzes] -->
+    <section class="py-16 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-12">
+                <h2 class="font-montserrat font-bold text-4xl text-gray-800 mb-4">Discover Popular Quizzes</h2>
+                <p class="text-xl text-gray-600">Join millions of learners worldwide</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- @MAP: popularQuizzes.map(quiz => ( -->
+                <!-- Quiz Card 1 -->
+                <div class="bg-gradient-to-br from-purple-500 to-pink-500 rounded-2xl p-6 text-white transform hover:scale-105 transition-transform shadow-xl">
+                    <!-- Interactive quiz competition scene -->
+                    <img 
+                        src="https://pixabay.com/get/gcacd01fdbb03dab98c286c438aa5c9806382b7d2efd3415cc4a207fed56eb55abf9af94cbe4abd9b5601ab98d63c0ce65b235f84f164ae11f31794c8b0ec4fd0_1280.jpg" 
+                        alt="Interactive quiz competition with multiple participants" 
+                        class="rounded-lg w-full h-32 object-cover mb-4"
+                    >
+                    <h3 class="font-montserrat font-bold text-xl mb-2" data-mock="true">World Geography Challenge</h3>
+                    <p class="text-sm opacity-90 mb-4" data-mock="true">Test your knowledge of countries, capitals, and landmarks around the globe.</p>
+                    <div class="flex justify-between items-center text-sm">
+                        <span data-mock="true">25 questions</span>
+                        <span data-mock="true">12.5K plays</span>
+                    </div>
+                </div>
+                
+                <!-- Quiz Card 2 -->
+                <div class="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-2xl p-6 text-white transform hover:scale-105 transition-transform shadow-xl">
+                    <!-- Students engaged in digital learning activity -->
+                    <img 
+                        src="https://images.unsplash.com/photo-1503676260728-1c00da094a0b?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=300" 
+                        alt="Students engaged in digital learning activity with technology" 
+                        class="rounded-lg w-full h-32 object-cover mb-4"
+                    >
+                    <h3 class="font-montserrat font-bold text-xl mb-2" data-mock="true">Science Trivia</h3>
+                    <p class="text-sm opacity-90 mb-4" data-mock="true">Explore fascinating facts about biology, chemistry, and physics.</p>
+                    <div class="flex justify-between items-center text-sm">
+                        <span data-mock="true">20 questions</span>
+                        <span data-mock="true">8.7K plays</span>
+                    </div>
+                </div>
+                
+                <!-- Quiz Card 3 -->
+                <div class="bg-gradient-to-br from-green-500 to-teal-500 rounded-2xl p-6 text-white transform hover:scale-105 transition-transform shadow-xl">
+                    <!-- Colorful educational interface design elements -->
+                    <img 
+                        src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=300" 
+                        alt="Colorful educational interface design elements and graphics" 
+                        class="rounded-lg w-full h-32 object-cover mb-4"
+                    >
+                    <h3 class="font-montserrat font-bold text-xl mb-2" data-mock="true">Math Masters</h3>
+                    <p class="text-sm opacity-90 mb-4" data-mock="true">Challenge yourself with algebra, geometry, and calculus problems.</p>
+                    <div class="flex justify-between items-center text-sm">
+                        <span data-mock="true">30 questions</span>
+                        <span data-mock="true">15.2K plays</span>
+                    </div>
+                </div>
+                
+                <!-- Quiz Card 4 -->
+                <div class="bg-gradient-to-br from-red-500 to-orange-500 rounded-2xl p-6 text-white transform hover:scale-105 transition-transform shadow-xl">
+                    <!-- Group of students participating in educational quiz game -->
+                    <img 
+                        src="https://images.unsplash.com/photo-1573164713988-8665fc963095?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=300" 
+                        alt="Group of students participating in educational quiz game" 
+                        class="rounded-lg w-full h-32 object-cover mb-4"
+                    >
+                    <h3 class="font-montserrat font-bold text-xl mb-2" data-mock="true">History Timeline</h3>
+                    <p class="text-sm opacity-90 mb-4" data-mock="true">Journey through major historical events and civilizations.</p>
+                    <div class="flex justify-between items-center text-sm">
+                        <span data-mock="true">18 questions</span>
+                        <span data-mock="true">9.3K plays</span>
+                    </div>
+                </div>
+                
+                <!-- Quiz Card 5 -->
+                <div class="bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl p-6 text-white transform hover:scale-105 transition-transform shadow-xl">
+                    <!-- Modern tablet interface with colorful UI elements -->
+                    <img 
+                        src="https://images.unsplash.com/photo-1555421689-3f034debb7a6?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=300" 
+                        alt="Modern tablet interface with colorful UI elements" 
+                        class="rounded-lg w-full h-32 object-cover mb-4"
+                    >
+                    <h3 class="font-montserrat font-bold text-xl mb-2" data-mock="true">Literature Classics</h3>
+                    <p class="text-sm opacity-90 mb-4" data-mock="true">Test your knowledge of famous books and authors.</p>
+                    <div class="flex justify-between items-center text-sm">
+                        <span data-mock="true">22 questions</span>
+                        <span data-mock="true">6.8K plays</span>
+                    </div>
+                </div>
+                
+                <!-- Quiz Card 6 -->
+                <div class="bg-gradient-to-br from-yellow-500 to-red-500 rounded-2xl p-6 text-white transform hover:scale-105 transition-transform shadow-xl">
+                    <!-- Students using smartphones for learning activities -->
+                    <img 
+                        src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&h=300" 
+                        alt="Students using smartphones for learning activities" 
+                        class="rounded-lg w-full h-32 object-cover mb-4"
+                    >
+                    <h3 class="font-montserrat font-bold text-xl mb-2" data-mock="true">Pop Culture Quiz</h3>
+                    <p class="text-sm opacity-90 mb-4" data-mock="true">Movies, music, celebrities, and trending topics.</p>
+                    <div class="flex justify-between items-center text-sm">
+                        <span data-mock="true">15 questions</span>
+                        <span data-mock="true">21.4K plays</span>
+                    </div>
+                </div>
+                <!-- @END_MAP )) -->
+            </div>
+        </div>
+    </section>
+    <!-- @END_COMPONENT: PopularQuizzes -->
+
+    <!-- Footer -->
+    <!-- @COMPONENT: Footer [site footer with links] -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="bg-kahoot-purple text-white w-8 h-8 rounded-lg flex items-center justify-center font-bold">
+                            K
+                        </div>
+                        <span class="font-montserrat font-bold text-xl">Kahoot!</span>
+                    </div>
+                    <p class="text-gray-400 text-sm">
+                        Making learning awesome for millions of people around the world.
+                    </p>
+                </div>
+                
+                <div>
+                    <h4 class="font-montserrat font-bold text-lg mb-4">Platform</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Create</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Play</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Discover</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Academy</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-montserrat font-bold text-lg mb-4">Resources</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Help Center</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Blog</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Webinars</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Community</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h4 class="font-montserrat font-bold text-lg mb-4">Connect</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="bg-gray-800 hover:bg-kahoot-purple w-10 h-10 rounded-lg flex items-center justify-center transition-colors">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="bg-gray-800 hover:bg-kahoot-purple w-10 h-10 rounded-lg flex items-center justify-center transition-colors">
+                            <i class="fab fa-facebook"></i>
+                        </a>
+                        <a href="#" class="bg-gray-800 hover:bg-kahoot-purple w-10 h-10 rounded-lg flex items-center justify-center transition-colors">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="bg-gray-800 hover:bg-kahoot-purple w-10 h-10 rounded-lg flex items-center justify-center transition-colors">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2024 Kahoot! Clone. All rights reserved. Built for educational purposes.</p>
+            </div>
+        </div>
+    </footer>
+    <!-- @END_COMPONENT: Footer -->
+
+    <script>
+        // TODO: Implement business logic, API calls, and state management
+        
+        (function() {
+            // Mock timer functionality for demonstration
+            let timerElement = document.querySelector('[data-bind="timer"]');
+            if (timerElement) {
+                let timeLeft = 15;
+                setInterval(() => {
+                    if (timeLeft > 0) {
+                        timeLeft--;
+                        timerElement.textContent = timeLeft + 's';
+                    }
+                }, 1000);
+            }
+            
+            // Add hover effects to interactive elements
+            document.querySelectorAll('button, .cursor-pointer').forEach(element => {
+                element.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.05)';
+                });
+                
+                element.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+            
+            // Simulate answer selection animation
+            document.querySelectorAll('.bg-kahoot-red, .bg-kahoot-blue, .bg-kahoot-green, .bg-kahoot-orange').forEach(element => {
+                if (element.tagName === 'BUTTON') {
+                    element.addEventListener('click', function() {
+                        this.style.transform = 'scale(0.95)';
+                        setTimeout(() => {
+                            this.style.transform = 'scale(1)';
+                        }, 150);
+                    });
+                }
+            });
+        })();
+    </script>
+
+</body>
+</html>
