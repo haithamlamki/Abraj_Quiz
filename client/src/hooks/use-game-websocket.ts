@@ -1,5 +1,6 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import type { WsServerMessage } from "@shared/ws-protocol";
 
 interface UseGameWebSocketOptions {
   gamePin: string;
@@ -8,23 +9,43 @@ interface UseGameWebSocketOptions {
   enabled?: boolean;
 }
 
+export interface RuntimeQuestionState {
+  status: "idle" | "open" | "closed" | "completed";
+  questionIndex: number | null;
+  timeRemaining: number | null;
+  correctAnswer?: number;
+  answerCounts?: number[];
+  answerPercentages?: number[];
+  totalResponses?: number;
+  players?: any[];
+}
+
 export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled = true }: UseGameWebSocketOptions) {
   const wsRef = useRef<WebSocket | null>(null);
   const queryClient = useQueryClient();
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const isActiveRef = useRef<boolean>(true);
+  const reconnectAttemptsRef = useRef(0);
+  const [runtimeState, setRuntimeState] = useState<RuntimeQuestionState>({
+    status: "idle",
+    questionIndex: null,
+    timeRemaining: null,
+  });
 
   const connect = useCallback(() => {
     if (!enabled || !gamePin || !isActiveRef.current) return;
 
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = `${protocol}//${window.location.host}/game-ws`;
+    const wsUrl =
+      import.meta.env.VITE_WS_URL ||
+      `${protocol}//${window.location.host}/game-ws`;
     
     try {
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
+        reconnectAttemptsRef.current = 0;
         console.log("WebSocket connected to game:", gamePin);
         ws.send(JSON.stringify({
           type: "join",
@@ -36,7 +57,7 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
 
       ws.onmessage = (event) => {
         try {
-          const message = JSON.parse(event.data);
+          const message = JSON.parse(event.data) as WsServerMessage;
           console.log("WebSocket message received:", message.type);
 
           switch (message.type) {
@@ -47,20 +68,70 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
             case "game_updated":
             case "game_started":
             case "next_question":
-            case "game_completed":
               // Invalidate game query to trigger refetch with new data
               queryClient.invalidateQueries({ queryKey: ["/api/games", gamePin] });
-              
-              // If it's a question change, also invalidate question results
               if (message.type === "next_question") {
+                setRuntimeState({
+                  status: "idle",
+                  questionIndex: null,
+                  timeRemaining: null,
+                });
                 queryClient.invalidateQueries({ 
                   queryKey: ["/api/games", gamePin, "question-results"] 
                 });
               }
               break;
 
+            case "question_started":
+              setRuntimeState({
+                status: "open",
+                questionIndex: message.questionIndex,
+                timeRemaining: message.timeRemaining,
+              });
+              queryClient.invalidateQueries({ queryKey: ["/api/games", gamePin] });
+              break;
+
+            case "time_remaining":
+              setRuntimeState((current) => ({
+                ...current,
+                status: "open",
+                questionIndex: message.questionIndex,
+                timeRemaining: message.timeRemaining,
+              }));
+              break;
+
+            case "question_closed":
+              setRuntimeState({
+                status: "closed",
+                questionIndex: message.questionIndex,
+                timeRemaining: 0,
+                correctAnswer: message.correctAnswer,
+                answerCounts: message.distribution.answerCounts,
+                answerPercentages: message.distribution.answerPercentages,
+                totalResponses: message.distribution.totalResponses,
+                players: message.players,
+              });
+              queryClient.invalidateQueries({ queryKey: ["/api/games", gamePin] });
+              queryClient.invalidateQueries({ 
+                queryKey: ["/api/games", gamePin, "question-results"] 
+              });
+              break;
+
+            case "game_completed":
+              setRuntimeState((current) => ({
+                ...current,
+                status: "completed",
+                timeRemaining: 0,
+              }));
+              queryClient.invalidateQueries({ queryKey: ["/api/games", gamePin] });
+              break;
+
+            case "error":
+              console.warn("WebSocket protocol error:", message.code, message.message);
+              break;
+
             default:
-              console.log("Unknown WebSocket message type:", message.type);
+              console.log("Unknown WebSocket message type");
           }
         } catch (error) {
           console.error("Error parsing WebSocket message:", error);
@@ -71,16 +142,18 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
         console.error("WebSocket error:", error);
       };
 
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         console.log("WebSocket disconnected from game:", gamePin);
         wsRef.current = null;
         
-        // Attempt to reconnect after 2 seconds if still enabled AND component is active
-        if (enabled && isActiveRef.current) {
+        // Policy violation usually means invalid room, invalid host session, or invalid player membership.
+        if (enabled && isActiveRef.current && event.code !== 1008) {
+          const attempt = reconnectAttemptsRef.current++;
+          const delay = Math.min(30000, 1000 * 2 ** attempt);
           reconnectTimeoutRef.current = setTimeout(() => {
             console.log("Attempting to reconnect WebSocket...");
             connect();
-          }, 2000);
+          }, delay);
         }
       };
     } catch (error) {
@@ -112,5 +185,5 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
     };
   }, [connect, disconnect]);
 
-  return { disconnect };
+  return { disconnect, runtimeState };
 }

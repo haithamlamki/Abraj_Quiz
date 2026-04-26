@@ -83,7 +83,7 @@ export default function HostGame() {
   };
 
   // Use WebSocket for real-time updates
-  useGameWebSocket({
+  const { runtimeState } = useGameWebSocket({
     gamePin: pin || "",
     isHost: true,
     enabled: !!pin
@@ -136,23 +136,11 @@ export default function HostGame() {
   });
 
   useEffect(() => {
-    if (game?.status === "active" && quiz) {
-      const questions = quiz.questions as Question[];
-      const currentQuestion = questions[game.currentQuestion || 0];
-      if (currentQuestion && !showResults) {
-        console.log('Setting timer for question', game.currentQuestion, 'to', currentQuestion.timeLimit);
-        setTimeLeft(currentQuestion.timeLimit);
-        
-        // Backup timer initialization after 1 second if timer doesn't start
-        setTimeout(() => {
-          if (timeLeft === null || timeLeft === currentQuestion.timeLimit) {
-            console.log('Backup timer initialization triggered');
-            setTimeLeft(currentQuestion.timeLimit);
-          }
-        }, 1000);
-      }
+    if (runtimeState.questionIndex !== null) {
+      setTimeLeft(runtimeState.timeRemaining);
+      setShowResults(runtimeState.status === "closed");
     }
-  }, [game?.status, game?.currentQuestion, quiz]);
+  }, [runtimeState.questionIndex, runtimeState.timeRemaining, runtimeState.status]);
 
   // Generate QR code when game loads
   useEffect(() => {
@@ -188,28 +176,9 @@ export default function HostGame() {
   }, [gameStartCountdown, isStartingGame, startGameMutation]);
 
   useEffect(() => {
-    if (timeLeft === null || timeLeft <= 0 || showResults) return;
-
-    console.log('Starting countdown timer from', timeLeft);
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === null || prev <= 1) {
-          console.log('Timer reached 0, showing results');
-          setShowResults(true);
-          return 0;
-        }
-        // Play urgent sound for last 3 seconds
-        if (prev <= 3) {
-          playUrgentCountdownSound();
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      console.log('Clearing countdown timer');
-      clearInterval(timer);
-    };
+    if (timeLeft !== null && timeLeft > 0 && timeLeft <= 3 && !showResults) {
+      playUrgentCountdownSound();
+    }
   }, [timeLeft, showResults]);
 
   // Reset sound flag when question changes
@@ -218,7 +187,7 @@ export default function HostGame() {
     setSoundPlayed(false);
     setShowResults(false);
     setTimeLeft(null);
-  }, [game?.currentQuestion]);
+  }, [game?.currentQuestion, runtimeState.questionIndex]);
 
   // Play correct answer sound immediately when results are shown (only once per question)
   useEffect(() => {
@@ -282,7 +251,7 @@ export default function HostGame() {
 
   const questions = quiz.questions as Question[];
   const currentQuestion = questions[game.currentQuestion || 0];
-  const players = (game.players as any[]) || [];
+  const players = runtimeState.players || (game.players as any[]) || [];
 
   // Countdown overlay component
   const CountdownOverlay = () => {
@@ -536,22 +505,6 @@ export default function HostGame() {
             </div>
           )}
           
-          {/* Emergency Next Button - Shows after 30 seconds even if timer hasn't finished */}
-          {timeLeft !== null && timeLeft > 0 && !showResults && (
-            <div className="absolute top-16 right-0 z-10">
-              <Button
-                onClick={() => {
-                  setShowResults(true);
-                  setTimeLeft(0);
-                }}
-                variant="outline"
-                className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-1 text-sm font-bold hover:scale-105 active:scale-95 transition-transform shadow-lg"
-              >
-                Skip Timer
-              </Button>
-            </div>
-          )}
-          
           {/* Header */}
           <div className="text-center mb-3 flex-shrink-0">
             <Badge variant="secondary" className="mb-1 bg-[#019ebd] text-[#ffffff]">
@@ -591,8 +544,8 @@ export default function HostGame() {
               const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
               const symbols = [Triangle, Diamond, Circle, Square];
               const SymbolIcon = symbols[index];
-              const percentage = showResults && questionResults ? questionResults.answerPercentages[index] || 0 : 0;
-              const count = showResults && questionResults ? questionResults.answerCounts[index] || 0 : 0;
+              const percentage = showResults ? (runtimeState.answerPercentages?.[index] ?? questionResults?.answerPercentages[index] ?? 0) : 0;
+              const count = showResults ? (runtimeState.answerCounts?.[index] ?? questionResults?.answerCounts[index] ?? 0) : 0;
               const isCorrect = index === currentQuestion.correctAnswer;
               
               return (

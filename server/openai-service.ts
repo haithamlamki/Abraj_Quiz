@@ -41,7 +41,7 @@ export async function generateQuizFromPDF(pdfBuffer: Buffer): Promise<GeneratedQ
     }
 
     return await generateQuizFromContent(content, "PDF Document");
-  } catch (error) {
+  } catch (error: any) {
     console.error("PDF processing error:", error);
     throw new Error(`Failed to process PDF: ${error.message}`);
   }
@@ -90,7 +90,7 @@ export async function generateQuizFromURL(url: string): Promise<GeneratedQuiz> {
     const pageTitle = $('title').text().trim() || $('h1').first().text().trim() || "Web Article";
 
     return await generateQuizFromContent(content, pageTitle);
-  } catch (error) {
+  } catch (error: any) {
     if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
       throw new Error("Unable to access the URL. Please check if the URL is correct and accessible.");
     }
@@ -148,6 +148,10 @@ Respond with JSON in this exact format:
     });
 
     const generatedContent = response.choices[0].message.content;
+    if (!generatedContent) {
+      throw new Error("AI service returned an empty response");
+    }
+
     const parsedQuiz = JSON.parse(generatedContent);
 
     // Validate the response structure
@@ -256,7 +260,12 @@ Respond with JSON in this exact format:
       max_tokens: 3000
     });
 
-    const result = JSON.parse(response.choices[0].message.content);
+    const generatedContent = response.choices[0].message.content;
+    if (!generatedContent) {
+      throw new Error("AI service returned an empty response");
+    }
+
+    const result = JSON.parse(generatedContent);
 
     // Validate the response structure
     if (!result.title || !result.description || !Array.isArray(result.questions)) {

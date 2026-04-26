@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Trash2, Triangle, Diamond, Circle, Square, Upload, Link as LinkIcon, Wand2, BookOpen, Image, X, PlusCircle, Download, FileText } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, buildApiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Question } from "@shared/schema";
@@ -166,9 +166,10 @@ export default function CreateQuiz() {
       const formData = new FormData();
       formData.append('pdf', file);
       
-      const response = await fetch('/api/generate-quiz/pdf', {
+      const response = await fetch(buildApiUrl('/api/generate-quiz/pdf'), {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       if (!response.ok) {

@@ -1,5 +1,15 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || "";
+
+export function buildApiUrl(url: string): string {
+  if (/^https?:\/\//i.test(url)) {
+    return url;
+  }
+
+  return `${apiBaseUrl}${url.startsWith("/") ? url : `/${url}`}`;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     let errorData;
@@ -24,7 +34,7 @@ export async function apiRequest(
   // Don't include body for GET/HEAD requests
   const shouldIncludeBody = method !== "GET" && method !== "HEAD" && data !== undefined;
   
-  const res = await fetch(url, {
+  const res = await fetch(buildApiUrl(url), {
     method,
     headers: shouldIncludeBody ? { "Content-Type": "application/json" } : {},
     body: shouldIncludeBody ? JSON.stringify(data) : undefined,
@@ -56,7 +66,7 @@ export const getQueryFn: <T>(options: {
       url = String(queryKey);
     }
 
-    const res = await fetch(url, {
+    const res = await fetch(buildApiUrl(url), {
       credentials: "include",
     });
 

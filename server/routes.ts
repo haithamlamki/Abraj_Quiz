@@ -10,6 +10,7 @@ import { pool } from "./db";
 import multer from "multer";
 import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText, generateBackgroundImage } from "./openai-service";
 import { gameWS } from "./websocket";
+import { gameRoomManager } from "./game-room-manager";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -29,22 +30,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Session configuration with PostgreSQL store
   const PgSession = connectPgSimple(session);
-  
-  app.use(session({
+  const isProduction = process.env.NODE_ENV === "production";
+  const sessionSecret = process.env.SESSION_SECRET;
+
+  if (isProduction && !sessionSecret) {
+    throw new Error("SESSION_SECRET must be set in production");
+  }
+
+  const rawClientOrigin = process.env.CLIENT_ORIGIN ?? "";
+  const rawCorsOrigin = process.env.CORS_ORIGIN ?? "";
+  const allowedOrigins = (rawClientOrigin || rawCorsOrigin)
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  if (isProduction && allowedOrigins.length === 0) {
+    throw new Error(
+      `CLIENT_ORIGIN must resolve to at least one origin in production. ` +
+        `CLIENT_ORIGIN=${JSON.stringify(rawClientOrigin)} CORS_ORIGIN=${JSON.stringify(rawCorsOrigin)}`,
+    );
+  }
+
+  const sessionMiddleware = session({
     store: new PgSession({
       pool: pool,
       tableName: 'session',
       createTableIfMissing: false
     }),
-    secret: process.env.SESSION_SECRET || 'abraj-quiz-secret-dev',
+    secret: sessionSecret || 'abraj-quiz-secret-dev',
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Set to true in production with HTTPS
+      secure: isProduction,
       httpOnly: true,
+      sameSite: isProduction ? "none" : "lax",
       maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
-  }));
+  });
+
+  app.use(sessionMiddleware);
 
   // Authentication middleware
   const requireAuth = (req: any, res: any, next: any) => {
@@ -53,6 +77,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(401).json({ message: "Not authenticated" });
     }
     next();
+  };
+
+  const gamePinSchema = z.string().regex(/^\d{6}$/, "Game PIN must be 6 digits");
+  const playerNameSchema = z.string().trim().min(1).max(40);
+  const answerSubmissionSchema = z.object({
+    playerName: playerNameSchema,
+    questionIndex: z.number().int().min(0),
+    selectedAnswer: z.number().int().min(0).max(3),
+    responseTime: z.number().int().min(0),
+  });
+
+  const getValidatedGamePin = (pin: string, res: any): string | undefined => {
+    const result = gamePinSchema.safeParse(pin);
+    if (!result.success) {
+      res.status(400).json({ message: "Invalid game PIN" });
+      return undefined;
+    }
+
+    return result.data;
   };
 
   // Authentication routes
@@ -184,22 +227,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Debug endpoint to check OpenAI API availability
-  app.get("/api/debug/openai", requireAuth, async (req, res) => {
-    try {
-      const hasApiKey = !!process.env.OPENAI_API_KEY;
-      const userId = (req as any).session.userId;
-      
-      res.json({
-        hasApiKey,
-        isAuthenticated: true,
-        userId,
-        apiKeyLength: process.env.OPENAI_API_KEY?.length || 0
-      });
-    } catch (error) {
-      console.error("Debug endpoint error:", error);
-      res.status(500).json({ message: "Debug check failed" });
-    }
-  });
+  if (!isProduction) {
+    app.get("/api/debug/openai", requireAuth, async (req, res) => {
+      try {
+        const hasApiKey = !!process.env.OPENAI_API_KEY;
+        const userId = (req as any).session.userId;
+        
+        res.json({
+          hasApiKey,
+          isAuthenticated: true,
+          userId,
+          apiKeyLength: process.env.OPENAI_API_KEY?.length || 0
+        });
+      } catch (error) {
+        console.error("Debug endpoint error:", error);
+        res.status(500).json({ message: "Debug check failed" });
+      }
+    });
+  }
 
   // Auto-generation routes
   app.post("/api/generate-quiz/pdf", requireAuth, upload.single('pdf'), async (req, res) => {
@@ -403,7 +448,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Game routes
   app.post("/api/games", requireAuth, async (req, res) => {
     try {
-      const { quizId, hostId } = req.body;
+      const quizId = Number(req.body.quizId);
+      if (!Number.isInteger(quizId) || quizId <= 0) {
+        return res.status(400).json({ message: "Valid quizId is required" });
+      }
       
       // Check if quiz exists
       const quiz = await storage.getQuiz(quizId);
@@ -439,12 +487,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/games/:pin", async (req, res) => {
     try {
-      const pin = req.params.pin;
+      const pin = getValidatedGamePin(req.params.pin, res);
+      if (!pin) return;
+
       const game = await storage.getGameByPin(pin);
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
       }
-      res.json(game);
+      res.json(await gameRoomManager.getGameSnapshot(pin, game));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch game" });
     }
@@ -452,12 +502,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/games/:pin/join", async (req, res) => {
     try {
-      const pin = req.params.pin;
-      const { playerName } = req.body;
+      const pin = getValidatedGamePin(req.params.pin, res);
+      if (!pin) return;
 
-      if (!playerName || typeof playerName !== 'string') {
-        return res.status(400).json({ message: "Player name is required" });
+      const playerNameValidation = playerNameSchema.safeParse(req.body.playerName);
+      if (!playerNameValidation.success) {
+        return res.status(400).json({ message: "Player name is required and must be 40 characters or fewer" });
       }
+      const playerName = playerNameValidation.data;
 
       const game = await storage.getGameByPin(pin);
       if (!game) {
@@ -470,19 +522,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Check if player name already exists
       const players = (game.players as any[]) || [];
-      if (players.some((p: any) => p.name === playerName)) {
+      if (players.some((p: any) => typeof p.name === "string" && p.name.toLowerCase() === playerName.toLowerCase())) {
         return res.status(400).json({ message: "Player name already taken" });
       }
 
       // Add player to game
       const updatedPlayers = [...players, { name: playerName, score: 0 }];
       const updatedGame = await storage.updateGame(game.id, { players: updatedPlayers });
+      if (!updatedGame) {
+        return res.status(500).json({ message: "Failed to join game" });
+      }
+      await gameRoomManager.addPersistedPlayer(pin, playerName, 0);
 
-      // Broadcast player joined to all clients in this game
-      gameWS.broadcastToGame(pin, {
-        type: "game_updated",
-        game: updatedGame
-      });
+      // Broadcast player joined to active runtime room clients.
+      await gameRoomManager.broadcastGameUpdated(pin, updatedGame);
 
       res.json({ success: true, game: updatedGame });
     } catch (error) {
@@ -490,172 +543,86 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/games/:pin/start", async (req, res) => {
+  app.post("/api/games/:pin/start", requireAuth, async (req, res) => {
     try {
-      const pin = req.params.pin;
+      const pin = getValidatedGamePin(req.params.pin, res);
+      if (!pin) return;
+
       const game = await storage.getGameByPin(pin);
       
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
+      }
+
+      if (game.hostId !== (req as any).session.userId) {
+        return res.status(403).json({ message: "Only the game host can start this game" });
       }
 
       if (game.status !== "waiting") {
         return res.status(400).json({ message: "Game cannot be started" });
       }
 
-      const updatedGame = await storage.updateGame(game.id, { 
-        status: "active",
-        currentQuestion: 0
-      });
-
-      // Broadcast game started to all clients
-      gameWS.broadcastToGame(pin, {
-        type: "game_started",
-        game: updatedGame
-      });
-
+      const updatedGame = await gameRoomManager.startGame(pin, (req as any).session.userId);
       res.json(updatedGame);
     } catch (error) {
-      res.status(500).json({ message: "Failed to start game" });
+      const runtimeError = gameRoomManager.toHttpError(error);
+      res.status(runtimeError.status).json(runtimeError.body);
     }
   });
 
   app.post("/api/games/:pin/answer", async (req, res) => {
     try {
-      const pin = req.params.pin;
-      const { playerName, questionIndex, selectedAnswer, responseTime } = req.body;
+      const pin = getValidatedGamePin(req.params.pin, res);
+      if (!pin) return;
 
-      const game = await storage.getGameByPin(pin);
-      if (!game) {
-        return res.status(404).json({ message: "Game not found" });
+      const submission = answerSubmissionSchema.safeParse(req.body);
+      if (!submission.success) {
+        return res.status(400).json({ message: "Invalid answer submission", errors: submission.error.errors });
       }
+      const { playerName, questionIndex, selectedAnswer } = submission.data;
 
-      const quiz = await storage.getQuiz(game.quizId);
-      if (!quiz) {
-        return res.status(404).json({ message: "Quiz not found" });
-      }
-
-      const questions = quiz.questions as any[];
-      const question = questions[questionIndex];
-      if (!question) {
-        return res.status(400).json({ message: "Invalid question index" });
-      }
-
-      const isCorrect = selectedAnswer === question.correctAnswer;
-      
-      // Store response without calculating score yet
-      // Score will be calculated when host moves to next question
-      const responseData = {
-        gameId: game.id,
+      const result = await gameRoomManager.submitAnswer({
+        gamePin: pin,
         playerName,
         questionIndex,
         selectedAnswer,
-        responseTime,
-        isCorrect,
-        pointsEarned: 0 // Will be calculated later
-      };
-
-      await storage.createGameResponse(responseData);
-
-      // Don't update player score yet - will be done when question time finishes
-      res.json({ 
-        success: true, 
-        isCorrect, 
-        pointsEarned: 0, // Don't reveal points yet
-        correctAnswer: question.correctAnswer
       });
+
+      res.json(result);
     } catch (error) {
-      res.status(500).json({ message: "Failed to submit answer" });
+      const runtimeError = gameRoomManager.toHttpError(error);
+      res.status(runtimeError.status).json(runtimeError.body);
     }
   });
 
-  app.post("/api/games/:pin/next-question", async (req, res) => {
+  app.post("/api/games/:pin/next-question", requireAuth, async (req, res) => {
     try {
-      const pin = req.params.pin;
+      const pin = getValidatedGamePin(req.params.pin, res);
+      if (!pin) return;
+
       const game = await storage.getGameByPin(pin);
       
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
       }
 
-      const quiz = await storage.getQuiz(game.quizId);
-      if (!quiz) {
-        return res.status(404).json({ message: "Quiz not found" });
+      if (game.hostId !== (req as any).session.userId) {
+        return res.status(403).json({ message: "Only the game host can advance this game" });
       }
 
-      const questions = quiz.questions as any[];
-      const currentQuestionIndex = game.currentQuestion || 0;
-      
-      // Calculate and award scores for the current question before moving to next
-      const currentQuestion = questions[currentQuestionIndex];
-      if (currentQuestion) {
-        const responses = await storage.getGameResponses(game.id);
-        const currentQuestionResponses = responses.filter(r => r.questionIndex === currentQuestionIndex);
-        
-        // Calculate scores for each response
-        for (const response of currentQuestionResponses) {
-          let pointsEarned = 0;
-          if (response.isCorrect) {
-            const maxPoints = 1000;
-            const timeBonus = Math.max(0, (currentQuestion.timeLimit - response.responseTime / 1000) / currentQuestion.timeLimit);
-            pointsEarned = Math.round(maxPoints * (0.5 + 0.5 * timeBonus));
-          }
-          
-          // Update the response with calculated points
-          await storage.updateGameResponse(response.id, { pointsEarned });
-        }
-        
-        // Update player scores
-        const players = (game.players as any[]) || [];
-        const updatedPlayers = players.map((player: any) => {
-          const playerResponses = currentQuestionResponses.filter(r => r.playerName === player.name);
-          const playerResponse = playerResponses[0]; // Get the first (should be only) response
-          
-          if (playerResponse && playerResponse.isCorrect) {
-            const maxPoints = 1000;
-            const timeBonus = Math.max(0, (currentQuestion.timeLimit - playerResponse.responseTime / 1000) / currentQuestion.timeLimit);
-            const pointsEarned = Math.round(maxPoints * (0.5 + 0.5 * timeBonus));
-            return { ...player, score: (player.score || 0) + pointsEarned };
-          }
-          return player;
-        });
-
-        // Update game with new player scores
-        await storage.updateGame(game.id, { players: updatedPlayers });
-      }
-
-      const nextQuestion = currentQuestionIndex + 1;
-
-      if (nextQuestion >= questions.length) {
-        // Game is complete
-        const updatedGame = await storage.updateGame(game.id, { status: "completed" });
-        
-        // Broadcast game completed to all clients
-        gameWS.broadcastToGame(pin, {
-          type: "game_completed",
-          game: updatedGame
-        });
-        
-        res.json({ gameComplete: true, game: updatedGame });
-      } else {
-        const updatedGame = await storage.updateGame(game.id, { currentQuestion: nextQuestion });
-        
-        // Broadcast next question to all clients
-        gameWS.broadcastToGame(pin, {
-          type: "next_question",
-          game: updatedGame
-        });
-        
-        res.json({ gameComplete: false, game: updatedGame });
-      }
+      const result = await gameRoomManager.advanceQuestion(pin, (req as any).session.userId);
+      res.json(result);
     } catch (error) {
-      res.status(500).json({ message: "Failed to advance to next question" });
+      const runtimeError = gameRoomManager.toHttpError(error);
+      res.status(runtimeError.status).json(runtimeError.body);
     }
   });
 
   app.get("/api/games/:pin/results", async (req, res) => {
     try {
-      const pin = req.params.pin;
+      const pin = getValidatedGamePin(req.params.pin, res);
+      if (!pin) return;
+
       const game = await storage.getGameByPin(pin);
       
       if (!game) {
@@ -686,18 +653,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/games/:pin/question-results/:questionIndex", async (req, res) => {
+  app.get("/api/games/:pin/question-results/:questionIndex", requireAuth, async (req, res) => {
     try {
-      const pin = req.params.pin;
+      const pin = getValidatedGamePin(req.params.pin, res);
+      if (!pin) return;
+
       const questionIndex = parseInt(req.params.questionIndex);
+      if (!Number.isInteger(questionIndex) || questionIndex < 0) {
+        return res.status(400).json({ message: "Invalid question index" });
+      }
 
       const game = await storage.getGameByPin(pin);
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
       }
 
+      if (game.hostId !== (req as any).session.userId) {
+        return res.status(403).json({ message: "Only the game host can view question results" });
+      }
+
       const responses = await storage.getGameResponses(game.id);
       const questionResponses = responses.filter(r => r.questionIndex === questionIndex);
+      const runtimeResults = gameRoomManager.getQuestionResults(pin, questionIndex);
+
+      if (runtimeResults) {
+        return res.json({
+          questionIndex,
+          answerCounts: runtimeResults.answerCounts,
+          answerPercentages: runtimeResults.answerPercentages,
+          totalResponses: runtimeResults.totalResponses,
+          responses: questionResponses
+        });
+      }
 
       // Calculate answer distribution
       const answerCounts = [0, 0, 0, 0];
@@ -760,9 +747,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
-  
-  // Initialize WebSocket server
-  gameWS.initialize(httpServer);
+
+  gameWS.initialize(httpServer, { sessionMiddleware, allowedOrigins });
   
   return httpServer;
 }

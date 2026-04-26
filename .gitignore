@@ -1,5 +1,12 @@
 # Sync .project/sourceTexts/ folder (source text files)
 
+# Dependencies and local environment
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+
 # Don't sync user-specific SQLite databases
 .project/*.sqlite
 

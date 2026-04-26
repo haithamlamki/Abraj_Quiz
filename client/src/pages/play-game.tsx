@@ -63,14 +63,14 @@ export default function PlayGame() {
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [lastResult, setLastResult] = useState<any>(null);
-  const [playerScore, setPlayerScore] = useState(0);
+  const [lastResult, setLastResult] = useState<{ isCorrect: boolean; pointsEarned: number } | null>(null);
+  const [scoreAtQuestionStart, setScoreAtQuestionStart] = useState(0);
   const [showTimeUpEffect, setShowTimeUpEffect] = useState(false);
   const [soundPlayed, setSoundPlayed] = useState(false);
 
 
   // Use WebSocket for real-time updates
-  useGameWebSocket({
+  const { runtimeState } = useGameWebSocket({
     gamePin: pin || "",
     playerName,
     isHost: false,
@@ -100,12 +100,9 @@ export default function PlayGame() {
       });
       return response.json();
     },
-    onSuccess: (data) => {
-      // Store the result but don't show it until timer expires
-      setLastResult(data);
-      setPlayerScore(prev => prev + (data.pointsEarned || 0));
-    },
     onError: () => {
+      setHasAnswered(false);
+      setSelectedAnswer(null);
       toast({
         title: "Error",
         description: "Failed to submit answer. Please try again.",
@@ -125,57 +122,56 @@ export default function PlayGame() {
   // The countdown is only for the host when starting the game
 
   useEffect(() => {
-    if (game?.status === "active" && quiz) {
-      const questions = quiz.questions as Question[];
-      const currentQuestion = questions[game.currentQuestion || 0];
-      if (currentQuestion) {
-        console.log('Player: Setting timer for question', game.currentQuestion, 'to', currentQuestion.timeLimit);
-        setTimeLeft(currentQuestion.timeLimit);
-        setShowResult(false);
-        setSelectedAnswer(null);
-        setHasAnswered(false);
-        setShowTimeUpEffect(false);
-        
-        // Backup timer initialization after 1 second if timer doesn't start
-        setTimeout(() => {
-          if (timeLeft === null || timeLeft === currentQuestion.timeLimit) {
-            console.log('Player: Backup timer initialization triggered');
-            setTimeLeft(currentQuestion.timeLimit);
-          }
-        }, 1000);
-      }
+    if (runtimeState.questionIndex === null) return;
+
+    setTimeLeft(runtimeState.timeRemaining);
+    if (runtimeState.status === "open") {
+      setShowResult(false);
+      setShowTimeUpEffect(false);
+      const players = runtimeState.players || (game?.players as any[]) || [];
+      const currentPlayer = players.find((player) => player.name === playerName);
+      setScoreAtQuestionStart(currentPlayer?.score || 0);
     }
-  }, [game?.currentQuestion, game?.status, quiz]);
+
+    if (
+      runtimeState.status === "closed" &&
+      hasAnswered &&
+      selectedAnswer !== null &&
+      typeof runtimeState.correctAnswer === "number"
+    ) {
+      const players = runtimeState.players || (game?.players as any[]) || [];
+      const currentPlayer = players.find((player) => player.name === playerName);
+      const isCorrect = selectedAnswer === runtimeState.correctAnswer;
+      const pointsEarned = isCorrect
+        ? Math.max(0, (currentPlayer?.score || 0) - scoreAtQuestionStart)
+        : 0;
+
+      setLastResult({ isCorrect, pointsEarned });
+    }
+  }, [
+    runtimeState.questionIndex,
+    runtimeState.timeRemaining,
+    runtimeState.status,
+    runtimeState.correctAnswer,
+    runtimeState.players,
+    game?.players,
+    playerName,
+    hasAnswered,
+    selectedAnswer,
+    scoreAtQuestionStart,
+  ]);
 
   useEffect(() => {
-    if (timeLeft === null || timeLeft <= 0) return;
-
-    console.log('Player: Starting countdown timer from', timeLeft);
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev === null || prev <= 1) {
-          console.log('Player: Timer reached 0');
-          return 0;
-        }
-        // Play urgent sound for last 3 seconds
-        if (prev <= 3) {
-          playUrgentCountdownSound();
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      console.log('Player: Clearing countdown timer');
-      clearInterval(timer);
-    };
-  }, [timeLeft]);
+    if (timeLeft !== null && timeLeft > 0 && timeLeft <= 3 && !hasAnswered) {
+      playUrgentCountdownSound();
+    }
+  }, [timeLeft, hasAnswered]);
 
   // Show results when timer reaches 0 AND we have a result from answering
   useEffect(() => {
-    if (timeLeft === 0 && lastResult && hasAnswered) {
+    if (runtimeState.status === "closed" && lastResult && hasAnswered) {
       setShowResult(true);
-    } else if (timeLeft === 0 && !hasAnswered) {
+    } else if (runtimeState.status === "closed" && !hasAnswered) {
       // Show time-up effect for players who haven't answered
       setShowTimeUpEffect(true);
       playTimeUpSound(); // Play time-up sound effect
@@ -185,7 +181,7 @@ export default function PlayGame() {
         setShowTimeUpEffect(false);
       }, 3000);
     }
-  }, [timeLeft, lastResult, hasAnswered]);
+  }, [runtimeState.status, lastResult, hasAnswered]);
 
   // Reset sound flag when question changes
   useEffect(() => {
@@ -195,7 +191,7 @@ export default function PlayGame() {
     setHasAnswered(false);
     setSelectedAnswer(null);
     setShowTimeUpEffect(false);
-  }, [game?.currentQuestion]);
+  }, [game?.currentQuestion, runtimeState.questionIndex]);
 
   // Play sound immediately when results are shown (only once per question)
   useEffect(() => {
@@ -211,10 +207,10 @@ export default function PlayGame() {
   }, [showResult, lastResult, soundPlayed]);
 
   useEffect(() => {
-    if (game?.status === "completed") {
+    if (game?.status === "completed" || runtimeState.status === "completed") {
       setLocation(`/results/${pin}?player=${encodeURIComponent(playerName)}`);
     }
-  }, [game?.status, pin, playerName, setLocation]);
+  }, [game?.status, runtimeState.status, pin, playerName, setLocation]);
 
   // Warn before leaving if player is in an active game
   useEffect(() => {
@@ -388,20 +384,16 @@ export default function PlayGame() {
   };
 
   const handleAnswerSelect = (answerIndex: number) => {
-    if (hasAnswered || timeLeft === 0) return;
+    if (hasAnswered || timeLeft === 0 || runtimeState.status !== "open") return;
     
     playClickSound();
-    
-    const responseTime = quiz ? 
-      ((quiz.questions as Question[])[game?.currentQuestion || 0]?.timeLimit || 10) * 1000 - (timeLeft || 0) * 1000 
-      : 0;
     
     setSelectedAnswer(answerIndex);
     setHasAnswered(true);
     
     submitAnswerMutation.mutate({
       selectedAnswer: answerIndex,
-      responseTime
+      responseTime: 0
     });
   };
 
@@ -432,8 +424,9 @@ export default function PlayGame() {
   }
 
   const questions = quiz.questions as Question[];
-  const currentQuestion = questions[game.currentQuestion || 0];
-  const players = (game.players as any[]) || [];
+  const currentQuestionIndex = runtimeState.questionIndex ?? game.currentQuestion ?? 0;
+  const currentQuestion = questions[currentQuestionIndex];
+  const players = runtimeState.players || (game.players as any[]) || [];
   const currentPlayer = players.find(p => p.name === playerName);
   const currentRank = players
     .sort((a, b) => (b.score || 0) - (a.score || 0))
@@ -525,11 +518,11 @@ export default function PlayGame() {
           </div>
         )}
         
-        {/* Correct Answer (if incorrect) */}
-        {!lastResult.isCorrect && currentQuestion && (
+        {/* Correct answer is shown on the host/results screens, not leaked from the answer API. */}
+        {!lastResult.isCorrect && (
           <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-8 py-4 mb-8 animate-in slide-in-from-bottom-3 duration-500 delay-200">
             <p className="text-white text-xl font-semibold text-center">
-              {currentQuestion.answers[lastResult.correctAnswer]}
+              Wait for the host to reveal the answer.
             </p>
           </div>
         )}
@@ -568,7 +561,7 @@ export default function PlayGame() {
         {/* Header */}
         <div className="text-center mb-3 flex-shrink-0">
           <Badge variant="secondary" className="mb-1">
-            Question {(game.currentQuestion || 0) + 1} of {questions.length}
+            Question {currentQuestionIndex + 1} of {questions.length}
           </Badge>
           
           {timeLeft !== null && timeLeft > 0 && !hasAnswered && (
@@ -605,7 +598,7 @@ export default function PlayGame() {
             const symbols = [Triangle, Diamond, Circle, Square];
             const SymbolIcon = symbols[index];
             const isSelected = selectedAnswer === index;
-            const isDisabled = hasAnswered || timeLeft === 0;
+            const isDisabled = hasAnswered || timeLeft === 0 || runtimeState.status !== "open";
             
             return (
               <Button
