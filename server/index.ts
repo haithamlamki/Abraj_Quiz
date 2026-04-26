@@ -8,6 +8,7 @@ if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
 
+// TODO: consolidate into shared origin parsing util — duplicated in server/routes.ts:34. See BACKLOG.md.
 const allowedOrigins = (process.env.CLIENT_ORIGIN || process.env.CORS_ORIGIN || "")
   .split(",")
   .map((origin) => origin.trim())

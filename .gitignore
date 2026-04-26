@@ -54,3 +54,7 @@ copilot-messages.log
 # System files
 .DS_Store
 .project/attachments/files/**
+
+# Claude Code — local-only state
+.claude/settings.local.json
+.claude/agent-memory/

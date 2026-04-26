@@ -31,6 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Session configuration with PostgreSQL store
   const PgSession = connectPgSimple(session);
   const isProduction = process.env.NODE_ENV === "production";
+  // TODO: consolidate origin parsing/guard with server/index.ts:11 into a shared util. See BACKLOG.md.
   const sessionSecret = process.env.SESSION_SECRET;
 
   if (isProduction && !sessionSecret) {
