@@ -2,6 +2,8 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { WsServerMessage } from "@shared/ws-protocol";
 
+let devFallbackLogged = false;
+
 interface UseGameWebSocketOptions {
   gamePin: string;
   playerName?: string;
@@ -35,11 +37,31 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
   const connect = useCallback(() => {
     if (!enabled || !gamePin || !isActiveRef.current) return;
 
+    const rawWsUrl = (import.meta.env.VITE_WS_URL ?? "").trim();
+
+    if (import.meta.env.PROD) {
+      if (!rawWsUrl) {
+        throw new Error(
+          "VITE_WS_URL must be set in production builds. Static frontend cannot serve WebSocket connections.",
+        );
+      }
+      if (!rawWsUrl.startsWith("wss://")) {
+        console.warn(
+          `VITE_WS_URL is "${rawWsUrl}" — production should use wss:// to match the https frontend.`,
+        );
+      }
+    }
+
     const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl =
-      import.meta.env.VITE_WS_URL ||
-      `${protocol}//${window.location.host}/game-ws`;
-    
+    const wsUrl = rawWsUrl || `${protocol}//${window.location.host}/game-ws`;
+
+    if (!rawWsUrl && import.meta.env.DEV && !devFallbackLogged) {
+      devFallbackLogged = true;
+      console.info(
+        `[useGameWebSocket] VITE_WS_URL not set; using dev fallback ${wsUrl}`,
+      );
+    }
+
     try {
       const ws = new WebSocket(wsUrl);
       wsRef.current = ws;
