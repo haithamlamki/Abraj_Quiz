@@ -58,3 +58,5 @@ copilot-messages.log
 # Claude Code — local-only state
 .claude/settings.local.json
 .claude/agent-memory/
+
+.env
