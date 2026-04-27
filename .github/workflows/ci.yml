@@ -1,0 +1,121 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-and-typecheck:
+    name: Type check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run check
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+
+  integration-tests:
+    name: Integration tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/test
+      SESSION_SECRET: ci-test-secret
+      NODE_ENV: development
+      PORT: '5000'
+      INTEGRATION_BASE_URL: http://localhost:5000
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Apply schema (drizzle-kit push)
+        run: npx drizzle-kit push --force
+
+      - name: Start dev server in background
+        run: |
+          npm run dev > /tmp/dev.log 2>&1 &
+          echo $! > /tmp/dev.pid
+
+      - name: Wait for server ready
+        run: |
+          for i in $(seq 1 90); do
+            if grep -q "serving on port" /tmp/dev.log 2>/dev/null; then
+              echo "Server ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::Server did not become ready within 90s"
+          cat /tmp/dev.log
+          exit 1
+
+      - run: npm run integration
+
+      - name: Stop dev server
+        if: always()
+        run: |
+          if [ -f /tmp/dev.pid ]; then
+            kill "$(cat /tmp/dev.pid)" 2>/dev/null || true
+          fi
+
+      - name: Dev server log (on failure)
+        if: failure()
+        run: cat /tmp/dev.log || true
