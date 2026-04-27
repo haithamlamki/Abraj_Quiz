@@ -1,5 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { WebSocket } from "ws";
 import {
+  WS_URL,
   assertServerUp,
   cleanupTestData,
   connectAsHost,
@@ -201,5 +203,57 @@ describe("WebSocket game flow", () => {
     expect(res.status).toBe(403);
     const body = await res.json();
     expect(body.message).toMatch(/host/i);
+  });
+
+  // Pinning the fix for the session-hydration race: pre-fix, this test would
+  // hang indefinitely because the join message arrived before the server
+  // attached its 'message' listener. With the queue-during-hydrate fix in
+  // server/websocket.ts, the join is buffered and processed the moment
+  // hydration completes — no client-side delay required.
+  it("7. join sent immediately on open is acked within 2s (no helper, no delay)", async () => {
+    const { agent: hostAgent, sessionCookie, prefix } = await createTestUser("flow7");
+    usedPrefixes.push(prefix);
+    const quiz = await createTestQuiz(hostAgent);
+    const { pin } = await createTestGame(hostAgent, quiz.id);
+
+    const ws = new WebSocket(WS_URL, { headers: { origin: "http://localhost:5000", cookie: sessionCookie } });
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("WS open timeout")), 2000);
+        ws.once("open", () => {
+          clearTimeout(timer);
+          resolve();
+        });
+        ws.once("error", (err) => {
+          clearTimeout(timer);
+          reject(err);
+        });
+      });
+
+      // Send join SYNCHRONOUSLY on the same tick we observed open. No setTimeout,
+      // no helper, no retry. Pre-fix, this would hang because the server's
+      // 'message' listener wasn't attached yet during session hydration.
+      const t0 = Date.now();
+      ws.send(JSON.stringify({ type: "join", gamePin: pin, isHost: true }));
+
+      const ack = await new Promise<any>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error("no joined ack within 2000ms")), 2000);
+        ws.on("message", (data) => {
+          const m = JSON.parse(data.toString());
+          if (m.type === "joined" && m.isHost === true) {
+            clearTimeout(timer);
+            resolve(m);
+          }
+        });
+      });
+
+      const elapsed = Date.now() - t0;
+      expect(ack.gamePin).toBe(pin);
+      expect(elapsed).toBeLessThan(2000);
+    } finally {
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
+    }
   });
 });

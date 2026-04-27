@@ -7,6 +7,7 @@ export const wsErrorCodeSchema = z.enum([
   "QUESTION_CLOSED",
   "INVALID_PAYLOAD",
   "PLAYER_NOT_REGISTERED",
+  "SESSION_HYDRATION_FAILED",
 ]);
 
 export type WsErrorCode = z.infer<typeof wsErrorCodeSchema>;

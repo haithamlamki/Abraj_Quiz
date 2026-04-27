@@ -228,45 +228,21 @@ function openWs(headers: Record<string, string> = {}): Promise<WebSocket> {
   });
 }
 
-const HYDRATE_SESSION_GUARD_MS = 500;
-
-async function sendJoinAndAwaitAck(
-  ws: WebSocket,
-  stream: MessageStream,
-  payload: unknown,
-  predicate: (m: any) => boolean,
-): Promise<any> {
-  await new Promise((r) => setTimeout(r, HYDRATE_SESSION_GUARD_MS));
-  ws.send(JSON.stringify(payload));
-  try {
-    return await stream.waitFor(predicate, 1500);
-  } catch {
-    ws.send(JSON.stringify(payload));
-    return stream.waitFor(predicate, 4000);
-  }
-}
-
+// The join can be sent immediately after `open` because `server/websocket.ts`
+// queues inbound messages until session hydration finishes (no race).
 export async function connectAsHost(pin: string, sessionCookie: string): Promise<MessageStream> {
   const ws = await openWs({ cookie: sessionCookie });
   const stream = attachStream(ws);
-  await sendJoinAndAwaitAck(
-    ws,
-    stream,
-    { type: "join", gamePin: pin, isHost: true },
-    (m) => m.type === "joined" && m.isHost === true,
-  );
+  ws.send(JSON.stringify({ type: "join", gamePin: pin, isHost: true }));
+  await stream.waitFor((m) => m.type === "joined" && m.isHost === true);
   return stream;
 }
 
 export async function connectAsPlayer(pin: string, playerName: string): Promise<MessageStream> {
   const ws = await openWs();
   const stream = attachStream(ws);
-  await sendJoinAndAwaitAck(
-    ws,
-    stream,
-    { type: "join", gamePin: pin, playerName, isHost: false },
-    (m) => m.type === "joined" && m.isHost === false,
-  );
+  ws.send(JSON.stringify({ type: "join", gamePin: pin, playerName, isHost: false }));
+  await stream.waitFor((m) => m.type === "joined" && m.isHost === false);
   return stream;
 }
 

@@ -60,50 +60,85 @@ class GameWebSocketServer {
       maxPayload: this.maxMessageBytes,
     });
 
-    this.wss.on("connection", async (ws: WebSocket, request: SessionRequest) => {
+    this.wss.on("connection", (ws: WebSocket, request: SessionRequest) => {
       if (!this.isAllowedOrigin(request.headers.origin)) {
         ws.close(1008, "Origin not allowed");
         return;
       }
 
-      try {
-        await this.hydrateSession(request);
-      } catch (error) {
-        console.error("WebSocket session parse error:", error);
-        ws.close(1011, "Session unavailable");
-        return;
-      }
-
-      console.log("New WebSocket connection");
-
+      // Attach lifecycle listeners synchronously so cleanup runs even if the
+      // socket dies during session hydration.
+      let closed = false;
+      ws.on("close", () => {
+        closed = true;
+        this.removeClient(ws);
+      });
+      ws.on("error", (error) => {
+        console.error("WebSocket error:", error);
+        this.removeClient(ws);
+      });
       ws.on("pong", () => {
         gameRoomManager.markSocketSeen(ws);
       });
 
-      ws.on("message", async (message: RawData) => {
+      // Buffer inbound messages until session hydration finishes. The `'message'`
+      // listener MUST be attached synchronously: hydrateSession is an async
+      // Postgres lookup and the client (legitimately) sends `join` immediately
+      // after the WS open event, well before hydrate resolves. Without this
+      // queue the early message would be dropped — Node's EventEmitter doesn't
+      // buffer events for late listeners.
+      let hydrated = false;
+      let hydrationFailed = false;
+      const pending: RawData[] = [];
+
+      const processMessage = async (message: RawData): Promise<void> => {
         try {
           if (!this.checkRateLimit(ws)) {
-            ws.send(JSON.stringify({ type: "error", code: "INVALID_PAYLOAD", message: "Too many WebSocket messages" }));
+            this.safeSend(ws, { type: "error", code: "INVALID_PAYLOAD", message: "Too many WebSocket messages" });
             ws.close(1008, "Rate limit exceeded");
             return;
           }
-
           const data = this.parseMessage(message);
           await this.handleMessage(ws, request, data);
         } catch (error) {
           console.error("WebSocket message error:", error);
           this.safeSend(ws, { type: "error", code: "INVALID_PAYLOAD", message: "Invalid WebSocket message" });
         }
+      };
+
+      ws.on("message", (message: RawData) => {
+        if (hydrationFailed) return;
+        if (!hydrated) {
+          pending.push(message);
+          return;
+        }
+        void processMessage(message);
       });
 
-      ws.on("close", () => {
-        this.removeClient(ws);
-      });
-
-      ws.on("error", (error) => {
-        console.error("WebSocket error:", error);
-        this.removeClient(ws);
-      });
+      void this.hydrateSession(request)
+        .then(async () => {
+          if (closed) return;
+          console.log("New WebSocket connection");
+          // Drain queued messages in arrival order before flipping to the live
+          // path. New messages received during the drain re-enter the queue
+          // (hydrated is still false) and get drained in subsequent iterations.
+          while (pending.length > 0 && !closed) {
+            const next = pending.shift()!;
+            await processMessage(next);
+          }
+          if (!closed) hydrated = true;
+        })
+        .catch((error) => {
+          console.error("WebSocket session parse error:", error);
+          hydrationFailed = true;
+          pending.length = 0;
+          this.safeSend(ws, {
+            type: "error",
+            code: "SESSION_HYDRATION_FAILED",
+            message: "Session unavailable",
+          });
+          ws.close(4001, "session_hydration_failed");
+        });
     });
 
     console.log("WebSocket server initialized");
