@@ -4,15 +4,22 @@ import axios from "axios";
 import * as cheerio from "cheerio";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-// Check if API key is available
-if (!process.env.OPENAI_API_KEY) {
-  console.error("OPENAI_API_KEY is not set in environment variables");
+//
+// Lazy client: instantiate on first use rather than at module load. Without this,
+// importing this module crashes the server boot when OPENAI_API_KEY is unset
+// (which is fine for any deploy that doesn't use the AI routes — and it's the
+// default in CI). Routes already short-circuit with a 500 if the key is missing,
+// so this lazy throw is the safety net, not the primary check.
+let _openai: OpenAI | null = null;
+function getOpenAI(): OpenAI {
+  if (_openai) return _openai;
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not set; OpenAI-backed routes are unavailable.");
+  }
+  _openai = new OpenAI({ apiKey, timeout: 30000 });
+  return _openai;
 }
-
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY,
-  timeout: 30000, // 30 second timeout
-});
 
 export interface QuizQuestion {
   question: string;
@@ -130,7 +137,7 @@ Respond with JSON in this exact format:
   ]
 }`;
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
@@ -243,7 +250,7 @@ Respond with JSON in this exact format:
   ]
 }`;
 
-    const response = await openai.chat.completions.create({
+    const response = await getOpenAI().chat.completions.create({
       model: "gpt-4o",
       messages: [
         {
@@ -365,7 +372,7 @@ export async function generateBackgroundImage(title: string, description: string
 
     console.log("Generating background image with DALL-E");
 
-    const response = await openai.images.generate({
+    const response = await getOpenAI().images.generate({
       model: "dall-e-3",
       prompt: prompt,
       n: 1,
