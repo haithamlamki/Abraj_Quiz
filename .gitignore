@@ -53,7 +53,32 @@ copilot-messages.log
 
 # System files
 .DS_Store
+Thumbs.db
 .project/attachments/files/**
+
+# IDE folders
+.vscode/
+.idea/
+
+# Build outputs (dist/ already covered above)
+build/
+
+# Logs and TS incremental build artifacts
+*.log
+*.tsbuildinfo
+
+# Curl cookie jars — never commit these
+cookies.txt
+*.cookie-jar
+*.cookies
+
+# Local scratch / dev artifacts (formalize via scripts/dev/ when reused)
+scripts/
+
+# Replit / Codex Editor residue — re-imports could recreate these
+replit.md
+metadata.json
+files/
 
 # Claude Code — local-only state
 .claude/settings.local.json
