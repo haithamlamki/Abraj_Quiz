@@ -2,12 +2,38 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { pool } from "./db";
 
 const app = express();
 
 if (process.env.NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
+
+// Ops endpoints. Mounted before every other middleware so they bypass CORS,
+// session lookup, body parsing, and the /api request logger — truly DB-free
+// liveness, and a separate readiness that pings the DB with a hard timeout.
+// See DEPLOYMENT.md for Render's "Health Check Path" setting.
+app.get("/api/healthz", (_req, res) => {
+  res.status(200).json({ status: "ok", uptime: Math.floor(process.uptime()) });
+});
+
+app.get("/api/readyz", async (_req, res) => {
+  const start = Date.now();
+  try {
+    await Promise.race([
+      pool.query("SELECT 1"),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("db ping timeout after 2000ms")), 2000),
+      ),
+    ]);
+    const latencyMs = Date.now() - start;
+    res.status(200).json({ status: "ok", db: "ok", latencyMs });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.status(503).json({ status: "degraded", db: "fail", error: message });
+  }
+});
 
 // TODO: consolidate into shared origin parsing util — duplicated in server/routes.ts:34. See BACKLOG.md.
 const allowedOrigins = (process.env.CLIENT_ORIGIN || process.env.CORS_ORIGIN || "")

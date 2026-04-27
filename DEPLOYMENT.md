@@ -66,11 +66,26 @@ npm run start
 Backend health checks:
 
 ```bash
-curl -i https://your-backend-domain.example.com/api/latest-results
+# Liveness — DB-free, session-free; survives a DB outage.
+# Use this for Render's "Health Check Path" setting.
+curl -i https://your-backend-domain.example.com/api/healthz
+
+# Readiness — pings the DB with a 2s timeout. 200 when DB reachable, 503 when not.
+curl -i https://your-backend-domain.example.com/api/readyz
+```
+
+Set Render's **Health Check Path** to `/api/healthz`. Do not point Render at
+`/api/readyz` — a transient DB blip would mark the instance unhealthy and
+trigger an unnecessary restart loop. Treat readiness as an external alerting
+signal, not a process-level liveness signal.
+
+Smoke check that CORS is configured correctly without a wildcard:
+
+```bash
 curl -i https://your-backend-domain.example.com/api/quizzes
 ```
 
-Both should return JSON and include no CORS wildcard with credentials.
+Should return JSON with no `Access-Control-Allow-Origin: *`.
 
 ## Vercel Frontend
 
