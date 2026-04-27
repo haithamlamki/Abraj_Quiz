@@ -104,10 +104,16 @@ jobs:
               echo "Server healthy at /api/healthz after ${i}s"
               exit 0
             fi
+            # Dump log periodically so failures are diagnosable inline.
+            if [ "$i" = "5" ] || [ "$i" = "20" ] || [ "$i" = "60" ] || [ "$i" = "120" ]; then
+              echo "--- /tmp/dev.log snapshot at ${i}s ---"
+              cat /tmp/dev.log 2>&1 || echo "(empty or missing)"
+              echo "--- end snapshot ---"
+            fi
             sleep 1
           done
           echo "::error::Server did not respond 200 on /api/healthz within 180s"
-          echo "--- dev server log ---"
+          echo "--- final /tmp/dev.log ---"
           cat /tmp/dev.log
           exit 1
 
@@ -120,6 +126,17 @@ jobs:
             kill "$(cat /tmp/dev.pid)" 2>/dev/null || true
           fi
 
-      - name: Dev server log (on failure)
+      - name: Upload dev server log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-server-log
+          path: /tmp/dev.log
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Dev server log (final dump on failure)
         if: failure()
-        run: cat /tmp/dev.log || true
+        run: |
+          echo "--- final /tmp/dev.log ---"
+          cat /tmp/dev.log || true
