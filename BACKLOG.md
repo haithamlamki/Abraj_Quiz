@@ -1,13 +1,13 @@
 # Backlog — Post Phase 1
 
-Tracked follow-ups after PRODUCTION_MIGRATION_PRD.md Phase 1 was closed (commits 6e41920, 617db04).
+Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commits `6e41920`, `617db04`). Last refreshed 2026-04-27.
 
 ## Phase 1 — Production Migration COMPLETE ✅ (2026-04-27)
 
-- Migrated from Replit dev to Render+Vercel+Supabase production
+- Migrated from Replit dev to Render + Vercel + Supabase production
 - All 9 FRs from `PRODUCTION_MIGRATION_PRD.md` verified
 - 29/29 API smoke tests pass (`tests/smoke/api-contract.md`)
-- 10/10 unit tests pass (`npm test`)
+- 10/10 unit tests, 12/12 integration tests pass
 - End-to-end signup + login verified in production
 - Custom domain `abrajquiz.com` operational with first-party cookies
 - Production stack:
@@ -16,43 +16,66 @@ Tracked follow-ups after PRODUCTION_MIGRATION_PRD.md Phase 1 was closed (commits
   - Database: Supabase eu-north-1 (Session Pooler)
   - DNS: Hostinger
 
-## ✅ Completed Today (2026-04-27)
-- [x] Production deployment to Render (backend) + Vercel (frontend)
-- [x] Supabase schema applied to production DB
-- [x] CLIENT_ORIGIN configured for Vercel production URL
-- [x] Production deployment verified end-to-end (commit 3bc7102)
-  - Verified via curl: direct POST 201, CORS preflight 204 with correct headers, cross-origin POST 201, DB persistence confirmed.
-- [x] Cross-platform npm scripts (cross-env on dev/start)
-- [x] dotenv autoload at server/index.ts and server/db.ts
-- [x] reusePort removal for Windows compatibility
-- [x] **Custom domain setup** (2026-04-27): Migrated to first-party domain
-  - `abrajquiz.com` → Vercel (frontend, apex + www)
-  - `api.abrajquiz.com` → Render (backend)
-  - DNS via Hostinger, TTL 300
-  - SSL certificates issued by Vercel + Render automatically
-  - Verified end-to-end signup + login in incognito mode on `https://abrajquiz.com`
-  - First-party cookie problem resolved
-  - Backend `CLIENT_ORIGIN` accepts apex, www, and legacy `abraj-quiz.vercel.app` (kept as fallback)
+## Recently shipped (post-Phase 1)
+
+- [x] Phase 2 WebSocket integration test suite (`tests/integration/`) — 12 cases (`885e99a`)
+- [x] **`correctAnswer` leak** on `GET /api/quizzes/:id` and `GET /api/quizzes` — closed; creator-aware via `sanitizeQuizForCaller` (`ca92d4d`); smoke contract updated (`f04f6ea`)
+- [x] **WebSocket session-hydration race** — closed; `'message'` listener now attached synchronously, messages buffered until hydrate completes, `SESSION_HYDRATION_FAILED` close code added (`681eba8`)
+- [x] Lock-file `optional` flag drift on nested platform binaries — patched 26 entries under `vitest/node_modules/@esbuild/*` (`2fd4881`)
+- [x] OpenAI client lazy-init — boot no longer crashes when `OPENAI_API_KEY` is unset (`c7cdb35`)
+- [x] Round 1 cleanup:
+  - Removed `cookies.txt` + Replit cruft (`replit.md`, `metadata.json`, `files/`); hardened `.gitignore` (`d2ade5f`)
+  - `/api/healthz` (DB-free liveness) + `/api/readyz` (DB-ping readiness with 2s timeout) (`7396147`)
+  - GitHub Actions CI: typecheck + unit + integration + build, on push/PR to main, with concurrency cancel + npm cache (`8429820` → green by `c7cdb35`)
 
 ## Code consolidation
-- [ ] Consolidate duplicate origin parsing/guard between server/index.ts:11-18 and server/routes.ts:34-52 into a single shared util (e.g. server/lib/parse-origins.ts). Both currently fail-closed correctly; this is cleanup, not a bug.
 
-## Bugs surfaced by Phase 2 integration tests
-- [ ] **WebSocket session-hydration race (`server/websocket.ts:63-97`)**: the `'message'` event listener is attached after `await this.hydrateSession(request)`. Messages sent by the client immediately after the WS `open` event arrive before the listener is wired up and are dropped silently — no error frame, no close, the client just hangs. Discovered while writing the host-join integration test. Fix is to attach the `'message'` listener synchronously inside the `'connection'` handler (queue/buffer messages while hydrate runs, drain after). Tests currently work around this with a 500ms post-open delay + retry in `tests/integration/helpers.ts`.
-- [ ] **`GET /api/quizzes/:id` leaks `correctAnswer`** to unauthenticated and non-creator callers (`server/routes.ts:207-218`). Captured by failing test `tests/integration/auth.test.ts`. Fix is to strip `correctAnswer` from each question unless the caller's `session.userId === quiz.createdBy`.
+- [ ] Consolidate origin parsing util — currently duplicated at `server/index.ts:11-18` and `server/routes.ts:34-52`. Both fail-closed correctly; this is cleanup, not a bug.
+- [ ] Generalize host-only / ownership middleware — open-coded as `if (resource.createdBy/hostId !== session.userId) return 403` in 4+ routes (`PUT /api/quizzes/:id`, `POST /api/games/:pin/start`, `POST /api/games/:pin/next-question`, `GET /api/games/:pin/question-results/:idx`). One `requireGameHost(pinParam)` middleware would shrink ~40 lines and reduce drift risk.
+- [ ] Resolve `client/src/pages/create-quiz.tsx` (1144 LOC) vs `create-quiz-simple.tsx` (481 LOC). Only `create-quiz.tsx` is routed in `App.tsx:42`; `create-quiz-simple.tsx` is dead code or an incomplete refactor. Decide and delete one.
+- [ ] Replace `(req as any).session.userId` casts (~17 occurrences in `server/routes.ts`) with a typed session augmentation via `declare module "express-session"`.
 
 ## Hardening warnings from FR-8 review (deferred)
-- [ ] Treat CLIENT_ORIGIN="*" as an explicit wildcard rather than a literal string match (server/websocket.ts:240).
+
+- [ ] Treat `CLIENT_ORIGIN="*"` as explicit wildcard rather than literal string match (`server/websocket.ts:240`).
 - [ ] Decide whether headerless WS upgrades should be allowed for internal tooling/health probes; document the decision either way.
-- [ ] Normalize origins at parse time: lowercase + strip trailing slash (server/routes.ts parse step).
-- [ ] Configure CLIENT_ORIGIN to support Vercel preview deployments (currently only production URL is whitelisted).
+- [ ] Normalize origins at parse time: lowercase + strip trailing slash.
+- [ ] Whitelist Vercel preview deployments in `CLIENT_ORIGIN` (currently only production URLs).
+- [ ] Add length limits on quiz `title` / `description` / `answers` at the API boundary — DB columns are unbounded `TEXT`, no Zod `.max()` clamp today. A pathological payload could blow up later renders.
 
-## Smoke-test gaps (FR-9 reviewer note)
-- [ ] Add a smoke-test step exercising late-answer rejection (FR-5 acceptance).
-- [ ] Add a smoke-test step exercising production origin rejection (FR-8 acceptance).
+## UX resilience
 
-## Phase 2+ from PRD §17
-- [ ] Full HTTP + WebSocket integration test covering host/player flow.
-- [ ] Structured logging for room events.
-- [ ] Database hardening: indexes, foreign keys, possible game_players table.
-- [ ] Scale-out runtime: Redis/pubsub for shared room state, multi-instance backend, durable reconnect state.
+- [ ] React error boundary at the root of `client/src/App.tsx`. Currently wraps lazy routes in `Suspense` only — a render-time exception in any page produces a blank screen, no toast, no fallback.
+- [ ] Client-side WebSocket reconnect for `play-game.tsx` and `host-game.tsx`. PRD §16 lists this as a known risk; today a dropped connection requires a page reload.
+
+## Test coverage gaps
+
+- [ ] Smoke test for late-answer rejection (FR-5 acceptance).
+- [ ] Smoke test for production origin rejection (FR-8 acceptance).
+- [ ] Unit tests for `server/storage.ts`, `server/openai-service.ts`, route-handler logic in `server/routes.ts` (currently zero).
+- [ ] Integration coverage gaps: login (only register tested), logout, `GET /api/games/:pin/results`, `GET /api/games/:pin/question-results/:idx`, the four `/api/generate-quiz/*` routes, `PUT /api/quizzes/:id`.
+- [ ] No client-side tests at all (no Playwright / RTL). Lowest priority — the integration suite covers the WebSocket flow that matters most.
+
+## Repo hygiene
+
+- [ ] **`attached_assets/` cleanup** — 84 files / 38 MB in repo. Only 5 brand background JPGs are used (referenced from `client/src/utils/backgrounds.ts:11-15` and `vite.config.ts:23` `@assets` alias). Move the 5 used files to `client/public/backgrounds/`, update the references, delete the rest. Saves ~38 MB of clone bloat.
+- [ ] Add `.env.example` so onboarding has a fast path and `DEPLOYMENT.md`'s env-var contract is checkable.
+- [ ] Branch protection on `main` requiring CI checks (Type check, Unit tests, Integration tests, Build) before merging. Done via GitHub Settings → Branches → add ruleset; UI-only, can't be done from a PR.
+
+## Phase 2+ from PRD §17 (deferred / scale)
+
+- [ ] **Phase 2** — Local production-like smoke script (mentioned PRD §17 line 455).
+- [ ] **Phase 2** — Cleanup of obsolete WebSocket legacy broadcast code (PRD §17 line 456).
+- [ ] **Phase 2** — Structured logging for room events; replace `console.log` / `console.error` (PRD §17 line 457).
+- [ ] **Phase 3** — DB indexes + foreign keys (PRD §17 lines 461-462).
+- [ ] **Phase 3** — Possible split of player records into a dedicated `game_players` table (PRD §17 line 463).
+- [ ] **Phase 3** — Migration review for Supabase performance (PRD §17 line 464).
+- [ ] **Phase 4** — Redis / managed pub/sub for shared room state (PRD §17 lines 467-468).
+- [ ] **Phase 4** — Multi-instance backend support behind sticky routing (PRD §17 line 469).
+- [ ] **Phase 4** — Durable reconnect state (PRD §17 line 470).
+- [ ] **Phase 4** — Operational metrics + alerts (PRD §17 line 471).
+
+## Known divergences from `tests/smoke/api-contract.md` (intentional, not bugs)
+
+- `DELETE /api/quizzes/:id` is not implemented. Editor can update but not delete a quiz. If/when added, mirror `PUT`'s ownership check.
+- `POST /api/games/:pin/answer` is intentionally public — players don't have user accounts; identity is `playerName` matching a runtime-room registration. There is no path that returns 401 from this endpoint.
