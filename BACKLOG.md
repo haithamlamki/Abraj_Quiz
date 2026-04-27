@@ -37,6 +37,10 @@ Tracked follow-ups after PRODUCTION_MIGRATION_PRD.md Phase 1 was closed (commits
 ## Code consolidation
 - [ ] Consolidate duplicate origin parsing/guard between server/index.ts:11-18 and server/routes.ts:34-52 into a single shared util (e.g. server/lib/parse-origins.ts). Both currently fail-closed correctly; this is cleanup, not a bug.
 
+## Bugs surfaced by Phase 2 integration tests
+- [ ] **WebSocket session-hydration race (`server/websocket.ts:63-97`)**: the `'message'` event listener is attached after `await this.hydrateSession(request)`. Messages sent by the client immediately after the WS `open` event arrive before the listener is wired up and are dropped silently — no error frame, no close, the client just hangs. Discovered while writing the host-join integration test. Fix is to attach the `'message'` listener synchronously inside the `'connection'` handler (queue/buffer messages while hydrate runs, drain after). Tests currently work around this with a 500ms post-open delay + retry in `tests/integration/helpers.ts`.
+- [ ] **`GET /api/quizzes/:id` leaks `correctAnswer`** to unauthenticated and non-creator callers (`server/routes.ts:207-218`). Captured by failing test `tests/integration/auth.test.ts`. Fix is to strip `correctAnswer` from each question unless the caller's `session.userId === quiz.createdBy`.
+
 ## Hardening warnings from FR-8 review (deferred)
 - [ ] Treat CLIENT_ORIGIN="*" as an explicit wildcard rather than a literal string match (server/websocket.ts:240).
 - [ ] Decide whether headerless WS upgrades should be allowed for internal tooling/health probes; document the decision either way.
