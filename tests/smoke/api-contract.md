@@ -4,8 +4,10 @@ Manual curl-based smoke tests verifying the HTTP contract of the Abraj Quiz back
 Last live run: 2026-04-27 — backend HTTP contract verified against the production
 Render service. The 29 cases below are the canonical contract surface; 16 were
 exercised live in that session and the remaining 13 are documented from
-`server/routes.ts`. Three prescribed expectations conflict with the current code
-and are flagged inline and in the Discrepancies section at the bottom.
+`server/routes.ts`. Two prescribed expectations conflict with the current code
+and are flagged inline and in the Discrepancies section at the bottom. (A third
+— `correctAnswer` leak from `GET /api/quizzes/:id` — was closed in commit `ca92d4d`
+and is now covered by `tests/integration/auth.test.ts`.)
 
 ## Environment
 
@@ -121,20 +123,23 @@ Note: the user-prescribed FR mapping for this group is "FR-3"; the underlying PR
 **FR**: FR-3
 **Method**: GET
 **Path**: `/api/quizzes`
-**Auth**: public
+**Auth**: public; response is creator-aware
 **Expected status**: 200
-**Expected body**: array of quizzes (only `isPublic = true`)
-**Notes**: Verified live 2026-04-27.
+**Expected body**: array of quizzes (only `isPublic = true`). For each element, `questions[].correctAnswer` is included only on quizzes the caller created; on every other quiz that field is stripped.
+**Notes**: Verified live 2026-04-27 for the array shape. The per-quiz `correctAnswer` filter was added in commit `ca92d4d` and is enforced by the same helper used by case #10. Behavior is covered by `tests/integration/auth.test.ts`.
 
 #### 10. Get quiz by id
 
-**FR**: FR-3 (prescribed)
+**FR**: FR-3, FR-5 (no-leak rule)
 **Method**: GET
 **Path**: `/api/quizzes/:id`
-**Auth**: public
+**Auth**: public; response is creator-aware
 **Expected status**: 200 if found, 404 if not
-**Expected body**: full quiz including `questions[].correctAnswer`
-**Notes**: **Discrepancy with prescribed expectation.** The prescribed test said the response should omit `correctAnswer` per FR-3, but `server/routes.ts:207-218` returns the full quiz unmodified. PRD FR-5 only forbids leaking `correctAnswer` from the answer-submission response (`/api/games/:pin/answer`); it does not apply to quiz fetch, which legitimately needs it for the host's quiz editor and for live game rendering once a question closes. Documented as actual behavior. See Discrepancies section.
+**Expected body**:
+- Unauthenticated caller: quiz with each `questions[].correctAnswer` stripped.
+- Authenticated caller, NOT the creator: same — `correctAnswer` stripped.
+- Authenticated caller, IS the creator (`session.userId === quiz.createdBy`): full quiz including `questions[].correctAnswer` (so the editor UI can render the form).
+**Notes**: Implemented in `server/routes.ts` via the `sanitizeQuizForCaller` helper (commit `ca92d4d`). The previous behavior leaked `correctAnswer` to every caller — now closed. `tests/integration/auth.test.ts` enforces all three cases automatically and is the real source of truth; this entry is human reference.
 
 #### 11. Update quiz
 
@@ -344,11 +349,10 @@ Note: PRD FR-2 is about frontend WebSocket routing. The user-prescribed group la
 
 ## Discrepancies
 
-Three prescribed test cases conflict with the current code. They are documented above as **actual behavior**, not as the prescribed expectation, per the "do not invent expected status codes" rule.
+Two prescribed test cases conflict with the current code. They are documented above as **actual behavior**, not as the prescribed expectation, per the "do not invent expected status codes" rule. (A third — case #10's `correctAnswer` leak — was fixed in commit `ca92d4d` and is now enforced by `tests/integration/auth.test.ts`; the row was removed.)
 
 | # | Prescribed | Actual | Why |
 |---|---|---|---|
-| 10 | `GET /api/quizzes/:id` returns quiz **without** `correctAnswer` per FR-3 | Returns full quiz **including** `correctAnswer` | PRD FR-5 only forbids leaking `correctAnswer` from `/answer` responses. Quiz fetch needs it for the host editor and post-close client rendering. The prescribed expectation appears to be a misread of FR-5. |
 | 12 | `DELETE /api/quizzes/:id` returns 200 or 204 | No DELETE route registered | Quiz deletion is not part of the current Phase 1 contract. To add it, add `app.delete("/api/quizzes/:id", requireAuth, ...)` with an ownership check mirroring `PUT`. |
 | 21 | `POST /api/games/:pin/answer` without auth returns 401 | Returns 200 (success) or 403 with code `PLAYER_NOT_REGISTERED` | The route is intentionally public — players don't have user accounts; they're identified by `playerName` matching a player registered in the runtime room. There is no path that produces 401 here. |
 
