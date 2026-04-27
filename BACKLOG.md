@@ -2,6 +2,20 @@
 
 Tracked follow-ups after PRODUCTION_MIGRATION_PRD.md Phase 1 was closed (commits 6e41920, 617db04).
 
+## Phase 1 — Production Migration COMPLETE ✅ (2026-04-27)
+
+- Migrated from Replit dev to Render+Vercel+Supabase production
+- All 9 FRs from `PRODUCTION_MIGRATION_PRD.md` verified
+- 29/29 API smoke tests pass (`tests/smoke/api-contract.md`)
+- 10/10 unit tests pass (`npm test`)
+- End-to-end signup + login verified in production
+- Custom domain `abrajquiz.com` operational with first-party cookies
+- Production stack:
+  - Frontend: Vercel (`https://abrajquiz.com`)
+  - Backend: Render Starter $7/mo, Frankfurt EU Central (`https://api.abrajquiz.com`)
+  - Database: Supabase eu-north-1 (Session Pooler)
+  - DNS: Hostinger
+
 ## ✅ Completed Today (2026-04-27)
 - [x] Production deployment to Render (backend) + Vercel (frontend)
 - [x] Supabase schema applied to production DB
@@ -11,6 +25,14 @@ Tracked follow-ups after PRODUCTION_MIGRATION_PRD.md Phase 1 was closed (commits
 - [x] Cross-platform npm scripts (cross-env on dev/start)
 - [x] dotenv autoload at server/index.ts and server/db.ts
 - [x] reusePort removal for Windows compatibility
+- [x] **Custom domain setup** (2026-04-27): Migrated to first-party domain
+  - `abrajquiz.com` → Vercel (frontend, apex + www)
+  - `api.abrajquiz.com` → Render (backend)
+  - DNS via Hostinger, TTL 300
+  - SSL certificates issued by Vercel + Render automatically
+  - Verified end-to-end signup + login in incognito mode on `https://abrajquiz.com`
+  - First-party cookie problem resolved
+  - Backend `CLIENT_ORIGIN` accepts apex, www, and legacy `abraj-quiz.vercel.app` (kept as fallback)
 
 ## Code consolidation
 - [ ] Consolidate duplicate origin parsing/guard between server/index.ts:11-18 and server/routes.ts:34-52 into a single shared util (e.g. server/lib/parse-origins.ts). Both currently fail-closed correctly; this is cleanup, not a bug.
