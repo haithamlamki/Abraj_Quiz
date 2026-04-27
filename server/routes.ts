@@ -194,11 +194,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // correctAnswer must only be visible to the quiz's creator (so the editor UI works);
+  // any other caller sees the questions with that field stripped.
+  const sanitizeQuizForCaller = <T extends { createdBy: number; questions: unknown }>(
+    quiz: T,
+    callerId: number | undefined,
+  ): T => {
+    if (callerId === quiz.createdBy) return quiz;
+    if (!Array.isArray(quiz.questions)) return quiz;
+    const questions = (quiz.questions as Array<Record<string, unknown>>).map((q) => {
+      const { correctAnswer: _omit, ...rest } = q;
+      return rest;
+    });
+    return { ...quiz, questions } as T;
+  };
+
   // Quiz routes
   app.get("/api/quizzes", async (req, res) => {
     try {
+      const callerId = (req as any).session?.userId as number | undefined;
       const quizzes = await storage.getPublicQuizzes();
-      res.json(quizzes);
+      res.json(quizzes.map((q) => sanitizeQuizForCaller(q, callerId)));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch quizzes" });
     }
@@ -211,7 +227,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!quiz) {
         return res.status(404).json({ message: "Quiz not found" });
       }
-      res.json(quiz);
+      const callerId = (req as any).session?.userId as number | undefined;
+      res.json(sanitizeQuizForCaller(quiz, callerId));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch quiz" });
     }
