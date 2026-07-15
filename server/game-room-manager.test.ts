@@ -254,3 +254,104 @@ test("runtime room persists final scores when completing the game", async () => 
   assert.equal(roster[0].name, "Alice");
   assert.ok(roster[0].score > 0);
 });
+
+test("calculatePoints doubles the score for double-points questions", async () => {
+  const { GameRoomManager } = await import("./game-room-manager");
+  const { MemStorage } = await import("./storage");
+
+  const mgr = new GameRoomManager(new MemStorage());
+  const base = (mgr as any).calculatePoints({ timeLimit: 20, points: "standard" }, 0);
+  const doubled = (mgr as any).calculatePoints({ timeLimit: 20, points: "double" }, 0);
+  assert.equal(doubled, base * 2);
+});
+
+test("calculatePoints gives a flat score for no-limit questions", async () => {
+  const { GameRoomManager } = await import("./game-room-manager");
+  const { MemStorage } = await import("./storage");
+
+  const mgr = new GameRoomManager(new MemStorage());
+  const fast = (mgr as any).calculatePoints({ timeLimit: 0, points: "standard" }, 0);
+  const slow = (mgr as any).calculatePoints({ timeLimit: 0, points: "standard" }, 60_000);
+  assert.equal(fast, slow); // no time bonus when there is no limit
+  assert.ok(fast > 0);
+});
+
+test("no-limit question schedules no close timer and stays open for host-paced answers", async () => {
+  const [{ GameRoomManager }, { MemStorage }] = await Promise.all([
+    import("./game-room-manager"),
+    import("./storage"),
+  ]);
+
+  const storage = new MemStorage();
+  const quiz = await storage.createQuiz({ tenantId: 1 }, {
+    title: "No-limit quiz",
+    createdBy: 1,
+    questions: [
+      {
+        question: "Take your time",
+        answers: ["A", "B"],
+        correctAnswer: 0,
+        timeLimit: 0, // no limit — host advances manually
+      },
+    ],
+  } as any);
+
+  const game = await storage.createGame({ tenantId: 1 }, {
+    quizId: quiz.id,
+    gamePin: "999000",
+    hostId: 1,
+    status: "waiting",
+  });
+  await storage.joinGame({ tenantId: 1 }, "999000", "Bob");
+
+  const manager = new GameRoomManager(storage);
+  const hostSocket = new FakeSocket();
+  const playerSocket = new FakeSocket();
+
+  await manager.registerClient({
+    ws: hostSocket as unknown as WebSocket,
+    gamePin: "999000",
+    userId: 1,
+    wantsHostRole: true,
+  });
+  await manager.registerClient({
+    ws: playerSocket as unknown as WebSocket,
+    gamePin: "999000",
+    wantsHostRole: false,
+    playerName: "Bob",
+  });
+
+  await manager.startGame("999000", 1);
+
+  const started = playerSocket.sent.find((event) => event.type === "question_started");
+  assert.equal(started.durationSeconds, 0);
+  assert.equal(started.closesAt, 0);
+
+  const room = (manager as any).rooms.get("999000");
+  assert.equal(room.questionClosesAt, null);
+  assert.equal(room.closeTimer, undefined);
+  assert.equal(room.tickTimer, undefined);
+
+  // A no-limit question must still accept answers — it must not be treated
+  // as already closed just because there is no close deadline.
+  const answer = await manager.submitAnswer({
+    gamePin: "999000",
+    playerName: "Bob",
+    questionIndex: 0,
+    selectedAnswer: 0,
+  });
+  assert.deepEqual(answer, { success: true });
+
+  // Reconnecting mid-question must still resend question_started (regression
+  // guard for sendCurrentQuestionState requiring a non-null questionClosesAt).
+  const reconnectSocket = new FakeSocket();
+  await manager.registerClient({
+    ws: reconnectSocket as unknown as WebSocket,
+    gamePin: "999000",
+    wantsHostRole: false,
+    playerName: "Bob",
+  });
+  const resent = reconnectSocket.sent.find((event) => event.type === "question_started");
+  assert.ok(resent, "reconnect must resend question_started for an open no-limit question");
+  assert.equal(resent.durationSeconds, 0);
+});
