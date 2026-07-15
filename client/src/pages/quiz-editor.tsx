@@ -18,14 +18,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Question } from "@shared/schema";
 import { answerStyle } from "@/lib/answer-style";
-import {
-  PRESET_THEMES, getThemeSwatchStyle, getBackgroundStyle,
-} from "@/utils/backgrounds";
+import { getBackgroundStyle } from "@/utils/backgrounds";
+import { resolveQuizTheme, type QuizTheme } from "@shared/quiz-theme";
+import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
 
 interface QuizForm {
   title: string;
   description: string;
   background: string;
+  isPublic: boolean;
+  theme: QuizTheme;
   questions: Question[];
 }
 
@@ -81,6 +83,8 @@ export default function QuizEditor() {
     title: "",
     description: "",
     background: "aurora",
+    isPublic: true,
+    theme: resolveQuizTheme({ background: "aurora" }),
     questions: [blankQuestion()],
   });
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -125,6 +129,8 @@ export default function QuizEditor() {
         title: loaded.title ?? "",
         description: loaded.description ?? "",
         background: loaded.background || "aurora",
+        isPublic: loaded.isPublic ?? true,
+        theme: resolveQuizTheme(loaded),
         questions,
       });
       setCurrentIndex(0);
@@ -245,7 +251,7 @@ export default function QuizEditor() {
       const res = await fetch(buildApiUrl("/api/upload-image"), { method: "POST", body: form, credentials: "include" });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || "Upload failed");
       const { url } = await res.json();
-      setQuiz((prev) => ({ ...prev, background: url }));
+      setQuiz((prev) => ({ ...prev, background: url, theme: { ...prev.theme, background: url } }));
     } catch (e: any) {
       toast({ title: "Theme upload failed", description: e.message, variant: "destructive" });
     } finally {
@@ -273,9 +279,10 @@ export default function QuizEditor() {
       const payload: any = {
         title: quiz.title.trim(),
         description: quiz.description.trim(),
-        background: quiz.background,
+        background: quiz.theme.background,
+        theme: quiz.theme,
         questions: quiz.questions,
-        isPublic: true,
+        isPublic: quiz.isPublic,
         // insertQuizSchema requires createdBy for BOTH create and update. The
         // server ignores it on create (it stamps the authed user) and never
         // changes ownership on update; owner is enforced server-side.
@@ -457,7 +464,7 @@ export default function QuizEditor() {
         </aside>
 
         {/* Center: question editor */}
-        <main className="flex-1 min-w-0 p-6 overflow-y-auto" style={getBackgroundStyle(quiz.background)}>
+        <main className="flex-1 min-w-0 p-6 overflow-y-auto" style={getBackgroundStyle(quiz.theme.background)}>
           <div className="max-w-3xl mx-auto space-y-4">
             <Input
               value={current.question}
@@ -594,31 +601,16 @@ export default function QuizEditor() {
             <label className="text-xs text-gray-500 flex items-center gap-1"><Palette className="w-3 h-3" /> Theme</label>
             <Dialog>
               <DialogTrigger asChild>
-                <button className="mt-1 w-full h-10 rounded-lg border" style={getBackgroundStyle(quiz.background)} title="Change theme" />
+                <button className="mt-1 w-full h-10 rounded-lg border" style={getBackgroundStyle(quiz.theme.background)} title="Change theme" />
               </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader><DialogTitle>Choose a theme</DialogTitle></DialogHeader>
-                <div className="grid grid-cols-3 gap-3">
-                  {PRESET_THEMES.map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => setQuiz((p) => ({ ...p, background: t.id }))}
-                      className={`h-16 rounded-lg border-2 relative ${quiz.background === t.id ? "border-abraj-primary" : "border-transparent"}`}
-                      style={getThemeSwatchStyle(t)}
-                    >
-                      <span className="absolute bottom-1 left-1 text-[10px] text-white font-medium drop-shadow">{t.label}</span>
-                    </button>
-                  ))}
-                  <label className="h-16 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer text-gray-500 hover:text-abraj-primary">
-                    <ImagePlus className="w-5 h-5" />
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/gif,image/webp"
-                      className="hidden"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadThemeImage(f); e.target.value = ""; }}
-                    />
-                  </label>
-                </div>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader><DialogTitle>Quiz theme</DialogTitle></DialogHeader>
+                <ThemeBuilder
+                  theme={quiz.theme}
+                  uploading={uploading}
+                  onChange={(theme) => setQuiz((p) => ({ ...p, theme, background: theme.background }))}
+                  onUploadBackground={uploadThemeImage}
+                />
               </DialogContent>
             </Dialog>
           </div>
