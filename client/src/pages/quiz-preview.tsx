@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, ChevronLeft, ChevronRight, Monitor, Smartphone } from "lucide-react";
 import type { Quiz, Question } from "@shared/schema";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
+import { resolveQuizTheme } from "@shared/quiz-theme";
 
 // Normalize a stored question (legacy or new) to the fields the renderer needs.
 function normalize(q: any): Question {
@@ -39,6 +40,7 @@ export default function QuizPreview() {
   const questions = (Array.isArray(quiz.questions) ? quiz.questions : []).map(normalize);
   const q = questions[index];
   const bg = quiz.background || "classroom";
+  const theme = resolveQuizTheme(quiz);
 
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col">
@@ -60,6 +62,7 @@ export default function QuizPreview() {
             <QuizQuestionRenderer
               question={q}
               background={bg}
+              theme={theme}
               questionNumber={index + 1}
               totalQuestions={questions.length}
               reveal
@@ -72,7 +75,7 @@ export default function QuizPreview() {
         <div className="min-w-0">
           <div className="text-slate-300 text-sm mb-2">Participant view</div>
           <div className="mx-auto max-w-xs h-[460px]">
-            <QuizQuestionRenderer question={q} background={bg} shapeOnly />
+            <QuizQuestionRenderer question={q} background={bg} theme={theme} shapeOnly />
           </div>
         </div>
       </div>

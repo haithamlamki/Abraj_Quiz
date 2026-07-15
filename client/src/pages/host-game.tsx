@@ -13,6 +13,7 @@ import QRCode from "qrcode";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
+import { resolveQuizTheme } from "@shared/quiz-theme";
 
 export default function HostGame() {
   const { pin } = useParams();
@@ -99,6 +100,8 @@ export default function HostGame() {
     queryKey: ["/api/quizzes", game?.quizId],
     enabled: !!game?.quizId
   });
+
+  const theme = resolveQuizTheme(quiz ?? {});
 
   const { data: questionResults } = useQuery<{answerPercentages: number[], answerCounts: number[]}>({
     queryKey: ["/api/games", pin, "question-results", game?.currentQuestion],
@@ -529,6 +532,7 @@ export default function HostGame() {
               <QuizQuestionRenderer
                 question={currentQuestion}
                 background={quiz?.background || "classroom"}
+                theme={theme}
                 questionNumber={(game.currentQuestion || 0) + 1}
                 totalQuestions={questions.length}
                 timeRemaining={!showResults ? timeLeft : null}

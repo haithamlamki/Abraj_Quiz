@@ -12,6 +12,7 @@ import { getBackgroundStyle } from "@/utils/backgrounds";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
 import { encodeSelection } from "@shared/quiz-scoring";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
+import { resolveQuizTheme } from "@shared/quiz-theme";
 
 export default function PlayGame() {
   const { pin } = useParams();
@@ -89,6 +90,8 @@ export default function PlayGame() {
     queryKey: ["/api/quizzes", game?.quizId],
     enabled: !!game?.quizId
   });
+
+  const theme = resolveQuizTheme(quiz ?? {});
 
   const submitAnswerMutation = useMutation({
     mutationFn: async (answerData: {
@@ -577,6 +580,7 @@ export default function PlayGame() {
             <QuizQuestionRenderer
               question={currentQuestion}
               background={quiz?.background || "classroom"}
+              theme={theme}
               questionNumber={currentQuestionIndex + 1}
               totalQuestions={questions.length}
               timeRemaining={timeLeft}
