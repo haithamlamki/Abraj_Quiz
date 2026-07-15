@@ -8,6 +8,11 @@ export const wsErrorCodeSchema = z.enum([
   "INVALID_PAYLOAD",
   "PLAYER_NOT_REGISTERED",
   "SESSION_HYDRATION_FAILED",
+  // Join was rejected because the game reached its configured player cap.
+  "GAME_FULL",
+  // Join hit transient database contention (pool exhaustion, lock/serialization
+  // timeout). Retryable — surfaced as HTTP 503, never a 500.
+  "GAME_BUSY",
 ]);
 
 export type WsErrorCode = z.infer<typeof wsErrorCodeSchema>;

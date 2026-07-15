@@ -1,13 +1,46 @@
 import {
-  users, quizzes, games, gameResponses, tenants,
+  users, quizzes, games, gameResponses, gamePlayers, tenants,
   type User, type InsertUser,
   type Quiz, type InsertQuiz,
   type Game, type InsertGame,
   type GameResponse, type InsertGameResponse,
+  type GamePlayer,
   type Tenant, type InsertTenant
 } from "@shared/schema";
 import { db } from "./db";
-import { and, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
+
+// Safety cap on active participants per game. Configurable via env; the default
+// leaves headroom over the 400-player target. This is a bound, not an exact
+// gate — see joinGame's rank-based enforcement for the concurrency caveat.
+export function maxPlayersPerGame(): number {
+  const raw = parseInt(process.env.MAX_PLAYERS_PER_GAME || "500", 10);
+  return Number.isInteger(raw) && raw > 0 ? raw : 500;
+}
+
+// Postgres/driver error codes and pg-pool messages that signal transient
+// contention rather than a real failure. A join that hits one of these is told
+// GAME_BUSY (retryable 503) instead of surfacing as an HTTP 500.
+const TRANSIENT_DB_CODES = new Set([
+  "40001", // serialization_failure
+  "40P01", // deadlock_detected
+  "55P03", // lock_not_available
+  "53300", // too_many_connections
+  "53400", // configuration_limit_exceeded
+  "57P03", // cannot_connect_now
+  "08000", "08003", "08006", "08001", "08004", // connection exceptions
+  "ECONNREFUSED", "ETIMEDOUT", "ECONNRESET", // node socket errors
+]);
+
+export function isTransientDbError(error: unknown): boolean {
+  const e = error as { code?: string; message?: string } | undefined;
+  if (e?.code && TRANSIENT_DB_CODES.has(e.code)) return true;
+  // node-postgres' Pool throws a plain Error (no .code) when connectionTimeout
+  // is exceeded while every connection is checked out — the pool-exhaustion
+  // case we most need to map to GAME_BUSY.
+  return typeof e?.message === "string" &&
+    /timeout exceeded when trying to connect|Connection terminated/i.test(e.message);
+}
 
 // ── Tenant context ───────────────────────────────────────────────
 // Request paths carry the resolved tenant. The in-memory game engine
@@ -15,12 +48,15 @@ import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 export type StorageCtx = { tenantId: number } | { system: true };
 export const SYSTEM_CTX: StorageCtx = { system: true };
 
-// Result of an atomic join attempt (see IStorage.joinGame).
+// Result of a join attempt (see IStorage.joinGame). "full" and "busy" let the
+// route return controlled GAME_FULL / GAME_BUSY responses instead of HTTP 500.
 export type JoinGameResult =
-  | { status: "ok"; game: Game }
+  | { status: "ok"; game: Game; player: GamePlayer; playerCount: number }
   | { status: "not_found" }
   | { status: "not_waiting" }
-  | { status: "duplicate" };
+  | { status: "duplicate" }
+  | { status: "full" }
+  | { status: "busy" };
 
 export function requireTenantId(ctx: StorageCtx): number {
   if ("system" in ctx) {
@@ -35,7 +71,7 @@ function requireSystem(ctx: StorageCtx): void {
   }
 }
 
-function tenantFilter(ctx: StorageCtx, column: typeof users.tenantId | typeof quizzes.tenantId | typeof games.tenantId | typeof gameResponses.tenantId): SQL | undefined {
+function tenantFilter(ctx: StorageCtx, column: typeof users.tenantId | typeof quizzes.tenantId | typeof games.tenantId | typeof gameResponses.tenantId | typeof gamePlayers.tenantId): SQL | undefined {
   return "system" in ctx ? undefined : eq(column, ctx.tenantId);
 }
 
@@ -60,9 +96,17 @@ export interface IStorage {
   createGame(ctx: StorageCtx, game: InsertGame): Promise<Game>;
   updateGame(ctx: StorageCtx, id: number, game: Partial<Game>): Promise<Game | undefined>;
   deleteGame(ctx: StorageCtx, id: number): Promise<boolean>;
-  // Atomically add a player to a waiting game. Serializes concurrent joins so
-  // two players cannot overwrite each other's entry in the players array.
+  // Add a player to a waiting game via an independent INSERT into game_players
+  // (no games-row lock). Duplicate names are rejected by a case-insensitive DB
+  // unique index; the configured player cap yields status "full"; transient DB
+  // contention yields status "busy".
   joinGame(ctx: StorageCtx, pin: string, playerName: string): Promise<JoinGameResult>;
+
+  // Game Players (authoritative roster — replaces the legacy games.players JSON)
+  getGamePlayers(ctx: StorageCtx, gameId: number): Promise<GamePlayer[]>;
+  countGamePlayers(ctx: StorageCtx, gameId: number): Promise<number>;
+  // Persist final scores at game completion (one bulk statement, not N updates).
+  setGamePlayerScores(ctx: StorageCtx, gameId: number, scores: Array<{ name: string; score: number }>): Promise<void>;
 
   // Game Responses
   getGameResponses(ctx: StorageCtx, gameId: number): Promise<GameResponse[]>;
@@ -223,29 +267,86 @@ export class DatabaseStorage implements IStorage {
   }
 
   async joinGame(ctx: StorageCtx, pin: string, playerName: string): Promise<JoinGameResult> {
+    const cap = maxPlayersPerGame();
+    try {
+      return await withCtx(ctx, async (tx) => {
+        // Read the game WITHOUT locking it — independent joins no longer contend
+        // on the games row. This is a plain lookup for existence/status only.
+        const [game] = await tx.select().from(games)
+          .where(and(eq(games.gamePin, pin), tenantFilter(ctx, games.tenantId)));
+
+        if (!game) return { status: "not_found" };
+        if (game.status !== "waiting") return { status: "not_waiting" };
+
+        // Independent insert. ON CONFLICT DO NOTHING against the case-insensitive
+        // unique index (game_id, lower(name)) rejects duplicates at the DB with
+        // no row lock — an empty returning() means the name was already taken.
+        const insertedRows = await tx
+          .insert(gamePlayers)
+          .values({ tenantId: game.tenantId, gameId: game.id, name: playerName, score: 0 })
+          .onConflictDoNothing()
+          .returning();
+        if (insertedRows.length === 0) return { status: "duplicate" };
+        const player = insertedRows[0];
+
+        // Enforce the cap by INSERTION RANK: count this game's rows with id <=
+        // mine. Ids are monotonic, so the first `cap` joiners (lowest ids) keep
+        // their seats and anyone past the cap deletes their own row and is told
+        // GAME_FULL. Deterministic — no lost survivors. Under extreme concurrency
+        // the count only sees committed peers (READ COMMITTED), so the cap can be
+        // exceeded by at most the number of in-flight joins at the exact boundary;
+        // it is a safety bound, not an exact gate.
+        const [{ rank }] = await tx
+          .select({ rank: sql<number>`count(*)::int` })
+          .from(gamePlayers)
+          .where(and(eq(gamePlayers.gameId, game.id), sql`${gamePlayers.id} <= ${player.id}`));
+
+        if (rank > cap) {
+          await tx.delete(gamePlayers).where(eq(gamePlayers.id, player.id));
+          return { status: "full" };
+        }
+
+        return { status: "ok", game, player, playerCount: rank };
+      });
+    } catch (error) {
+      if (isTransientDbError(error)) return { status: "busy" };
+      throw error;
+    }
+  }
+
+  async getGamePlayers(ctx: StorageCtx, gameId: number): Promise<GamePlayer[]> {
     return withCtx(ctx, async (tx) => {
-      // Lock the game row for the duration of the transaction. Concurrent joins
-      // to the same pin serialize here: the second SELECT ... FOR UPDATE blocks
-      // until the first commits, then reads the already-appended players array,
-      // so no player is lost and duplicate names are reliably rejected.
-      const [game] = await tx.select().from(games)
-        .where(and(eq(games.gamePin, pin), tenantFilter(ctx, games.tenantId)))
-        .for("update");
+      return tx.select().from(gamePlayers)
+        .where(and(eq(gamePlayers.gameId, gameId), tenantFilter(ctx, gamePlayers.tenantId)))
+        .orderBy(asc(gamePlayers.id));
+    });
+  }
 
-      if (!game) return { status: "not_found" };
-      if (game.status !== "waiting") return { status: "not_waiting" };
+  async countGamePlayers(ctx: StorageCtx, gameId: number): Promise<number> {
+    return withCtx(ctx, async (tx) => {
+      const [{ n }] = await tx
+        .select({ n: sql<number>`count(*)::int` })
+        .from(gamePlayers)
+        .where(and(eq(gamePlayers.gameId, gameId), tenantFilter(ctx, gamePlayers.tenantId)));
+      return n ?? 0;
+    });
+  }
 
-      const players = (game.players as Array<{ name?: unknown }>) || [];
-      const taken = players.some(
-        (p) => typeof p?.name === "string" && p.name.toLowerCase() === playerName.toLowerCase(),
-      );
-      if (taken) return { status: "duplicate" };
-
-      const updatedPlayers = [...players, { name: playerName, score: 0 }];
-      const [updated] = await tx.update(games).set({ players: updatedPlayers })
-        .where(and(eq(games.id, game.id), tenantFilter(ctx, games.tenantId)))
-        .returning();
-      return { status: "ok", game: updated };
+  async setGamePlayerScores(ctx: StorageCtx, gameId: number, scores: Array<{ name: string; score: number }>): Promise<void> {
+    if (scores.length === 0) return;
+    await withCtx(ctx, async (tx) => {
+      // One bulk UPDATE joining against an inline VALUES list keyed by lower(name)
+      // — a single statement instead of one round-trip per player at completion.
+      const names = scores.map((s) => s.name);
+      const values = scores.map((s) => Math.trunc(s.score));
+      await tx.execute(sql`
+        update ${gamePlayers} as gp
+        set score = v.score
+        from (select unnest(${names}::text[]) as name, unnest(${values}::int[]) as score) as v
+        where gp.game_id = ${gameId}
+          and lower(gp.name) = lower(v.name)
+          ${"system" in ctx ? sql`` : sql`and gp.tenant_id = ${ctx.tenantId}`}
+      `);
     });
   }
 
@@ -303,7 +404,10 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(quizzes.id, latestGame.quizId), tenantFilter(ctx, quizzes.tenantId)));
       if (!quiz) return undefined;
 
-      const players = (latestGame.players as any[]) || [];
+      // Roster comes from game_players (authoritative), not the legacy JSON.
+      const roster = await tx.select().from(gamePlayers)
+        .where(and(eq(gamePlayers.gameId, latestGame.id), tenantFilter(ctx, gamePlayers.tenantId)));
+      const players = roster.map((p) => ({ name: p.name, score: p.score }));
       const totalQuestions = (quiz.questions as any[])?.length || 0;
 
       return {
@@ -366,11 +470,13 @@ export class MemStorage implements IStorage {
   private quizzes: Map<number, Quiz>;
   private games: Map<number, Game>;
   private gameResponses: Map<number, GameResponse>;
+  private gamePlayers: Map<number, GamePlayer>;
   private tenants: Map<number, Tenant> = new Map();
   private currentUserId: number;
   private currentQuizId: number;
   private currentGameId: number;
   private currentResponseId: number;
+  private currentGamePlayerId: number;
   private currentTenantId = 1;
 
   constructor() {
@@ -378,10 +484,12 @@ export class MemStorage implements IStorage {
     this.quizzes = new Map();
     this.games = new Map();
     this.gameResponses = new Map();
+    this.gamePlayers = new Map();
     this.currentUserId = 1;
     this.currentQuizId = 1;
     this.currentGameId = 1;
     this.currentResponseId = 1;
+    this.currentGamePlayerId = 1;
 
     // Add some sample quizzes
     this.initializeSampleData();
@@ -610,23 +718,57 @@ export class MemStorage implements IStorage {
   }
 
   async joinGame(ctx: StorageCtx, pin: string, playerName: string): Promise<JoinGameResult> {
-    // No await between the read and the write, so this is atomic in the
-    // single-threaded runtime (mirrors the DB's row-locked behavior).
+    // Mirrors the DB path: independent game_players insert, case-insensitive
+    // uniqueness, insertion-rank cap. No await between read and write, so it is
+    // atomic in the single-threaded runtime.
     const game = Array.from(this.games.values()).find(
       (g) => g.gamePin === pin && this.inTenant(ctx, g),
     );
     if (!game) return { status: "not_found" };
     if (game.status !== "waiting") return { status: "not_waiting" };
 
-    const players = (game.players as Array<{ name?: unknown }>) || [];
-    const taken = players.some(
-      (p) => typeof p?.name === "string" && p.name.toLowerCase() === playerName.toLowerCase(),
-    );
+    const roster = Array.from(this.gamePlayers.values()).filter((p) => p.gameId === game.id);
+    const taken = roster.some((p) => p.name.toLowerCase() === playerName.toLowerCase());
     if (taken) return { status: "duplicate" };
 
-    const updatedGame = { ...game, players: [...players, { name: playerName, score: 0 }] };
-    this.games.set(game.id, updatedGame);
-    return { status: "ok", game: updatedGame };
+    const id = this.currentGamePlayerId++;
+    const player: GamePlayer = {
+      id,
+      tenantId: game.tenantId,
+      gameId: game.id,
+      name: playerName,
+      score: 0,
+      joinedAt: new Date(),
+    };
+
+    const rank = roster.length + 1;
+    if (rank > maxPlayersPerGame()) {
+      return { status: "full" };
+    }
+
+    this.gamePlayers.set(id, player);
+    return { status: "ok", game, player, playerCount: rank };
+  }
+
+  async getGamePlayers(ctx: StorageCtx, gameId: number): Promise<GamePlayer[]> {
+    return Array.from(this.gamePlayers.values())
+      .filter((p) => p.gameId === gameId && this.inTenant(ctx, p))
+      .sort((a, b) => a.id - b.id);
+  }
+
+  async countGamePlayers(ctx: StorageCtx, gameId: number): Promise<number> {
+    return (await this.getGamePlayers(ctx, gameId)).length;
+  }
+
+  async setGamePlayerScores(ctx: StorageCtx, gameId: number, scores: Array<{ name: string; score: number }>): Promise<void> {
+    const byName = new Map(scores.map((s) => [s.name.toLowerCase(), Math.trunc(s.score)]));
+    for (const player of Array.from(this.gamePlayers.values())) {
+      if (player.gameId !== gameId || !this.inTenant(ctx, player)) continue;
+      const score = byName.get(player.name.toLowerCase());
+      if (score !== undefined) {
+        this.gamePlayers.set(player.id, { ...player, score });
+      }
+    }
   }
 
   // Game Responses
@@ -678,7 +820,8 @@ export class MemStorage implements IStorage {
     const quiz = await this.getQuiz(ctx, latestGame.quizId);
     if (!quiz) return undefined;
 
-    const players = (latestGame.players as any[]) || [];
+    const roster = await this.getGamePlayers(ctx, latestGame.id);
+    const players = roster.map((p) => ({ name: p.name, score: p.score }));
     const totalQuestions = (quiz.questions as any[])?.length || 0;
 
     return {

@@ -1,4 +1,5 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -86,9 +87,37 @@ export const games = pgTable("games", {
   hostId: integer("host_id").notNull(),
   status: text("status").notNull(), // 'waiting', 'active', 'completed'
   currentQuestion: integer("current_question").default(0),
+  // LEGACY / FROZEN as of migration 0006. The authoritative roster of active
+  // participants is now the game_players table (independent per-row inserts —
+  // no single-row lock, no O(n^2) rewrite). This column is retained only so
+  // historical rows survive; the app no longer reads or writes it. Do not
+  // reintroduce reads/writes here — that would recreate the dual-source
+  // inconsistency 0006 removed.
   players: jsonb("players").default([]),
   createdAt: timestamp("created_at").defaultNow(),
 });
+
+// Authoritative roster of active participants for a game. One row per player;
+// joins are independent INSERTs (no locking/rewriting a shared JSON array), so
+// a 400-player join storm no longer serializes on the games row. The partial
+// unique index on (game_id, lower(name)) enforces case-insensitive name
+// uniqueness per game at the database — the second layer that makes duplicate
+// rejection reliable under concurrency, not just in application code.
+export const gamePlayers = pgTable(
+  "game_players",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+    gameId: integer("game_id").notNull().references(() => games.id),
+    name: text("name").notNull(),
+    score: integer("score").notNull().default(0),
+    joinedAt: timestamp("joined_at").defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("game_players_game_name_uq").on(t.gameId, sql`lower(${t.name})`),
+    index("game_players_game_id_idx").on(t.gameId),
+  ],
+);
 
 export const gameResponses = pgTable("game_responses", {
   id: serial("id").primaryKey(),
@@ -135,6 +164,18 @@ export const insertGameSchema = createInsertSchema(games).pick({
   status: true,
 });
 
+export const insertGamePlayerSchema = createInsertSchema(gamePlayers).pick({
+  tenantId: true,
+  gameId: true,
+  name: true,
+  score: true,
+}).extend({
+  // tenantId has a DB default(1) that drizzle-zod treats as optional; storage
+  // callers always stamp it explicitly from the game's tenant.
+  tenantId: z.number().int(),
+  score: z.number().int().default(0),
+});
+
 export const insertGameResponseSchema = createInsertSchema(gameResponses).pick({
   tenantId: true,
   gameId: true,
@@ -172,6 +213,9 @@ export type Game = typeof games.$inferSelect;
 
 export type InsertGameResponse = z.infer<typeof insertGameResponseSchema>;
 export type GameResponse = typeof gameResponses.$inferSelect;
+
+export type InsertGamePlayer = z.infer<typeof insertGamePlayerSchema>;
+export type GamePlayer = typeof gamePlayers.$inferSelect;
 
 export type Question = z.infer<typeof questionSchema>;
 export type QuizQuestions = z.infer<typeof quizQuestionsSchema>;

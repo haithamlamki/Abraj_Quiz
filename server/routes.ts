@@ -610,7 +610,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
       }
-      res.json(await gameRoomManager.getGameSnapshot(pin, game));
+      // Overlay the authoritative roster from game_players. If a live runtime
+      // room exists, getGameSnapshot replaces this with the room's live scores;
+      // otherwise (waiting lobby, no host yet) the DB roster is the source.
+      const roster = await storage.getGamePlayers(tctx(req), game.id);
+      const players = roster.map((p) => ({ name: p.name, score: p.score }));
+      res.json(await gameRoomManager.getGameSnapshot(pin, { ...game, players }));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch game" });
     }
@@ -627,8 +632,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const playerName = playerNameValidation.data;
 
-      // Atomic, row-locked append — prevents two concurrent joins from
-      // overwriting each other's entry or both passing the duplicate check.
+      // Independent game_players INSERT — no games-row lock, so a 400-player
+      // join storm no longer serializes. Duplicate/full/busy are controlled
+      // outcomes, never a 500.
       const result = await storage.joinGame(tctx(req), pin, playerName);
       if (result.status === "not_found") {
         return res.status(404).json({ message: "Game not found" });
@@ -639,13 +645,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (result.status === "duplicate") {
         return res.status(400).json({ message: "Player name already taken" });
       }
+      if (result.status === "full") {
+        return res.status(409).json({ message: "This game is full", code: "GAME_FULL" });
+      }
+      if (result.status === "busy") {
+        // Transient DB contention (pool/lock/serialization). Ask the client to
+        // retry rather than surfacing a 500.
+        res.setHeader("Retry-After", "1");
+        return res.status(503).json({ message: "The game is busy, please try again", code: "GAME_BUSY" });
+      }
       const updatedGame = result.game;
       await gameRoomManager.addPersistedPlayer(pin, playerName, 0);
 
       // Broadcast player joined to active runtime room clients.
       await gameRoomManager.broadcastGameUpdated(pin, updatedGame);
 
-      res.json({ success: true, game: updatedGame });
+      res.json({ success: true, game: updatedGame, playerCount: result.playerCount });
     } catch (error) {
       res.status(500).json({ message: "Failed to join game" });
     }
@@ -757,8 +772,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? sanitizeQuizForCaller(rawQuiz, undefined)
           : rawQuiz;
       const responses = await storage.getGameResponses(tctx(req), game.id);
-      const players = (game.players as any[]) || [];
-      
+      // Authoritative roster from game_players (final scores are persisted there
+      // at game completion), not the frozen games.players JSON.
+      const roster = await storage.getGamePlayers(tctx(req), game.id);
+      const players = roster.map((p) => ({ name: p.name, score: p.score }));
+
       // Sort players by score
       const sortedPlayers = players.sort((a: any, b: any) => (b.score || 0) - (a.score || 0));
 

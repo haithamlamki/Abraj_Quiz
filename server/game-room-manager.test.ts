@@ -40,9 +40,9 @@ async function createRuntimeFixture() {
     hostId: 1,
     status: "waiting",
   });
-  await storage.updateGame({ tenantId: 1 }, game.id, {
-    players: [{ name: "Alice", score: 0 }],
-  });
+  // Seed the roster through the authoritative path (game_players), not the
+  // legacy JSON — the runtime room now loads players from game_players.
+  await storage.joinGame({ tenantId: 1 }, "123456", "Alice");
 
   const manager = new GameRoomManager(storage);
   const hostSocket = new FakeSocket();
@@ -128,7 +128,9 @@ test("runtime room batch-persists every player's response on question close", as
     hostId: 1,
     status: "waiting",
   });
-  await storage.updateGame({ tenantId: 1 }, game.id, { players });
+  for (const player of players) {
+    await storage.joinGame({ tenantId: 1 }, "654321", player.name);
+  }
 
   const manager = new GameRoomManager(storage);
   await manager.startGame("654321", 1);
@@ -246,6 +248,9 @@ test("runtime room persists final scores when completing the game", async () => 
 
   const persistedGame = await storage.getGameByPin({ tenantId: 1 }, "123456");
   assert.equal(persistedGame?.status, "completed");
-  const players = persistedGame?.players as any[];
-  assert.ok(players[0].score > 0);
+  // Final scores are persisted to the authoritative game_players roster.
+  const roster = await storage.getGamePlayers({ tenantId: 1 }, persistedGame!.id);
+  assert.equal(roster.length, 1);
+  assert.equal(roster[0].name, "Alice");
+  assert.ok(roster[0].score > 0);
 });
