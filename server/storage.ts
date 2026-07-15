@@ -15,6 +15,13 @@ import { and, desc, eq, sql, type SQL } from "drizzle-orm";
 export type StorageCtx = { tenantId: number } | { system: true };
 export const SYSTEM_CTX: StorageCtx = { system: true };
 
+// Result of an atomic join attempt (see IStorage.joinGame).
+export type JoinGameResult =
+  | { status: "ok"; game: Game }
+  | { status: "not_found" }
+  | { status: "not_waiting" }
+  | { status: "duplicate" };
+
 export function requireTenantId(ctx: StorageCtx): number {
   if ("system" in ctx) {
     throw new Error("Tenant context required");
@@ -53,6 +60,9 @@ export interface IStorage {
   createGame(ctx: StorageCtx, game: InsertGame): Promise<Game>;
   updateGame(ctx: StorageCtx, id: number, game: Partial<Game>): Promise<Game | undefined>;
   deleteGame(ctx: StorageCtx, id: number): Promise<boolean>;
+  // Atomically add a player to a waiting game. Serializes concurrent joins so
+  // two players cannot overwrite each other's entry in the players array.
+  joinGame(ctx: StorageCtx, pin: string, playerName: string): Promise<JoinGameResult>;
 
   // Game Responses
   getGameResponses(ctx: StorageCtx, gameId: number): Promise<GameResponse[]>;
@@ -205,6 +215,33 @@ export class DatabaseStorage implements IStorage {
       const result = await tx.delete(games)
         .where(and(eq(games.id, id), tenantFilter(ctx, games.tenantId)));
       return (result.rowCount || 0) > 0;
+    });
+  }
+
+  async joinGame(ctx: StorageCtx, pin: string, playerName: string): Promise<JoinGameResult> {
+    return withCtx(ctx, async (tx) => {
+      // Lock the game row for the duration of the transaction. Concurrent joins
+      // to the same pin serialize here: the second SELECT ... FOR UPDATE blocks
+      // until the first commits, then reads the already-appended players array,
+      // so no player is lost and duplicate names are reliably rejected.
+      const [game] = await tx.select().from(games)
+        .where(and(eq(games.gamePin, pin), tenantFilter(ctx, games.tenantId)))
+        .for("update");
+
+      if (!game) return { status: "not_found" };
+      if (game.status !== "waiting") return { status: "not_waiting" };
+
+      const players = (game.players as Array<{ name?: unknown }>) || [];
+      const taken = players.some(
+        (p) => typeof p?.name === "string" && p.name.toLowerCase() === playerName.toLowerCase(),
+      );
+      if (taken) return { status: "duplicate" };
+
+      const updatedPlayers = [...players, { name: playerName, score: 0 }];
+      const [updated] = await tx.update(games).set({ players: updatedPlayers })
+        .where(and(eq(games.id, game.id), tenantFilter(ctx, games.tenantId)))
+        .returning();
+      return { status: "ok", game: updated };
     });
   }
 
@@ -559,6 +596,26 @@ export class MemStorage implements IStorage {
     const game = this.games.get(id);
     if (!game || !this.inTenant(ctx, game)) return false;
     return this.games.delete(id);
+  }
+
+  async joinGame(ctx: StorageCtx, pin: string, playerName: string): Promise<JoinGameResult> {
+    // No await between the read and the write, so this is atomic in the
+    // single-threaded runtime (mirrors the DB's row-locked behavior).
+    const game = Array.from(this.games.values()).find(
+      (g) => g.gamePin === pin && this.inTenant(ctx, g),
+    );
+    if (!game) return { status: "not_found" };
+    if (game.status !== "waiting") return { status: "not_waiting" };
+
+    const players = (game.players as Array<{ name?: unknown }>) || [];
+    const taken = players.some(
+      (p) => typeof p?.name === "string" && p.name.toLowerCase() === playerName.toLowerCase(),
+    );
+    if (taken) return { status: "duplicate" };
+
+    const updatedGame = { ...game, players: [...players, { name: playerName, score: 0 }] };
+    this.games.set(game.id, updatedGame);
+    return { status: "ok", game: updatedGame };
   }
 
   // Game Responses
