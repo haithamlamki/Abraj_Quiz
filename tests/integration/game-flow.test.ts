@@ -236,8 +236,13 @@ describe("WebSocket game flow", () => {
       const t0 = Date.now();
       ws.send(JSON.stringify({ type: "join", gamePin: pin, isHost: true }));
 
+      // The point of this test is that the join is acked at all (the server's
+      // 'message' listener is attached synchronously, so the frame isn't dropped
+      // during async session hydration). The latency bound is generous because a
+      // real ack requires session hydration + room load against a possibly
+      // remote Postgres.
       const ack = await new Promise<any>((resolve, reject) => {
-        const timer = setTimeout(() => reject(new Error("no joined ack within 2000ms")), 2000);
+        const timer = setTimeout(() => reject(new Error("no joined ack within 20000ms")), 20000);
         ws.on("message", (data) => {
           const m = JSON.parse(data.toString());
           if (m.type === "joined" && m.isHost === true) {
@@ -249,7 +254,7 @@ describe("WebSocket game flow", () => {
 
       const elapsed = Date.now() - t0;
       expect(ack.gamePin).toBe(pin);
-      expect(elapsed).toBeLessThan(2000);
+      expect(elapsed).toBeLessThan(20000);
     } finally {
       if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
         ws.close();

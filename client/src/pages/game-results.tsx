@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Leaderboard from "@/components/leaderboard";
-import { Trophy, Home, RotateCcw, Star, Award, Crown, Download } from "lucide-react";
+import { Trophy, Home, RotateCcw, Star, Award, Crown, Download, PlusCircle } from "lucide-react";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { useTenant, tenantPdfBranding } from "@/lib/tenant";
 
@@ -59,7 +59,7 @@ export default function GameResults() {
       const pdf = new jsPDF('l', 'mm', 'a4');
       
       pdf.setFontSize(20);
-      pdf.text('Abraj Quiz Results', 20, 20);
+      pdf.text(`${tenant.branding.appName} Results`, 20, 20);
       pdf.setFontSize(14);
       pdf.text(`Quiz: ${game.quiz?.title || 'Untitled Quiz'}`, 20, 40);
       pdf.text(`Game PIN: ${game.gamePin}`, 20, 50);
@@ -220,7 +220,7 @@ export default function GameResults() {
               Home
             </Button>
             <Button 
-              onClick={() => setLocation(`/join-game?pin=${pin}`)} 
+              onClick={() => setLocation(`/join/${pin}`)}
               variant="outline" 
               className="flex-1"
             >
@@ -268,8 +268,8 @@ export default function GameResults() {
                 <Download className="mr-2 h-4 w-4" />
                 Download PDF Report
               </Button>
-              <Button onClick={() => setLocation("/")} variant="outline" className="py-2">
-                <Home className="mr-2 h-4 w-4" />
+              <Button onClick={() => setLocation("/create")} variant="outline" className="py-2">
+                <PlusCircle className="mr-2 h-4 w-4" />
                 Create New Quiz
               </Button>
               <Button 

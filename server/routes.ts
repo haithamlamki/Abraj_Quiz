@@ -288,7 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!features.publicQuizzes) {
         return res.json([]);
       }
-      const callerId = (req as any).session?.userId as number | undefined;
+      const callerId = (req as any).authUserId as number | undefined;
       const quizzes = await storage.getPublicQuizzes(tctx(req));
       res.json(quizzes.map((q) => sanitizeQuizForCaller(q, callerId)));
     } catch (error) {
@@ -298,12 +298,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/quizzes/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id, 10);
+      if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid quiz id" });
+      }
       const quiz = await storage.getQuiz(tctx(req), id);
       if (!quiz) {
         return res.status(404).json({ message: "Quiz not found" });
       }
-      const callerId = (req as any).session?.userId as number | undefined;
+      const callerId = (req as any).authUserId as number | undefined;
+      // A private quiz is visible only to its creator. Players never reach a
+      // quiz through this route (they receive questions over the WebSocket),
+      // and a private quiz can only be hosted by its owner, so restricting to
+      // the creator does not break gameplay. Respond 404 (not 403) so the
+      // existence of a private quiz at this id is not disclosed.
+      if (!quiz.isPublic && callerId !== quiz.createdBy) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
       res.json(sanitizeQuizForCaller(quiz, callerId));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch quiz" });
@@ -502,7 +513,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/quizzes/:id", requireAuth, async (req, res) => {
     try {
-      const quizId = parseInt(req.params.id);
+      const quizId = parseInt(req.params.id, 10);
+      if (!Number.isInteger(quizId) || quizId <= 0) {
+        return res.status(400).json({ message: "Invalid quiz id" });
+      }
       const userId = (req as any).authUserId;
 
       // Check if quiz exists and user owns it
@@ -550,6 +564,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Check if quiz exists
       const quiz = await storage.getQuiz(tctx(req), quizId);
       if (!quiz) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
+
+      // A private quiz can only be hosted by its creator. Without this, a
+      // non-owner could create a game from someone else's private quiz, host
+      // it to completion, and read every question/answer via the results
+      // endpoint — bypassing the private-quiz gate on GET /api/quizzes/:id.
+      if (!quiz.isPublic && quiz.createdBy !== (req as any).authUserId) {
         return res.status(404).json({ message: "Quiz not found" });
       }
 
@@ -605,27 +627,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const playerName = playerNameValidation.data;
 
-      const game = await storage.getGameByPin(tctx(req), pin);
-      if (!game) {
+      // Atomic, row-locked append — prevents two concurrent joins from
+      // overwriting each other's entry or both passing the duplicate check.
+      const result = await storage.joinGame(tctx(req), pin, playerName);
+      if (result.status === "not_found") {
         return res.status(404).json({ message: "Game not found" });
       }
-
-      if (game.status !== "waiting") {
+      if (result.status === "not_waiting") {
         return res.status(400).json({ message: "Game is not accepting new players" });
       }
-
-      // Check if player name already exists
-      const players = (game.players as any[]) || [];
-      if (players.some((p: any) => typeof p.name === "string" && p.name.toLowerCase() === playerName.toLowerCase())) {
+      if (result.status === "duplicate") {
         return res.status(400).json({ message: "Player name already taken" });
       }
-
-      // Add player to game
-      const updatedPlayers = [...players, { name: playerName, score: 0 }];
-      const updatedGame = await storage.updateGame(tctx(req), game.id, { players: updatedPlayers });
-      if (!updatedGame) {
-        return res.status(500).json({ message: "Failed to join game" });
-      }
+      const updatedGame = result.game;
       await gameRoomManager.addPersistedPlayer(pin, playerName, 0);
 
       // Broadcast player joined to active runtime room clients.
@@ -668,6 +682,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const pin = getValidatedGamePin(req.params.pin, res);
       if (!pin) return;
+
+      // Validate the PIN belongs to the caller's tenant before touching the
+      // runtime room (the engine resolves rooms by globally-unique PIN under
+      // SYSTEM_CTX, so without this a caller on tenant B could submit answers
+      // into tenant A's game). Mirrors /start and /next-question.
+      const game = await storage.getGameByPin(tctx(req), pin);
+      if (!game) {
+        return res.status(404).json({ message: "Game not found" });
+      }
 
       const submission = answerSubmissionSchema.safeParse(req.body);
       if (!submission.success) {
@@ -723,7 +746,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Game not found" });
       }
 
-      const quiz = await storage.getQuiz(tctx(req), game.quizId);
+      const rawQuiz = await storage.getQuiz(tctx(req), game.quizId);
+      // Never expose correctAnswer while the game is still in progress. This
+      // endpoint has no host gate (players load their own results here), so a
+      // player polling it mid-game could otherwise read every upcoming answer.
+      // Correct answers are attached only once the game is completed, for the
+      // final review screen and the host PDF report.
+      const quiz =
+        rawQuiz && game.status !== "completed"
+          ? sanitizeQuizForCaller(rawQuiz, undefined)
+          : rawQuiz;
       const responses = await storage.getGameResponses(tctx(req), game.id);
       const players = (game.players as any[]) || [];
       

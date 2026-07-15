@@ -8,11 +8,13 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { setAuthToken } from "@/lib/authToken";
+import { useTenant } from "@/lib/tenant";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const tenant = useTenant();
   const [formData, setFormData] = useState({
     username: "",
     password: "",
@@ -26,11 +28,12 @@ export default function Signup() {
     },
     onSuccess: (data: any) => {
       if (data?.token) setAuthToken(data.token);
+      // Clear any cached data from a previously-signed-in user on this browser.
+      queryClient.clear();
       toast({
         title: "Welcome!",
         description: "Your account has been created successfully.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/me"] });
       setLocation("/");
     },
     onError: (error: any) => {
@@ -90,7 +93,7 @@ export default function Signup() {
       <Card className="w-full max-w-md card-3d-enhanced glass animate-scale-in">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold gradient-text">
-            Join Abraj Quiz
+            Join {tenant.branding.appName}
           </CardTitle>
           <p className="text-gray-600">Create your account to start creating quizzes</p>
         </CardHeader>

@@ -46,6 +46,32 @@ test("games: tenant-scoped pin lookup, system sees all", async () => {
   assert.equal((await s.getGameByPin(SYSTEM_CTX, "654321"))?.id, g.id);
 });
 
+test("joinGame appends players and rejects duplicates, closed games, and unknown pins", async () => {
+  const s = new MemStorage();
+  const g = await s.createGame(T2, { quizId: 1, gamePin: "222333", hostId: 1, status: "waiting" });
+
+  const first = await s.joinGame(T2, "222333", "Alice");
+  assert.equal(first.status, "ok");
+  assert.equal((first as any).game.players.length, 1);
+
+  const second = await s.joinGame(T2, "222333", "Bob");
+  assert.equal(second.status, "ok");
+  assert.deepEqual((second as any).game.players.map((p: any) => p.name), ["Alice", "Bob"]);
+
+  // Case-insensitive duplicate rejection.
+  assert.equal((await s.joinGame(T2, "222333", "alice")).status, "duplicate");
+
+  // Wrong tenant cannot see the game.
+  assert.equal((await s.joinGame(T1, "222333", "Eve")).status, "not_found");
+
+  // Unknown pin.
+  assert.equal((await s.joinGame(T2, "999999", "Eve")).status, "not_found");
+
+  // Not accepting players once started.
+  await s.updateGame(T2, g.id, { status: "active" });
+  assert.equal((await s.joinGame(T2, "222333", "Carol")).status, "not_waiting");
+});
+
 test("game responses carry explicit tenantId and latest-completed is tenant-scoped", async () => {
   const s = new MemStorage();
   const g = await s.createGame(T2, { quizId: 1, gamePin: "111222", hostId: 1, status: "waiting" });

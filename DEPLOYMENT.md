@@ -40,8 +40,14 @@ Use a persistent Node host such as Render, Railway, Fly.io, or a VPS. The backen
 
 Set these backend environment variables:
 
+> **CRITICAL — use the `quiz_app` role, never `postgres`.** The Supabase
+> `postgres` superuser carries `BYPASSRLS`, which silently disables the
+> tenant-isolation policies from `migrations/0003_rls.sql`. The backend must
+> connect as the non-superuser `quiz_app` role (see `migrations/0005_quiz_app_role.sql`).
+> In production the server refuses to start if its role can bypass RLS.
+
 ```bash
-DATABASE_URL=postgres://postgres.[PROJECT_REF]:[PASSWORD]@[REGION].pooler.supabase.com:5432/postgres
+DATABASE_URL=postgres://quiz_app.[PROJECT_REF]:[PASSWORD]@[REGION].pooler.supabase.com:5432/postgres
 DATABASE_SSL=true
 DATABASE_POOL_MAX=10
 DATABASE_IDLE_TIMEOUT_MS=30000

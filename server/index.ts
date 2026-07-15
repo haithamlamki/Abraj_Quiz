@@ -93,7 +93,36 @@ app.use((req, res, next) => {
   next();
 });
 
+// Fail fast (in production) if the backend connects as a role that can bypass
+// Row Level Security. The FORCE RLS policies (migrations/0003) are the second
+// layer of tenant isolation; a superuser / BYPASSRLS role (e.g. Supabase
+// `postgres`) silently disables them. The app must connect as `quiz_app`.
+async function assertAppRoleCannotBypassRls() {
+  try {
+    const { rows } = await pool.query<{ rolsuper: boolean; rolbypassrls: boolean; current_user: string }>(
+      "select current_user, rolsuper, rolbypassrls from pg_roles where rolname = current_user",
+    );
+    const row = rows[0];
+    if (!row) return; // can't determine — don't block startup
+    if (row.rolsuper || row.rolbypassrls) {
+      const msg =
+        `Database role "${row.current_user}" can bypass RLS ` +
+        `(rolsuper=${row.rolsuper}, rolbypassrls=${row.rolbypassrls}). ` +
+        `Tenant isolation via FORCE RLS is disabled. Connect as a NOBYPASSRLS role (quiz_app), not postgres.`;
+      if (process.env.NODE_ENV === "production") {
+        throw new Error(msg);
+      }
+      console.warn(`[startup] WARNING: ${msg}`);
+    }
+  } catch (err) {
+    if (process.env.NODE_ENV === "production") throw err;
+    console.warn("[startup] Could not verify DB role RLS-bypass status:", err);
+  }
+}
+
 (async () => {
+  await assertAppRoleCannotBypassRls();
+
   try {
     await tenantCache.refresh();
   } catch (err) {
