@@ -252,7 +252,7 @@ export default function QuizPDF() {
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-blue-800 mb-2">Included Features</h4>
                 <ul className="text-sm text-blue-700 space-y-1">
-                  <li>✓ Professional Abraj branding and logo</li>
+                  <li>✓ Professional {tenant.branding.appName} branding and logo</li>
                   <li>✓ Numbered questions with clear formatting</li>
                   <li>✓ A, B, C, D labeled answer options</li>
                   <li>✓ Summary table with all correct answers</li>

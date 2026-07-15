@@ -175,11 +175,13 @@ export default function PlayGame() {
       // Show time-up effect for players who haven't answered
       setShowTimeUpEffect(true);
       playTimeUpSound(); // Play time-up sound effect
-      
-      // Hide time-up effect after 3 seconds
-      setTimeout(() => {
+
+      // Hide time-up effect after 3 seconds; clear on unmount / deps change so
+      // we don't call setState on an unmounted component.
+      const timer = setTimeout(() => {
         setShowTimeUpEffect(false);
       }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [runtimeState.status, lastResult, hasAnswered]);
 

@@ -23,8 +23,10 @@ export function useAuth() {
     },
     onSuccess: () => {
       clearAuthToken();
-      queryClient.setQueryData(["/api/me"], null);
-      queryClient.invalidateQueries({ queryKey: ["/api/me"] });
+      // Drop every cached query. User-scoped lists (my-quizzes, quiz details)
+      // are cached with staleTime and would otherwise remain visible to the
+      // next user who logs in on the same browser.
+      queryClient.clear();
     }
   });
 

@@ -42,9 +42,14 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
 
     if (import.meta.env.PROD) {
       if (!rawWsUrl) {
-        throw new Error(
-          "VITE_WS_URL must be set in production builds. Static frontend cannot serve WebSocket connections.",
+        // Misconfiguration: a static production frontend cannot infer the
+        // backend WS host. Fail soft — log and skip connecting so the page
+        // still renders — rather than throwing out of the mount effect, which
+        // would white-screen the whole route.
+        console.error(
+          "VITE_WS_URL must be set in production builds. Static frontend cannot serve WebSocket connections; live updates are disabled.",
         );
+        return;
       }
       if (!rawWsUrl.startsWith("wss://")) {
         console.warn(

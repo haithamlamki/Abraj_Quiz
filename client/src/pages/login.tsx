@@ -27,11 +27,13 @@ export default function Login() {
     },
     onSuccess: (data: any) => {
       if (data?.token) setAuthToken(data.token);
+      // Clear any cached data from a previously-signed-in user on this browser
+      // before loading this user's views.
+      queryClient.clear();
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",
       });
-      queryClient.invalidateQueries({ queryKey: ["/api/me"] });
       setLocation("/");
     },
     onError: (error: any) => {

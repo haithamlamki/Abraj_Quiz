@@ -116,6 +116,16 @@ export default function HostGame() {
         title: "Game Started!",
         description: "Players can now answer questions.",
       });
+    },
+    onError: (error: any) => {
+      // Reset the lobby so the host can retry instead of being stuck.
+      setIsStartingGame(false);
+      setGameStartCountdown(null);
+      toast({
+        title: "Couldn't start the game",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -132,6 +142,13 @@ export default function HostGame() {
         setShowResults(false);
         setTimeLeft(null);
       }
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Couldn't advance the game",
+        description: error?.message || "Please try again.",
+        variant: "destructive",
+      });
     }
   });
 
@@ -544,8 +561,8 @@ export default function HostGame() {
               const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
               const symbols = [Triangle, Diamond, Circle, Square];
               const SymbolIcon = symbols[index];
-              const percentage = showResults ? (runtimeState.answerPercentages?.[index] ?? questionResults?.answerPercentages[index] ?? 0) : 0;
-              const count = showResults ? (runtimeState.answerCounts?.[index] ?? questionResults?.answerCounts[index] ?? 0) : 0;
+              const percentage = showResults ? (runtimeState.answerPercentages?.[index] ?? questionResults?.answerPercentages?.[index] ?? 0) : 0;
+              const count = showResults ? (runtimeState.answerCounts?.[index] ?? questionResults?.answerCounts?.[index] ?? 0) : 0;
               const isCorrect = index === currentQuestion.correctAnswer;
               
               return (
