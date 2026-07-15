@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { setAuthToken } from "@/lib/authToken";
 
 export default function Signup() {
   const [, setLocation] = useLocation();
@@ -23,9 +24,10 @@ export default function Signup() {
       const response = await apiRequest("POST", "/api/register", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      if (data?.token) setAuthToken(data.token);
       toast({
-        title: "Welcome to Abraj Quiz!",
+        title: "Welcome!",
         description: "Your account has been created successfully.",
       });
       queryClient.invalidateQueries({ queryKey: ["/api/me"] });

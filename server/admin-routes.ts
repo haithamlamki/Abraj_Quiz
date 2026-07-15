@@ -8,7 +8,8 @@ import { tenantCache } from "./tenant-cache";
 export function registerAdminRoutes(app: Express) {
   const requireSuperAdmin = async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const userId = (req as any).session?.userId as number | undefined;
+      // req.authUserId is populated by the token/session resolver in routes.ts.
+      const userId = (req as any).authUserId as number | undefined;
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }

@@ -12,6 +12,7 @@ import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, gener
 import { gameWS } from "./websocket";
 import { gameRoomManager } from "./game-room-manager";
 import { tenantMiddleware, requireFeature } from "./tenant";
+import { signToken, verifyToken } from "./token";
 import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
 import { getAllowedOrigins } from "./origins";
 import { registerAdminRoutes } from "./admin-routes";
@@ -79,6 +80,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // registered earlier in server/index.ts and are unaffected.
   app.use("/api", tenantMiddleware);
 
+  // Resolve the caller's identity from a bearer token (preferred — works
+  // cross-site where third-party cookies are blocked) or the session cookie.
+  // The token is bound to a tenant, so a token minted on one tenant's domain
+  // cannot authenticate on another. Downstream handlers read req.authUserId.
+  app.use("/api", (req: any, _res, next) => {
+    const header = req.headers.authorization as string | undefined;
+    if (header && header.startsWith("Bearer ")) {
+      const payload = verifyToken(header.slice(7));
+      if (payload && payload.tenantId === (req.tenant as Tenant).id) {
+        req.authUserId = payload.userId;
+      }
+    }
+    if (req.authUserId === undefined) {
+      req.authUserId = req.session?.userId;
+    }
+    next();
+  });
+
   app.get("/api/tenant/config", (req, res) => {
     const tenant = req.tenant as Tenant;
     res.json({
@@ -105,12 +124,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // valid session for a user in another tenant must not be treated as authenticated here.
   const requireAuth = async (req: any, res: any, next: any) => {
     try {
-      if (!req.session.userId) {
+      if (!req.authUserId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
-      const user = await storage.getUser(tctx(req), req.session.userId);
+      const user = await storage.getUser(tctx(req), req.authUserId);
       if (!user) {
-        // Session belongs to a user from another tenant (shared backend cookie).
+        // Identity belongs to a user from another tenant (shared backend).
         return res.status(401).json({ message: "Not authenticated" });
       }
       next();
@@ -164,14 +183,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         password: hashedPassword
       });
 
-      // Set session
+      // Set the session cookie (for same-site clients) and issue a bearer
+      // token (used cross-site where third-party cookies are blocked).
       (req as any).session.userId = user.id;
       (req as any).session.username = user.username;
+      const token = signToken({ userId: user.id, tenantId: (req.tenant as Tenant).id });
 
-      res.status(201).json({ 
-        id: user.id, 
+      res.status(201).json({
+        id: user.id,
         username: user.username,
-        message: "User registered successfully" 
+        token,
+        message: "User registered successfully"
       });
     } catch (error) {
       console.error("Registration error:", error);
@@ -199,14 +221,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: "Invalid username or password" });
       }
 
-      // Set session
+      // Set the session cookie (for same-site clients) and issue a bearer
+      // token (used cross-site where third-party cookies are blocked).
       (req as any).session.userId = user.id;
       (req as any).session.username = user.username;
+      const token = signToken({ userId: user.id, tenantId: (req.tenant as Tenant).id });
 
-      res.json({ 
-        id: user.id, 
+      res.json({
+        id: user.id,
         username: user.username,
-        message: "Login successful" 
+        token,
+        message: "Login successful"
       });
     } catch (error) {
       console.error("Login error:", error);
@@ -225,7 +250,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/me", async (req, res) => {
     try {
-      const userId = (req as any).session.userId;
+      const userId = (req as any).authUserId;
       if (!userId) {
         return res.status(401).json({ message: "Not authenticated" });
       }
@@ -287,7 +312,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/my-quizzes", requireAuth, async (req, res) => {
     try {
-      const userId = (req as any).session.userId;
+      const userId = (req as any).authUserId;
       const quizzes = await storage.getUserQuizzes(tctx(req), userId);
       res.json(quizzes);
     } catch (error) {
@@ -300,7 +325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     app.get("/api/debug/openai", requireAuth, async (req, res) => {
       try {
         const hasApiKey = !!process.env.OPENAI_API_KEY;
-        const userId = (req as any).session.userId;
+        const userId = (req as any).authUserId;
         
         res.json({
           hasApiKey,
@@ -318,7 +343,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auto-generation routes
   app.post("/api/generate-quiz/pdf", requireAuth, requireFeature("aiGeneration"), upload.single('pdf'), async (req, res) => {
     try {
-      console.log("PDF quiz generation request - User ID:", (req as any).session.userId);
+      console.log("PDF quiz generation request - User ID:", (req as any).authUserId);
       
       if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ message: "OpenAI API key is not configured on the server" });
@@ -338,7 +363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/generate-quiz/url", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
-      console.log("URL quiz generation request - User ID:", (req as any).session.userId);
+      console.log("URL quiz generation request - User ID:", (req as any).authUserId);
       
       if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ message: "OpenAI API key is not configured on the server" });
@@ -367,7 +392,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/generate-quiz/topics", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
-      console.log("Topics quiz generation request - User ID:", (req as any).session.userId);
+      console.log("Topics quiz generation request - User ID:", (req as any).authUserId);
       
       if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ message: "OpenAI API key is not configured on the server" });
@@ -389,7 +414,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/generate-quiz/text", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
-      console.log("Text quiz generation request - User ID:", (req as any).session.userId);
+      console.log("Text quiz generation request - User ID:", (req as any).authUserId);
       
       if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ message: "OpenAI API key is not configured on the server" });
@@ -411,7 +436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/generate-background", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
-      console.log("Background image generation request - User ID:", (req as any).session.userId);
+      console.log("Background image generation request - User ID:", (req as any).authUserId);
       
       if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ message: "Service not configured" });
@@ -467,7 +492,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         questions: validation.data.questions,
         background: validation.data.background || "classroom",
         isPublic: validation.data.isPublic,
-        createdBy: (req as any).session.userId
+        createdBy: (req as any).authUserId
       });
       res.status(201).json(quiz);
     } catch (error) {
@@ -478,7 +503,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/quizzes/:id", requireAuth, async (req, res) => {
     try {
       const quizId = parseInt(req.params.id);
-      const userId = (req as any).session.userId;
+      const userId = (req as any).authUserId;
 
       // Check if quiz exists and user owns it
       const existingQuiz = await storage.getQuiz(tctx(req), quizId);
@@ -542,7 +567,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const gameData = {
         quizId,
-        hostId: (req as any).session.userId,
+        hostId: (req as any).authUserId,
         gamePin,
         status: "waiting" as const
       };
@@ -623,7 +648,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Game not found" });
       }
 
-      if (game.hostId !== (req as any).session.userId) {
+      if (game.hostId !== (req as any).authUserId) {
         return res.status(403).json({ message: "Only the game host can start this game" });
       }
 
@@ -631,7 +656,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Game cannot be started" });
       }
 
-      const updatedGame = await gameRoomManager.startGame(pin, (req as any).session.userId);
+      const updatedGame = await gameRoomManager.startGame(pin, (req as any).authUserId);
       res.json(updatedGame);
     } catch (error) {
       const runtimeError = gameRoomManager.toHttpError(error);
@@ -675,11 +700,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Game not found" });
       }
 
-      if (game.hostId !== (req as any).session.userId) {
+      if (game.hostId !== (req as any).authUserId) {
         return res.status(403).json({ message: "Only the game host can advance this game" });
       }
 
-      const result = await gameRoomManager.advanceQuestion(pin, (req as any).session.userId);
+      const result = await gameRoomManager.advanceQuestion(pin, (req as any).authUserId);
       res.json(result);
     } catch (error) {
       const runtimeError = gameRoomManager.toHttpError(error);
@@ -737,7 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Game not found" });
       }
 
-      if (game.hostId !== (req as any).session.userId) {
+      if (game.hostId !== (req as any).authUserId) {
         return res.status(403).json({ message: "Only the game host can view question results" });
       }
 

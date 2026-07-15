@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { WsServerMessage } from "@shared/ws-protocol";
+import { getAuthToken } from "@/lib/authToken";
 
 let devFallbackLogged = false;
 
@@ -63,7 +64,13 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
     }
 
     try {
-      const ws = new WebSocket(wsUrl);
+      // Host role is authenticated from this token on the WS upgrade — the
+      // session cookie is third-party on a cross-site WS and gets dropped.
+      const token = getAuthToken();
+      const connectUrl = token
+        ? `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`
+        : wsUrl;
+      const ws = new WebSocket(connectUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {

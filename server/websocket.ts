@@ -3,6 +3,7 @@ import type { Server } from "http";
 import type { IncomingMessage } from "http";
 import { gameRoomManager } from "./game-room-manager";
 import { wsClientMessageSchema, type WsServerMessage } from "@shared/ws-protocol";
+import { verifyToken } from "./token";
 
 interface GameClient {
   ws: WebSocket;
@@ -168,7 +169,7 @@ class GameWebSocketServer {
           gamePin: message.gamePin,
           playerName: message.playerName,
           wantsHostRole: Boolean(message.isHost),
-          userId: request.session?.userId,
+          userId: this.resolveUserId(request),
         });
       } catch (error) {
         const httpError = gameRoomManager.toHttpError(error);
@@ -288,6 +289,20 @@ class GameWebSocketServer {
       origin,
       process.env.NODE_ENV === "production",
     );
+  }
+
+  // Host identity comes from a bearer token in the WS URL (?token=...) when
+  // present — cookies are third-party on a cross-site WS and get dropped — and
+  // falls back to the hydrated session cookie for same-site clients.
+  private resolveUserId(request: SessionRequest): number | undefined {
+    try {
+      const token = new URL(request.url || "", "http://localhost").searchParams.get("token");
+      const payload = verifyToken(token);
+      if (payload) return payload.userId;
+    } catch {
+      // ignore malformed URL/token — fall through to the session
+    }
+    return request.session?.userId;
   }
 
   private hydrateSession(request: SessionRequest): Promise<void> {

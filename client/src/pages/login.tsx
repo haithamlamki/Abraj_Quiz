@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { setAuthToken } from "@/lib/authToken";
 import { apiRequest } from "@/lib/queryClient";
 import { useTenant } from "@/lib/tenant";
 
@@ -24,7 +25,8 @@ export default function Login() {
       const response = await apiRequest("POST", "/api/login", data);
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
+      if (data?.token) setAuthToken(data.token);
       toast({
         title: "Welcome back!",
         description: "You have successfully logged in.",

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import { clearAuthToken } from "@/lib/authToken";
 
 interface User {
   id: number;
@@ -21,6 +22,7 @@ export function useAuth() {
       return response.json();
     },
     onSuccess: () => {
+      clearAuthToken();
       queryClient.setQueryData(["/api/me"], null);
       queryClient.invalidateQueries({ queryKey: ["/api/me"] });
     }

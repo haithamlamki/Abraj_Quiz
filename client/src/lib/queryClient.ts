@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { getAuthToken } from "./authToken";
 
 const apiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/$/, "") || "";
 
@@ -33,10 +34,14 @@ export async function apiRequest(
 ): Promise<Response> {
   // Don't include body for GET/HEAD requests
   const shouldIncludeBody = method !== "GET" && method !== "HEAD" && data !== undefined;
-  
+
+  const headers: Record<string, string> = shouldIncludeBody ? { "Content-Type": "application/json" } : {};
+  const token = getAuthToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+
   const res = await fetch(buildApiUrl(url), {
     method,
-    headers: shouldIncludeBody ? { "Content-Type": "application/json" } : {},
+    headers,
     body: shouldIncludeBody ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -66,8 +71,10 @@ export const getQueryFn: <T>(options: {
       url = String(queryKey);
     }
 
+    const token = getAuthToken();
     const res = await fetch(buildApiUrl(url), {
       credentials: "include",
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {
