@@ -567,6 +567,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Quiz not found" });
       }
 
+      // A private quiz can only be hosted by its creator. Without this, a
+      // non-owner could create a game from someone else's private quiz, host
+      // it to completion, and read every question/answer via the results
+      // endpoint — bypassing the private-quiz gate on GET /api/quizzes/:id.
+      if (!quiz.isPublic && quiz.createdBy !== (req as any).authUserId) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
+
       // Generate unique game PIN
       let gamePin: string;
       let attempts = 0;

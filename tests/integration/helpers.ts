@@ -251,7 +251,12 @@ export async function connectAsPlayer(pin: string, playerName: string): Promise<
 // GUC set matches zero rows and silently deletes nothing (leaving orphaned
 // it_ rows in the DB). Set app.role='system' inside a transaction — mirroring
 // the game engine's SYSTEM_CTX — so the prefix-bounded deletes actually apply.
-async function runSystemDeletes(like: string): Promise<void> {
+async function runSystemDeletes(literalPrefix: string): Promise<void> {
+  // Escape LIKE metacharacters so the '_' in the it_ prefix is a literal
+  // underscore, not a single-char wildcard. Without this, `it_%` also matches
+  // real usernames like `italy`/`itmanager`, and because these deletes run in
+  // system context (RLS bypassed, cross-tenant) that could destroy real data.
+  const like = literalPrefix.replace(/([\\%_])/g, "\\$1") + "%";
   const client = await pool.connect();
   try {
     await client.query("begin");
@@ -260,20 +265,20 @@ async function runSystemDeletes(like: string): Promise<void> {
       `DELETE FROM game_responses WHERE game_id IN (
          SELECT g.id FROM games g
          JOIN users u ON u.id = g.host_id
-         WHERE u.username LIKE $1
+         WHERE u.username LIKE $1 ESCAPE '\\'
        )`,
       [like],
     );
     await client.query(
-      `DELETE FROM games WHERE host_id IN (SELECT id FROM users WHERE username LIKE $1)`,
+      `DELETE FROM games WHERE host_id IN (SELECT id FROM users WHERE username LIKE $1 ESCAPE '\\')`,
       [like],
     );
     await client.query(
-      `DELETE FROM quizzes WHERE created_by IN (SELECT id FROM users WHERE username LIKE $1)`,
+      `DELETE FROM quizzes WHERE created_by IN (SELECT id FROM users WHERE username LIKE $1 ESCAPE '\\')`,
       [like],
     );
-    await client.query(`DELETE FROM quizzes WHERE title LIKE $1`, [like]);
-    await client.query(`DELETE FROM users WHERE username LIKE $1`, [like]);
+    await client.query(`DELETE FROM quizzes WHERE title LIKE $1 ESCAPE '\\'`, [like]);
+    await client.query(`DELETE FROM users WHERE username LIKE $1 ESCAPE '\\'`, [like]);
     await client.query("commit");
   } catch (err) {
     await client.query("rollback");
@@ -287,12 +292,12 @@ export async function cleanupTestData(prefix: string): Promise<void> {
   if (!prefix.startsWith(PREFIX_ROOT)) {
     throw new Error(`Refusing to clean up with non-prefixed pattern: ${prefix}`);
   }
-  await runSystemDeletes(`${prefix}%`);
+  await runSystemDeletes(prefix);
   allPrefixes.delete(prefix);
 }
 
 export async function sweepAllPrefixedTestData(): Promise<void> {
-  await runSystemDeletes(`${PREFIX_ROOT}%`);
+  await runSystemDeletes(PREFIX_ROOT);
 }
 
 export async function endPool(): Promise<void> {
