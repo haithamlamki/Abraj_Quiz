@@ -86,13 +86,14 @@ function readFileAsDataUrl(file: File): Promise<string> {
 }
 
 function TenantForm({
-  form, setForm, onSubmit, submitLabel, disableSlug,
+  form, setForm, onSubmit, submitLabel, disableSlug, submitDisabled,
 }: {
   form: TenantFormState;
   setForm: (f: TenantFormState) => void;
   onSubmit: () => void;
   submitLabel: string;
   disableSlug?: boolean;
+  submitDisabled?: boolean;
 }) {
   return (
     <div className="grid gap-3">
@@ -147,7 +148,7 @@ function TenantForm({
           <option value="suspended">suspended</option>
         </select>
       </label>
-      <Button className="abraj-primary text-white" onClick={onSubmit}>{submitLabel}</Button>
+      <Button className="abraj-primary text-white" disabled={submitDisabled} onClick={onSubmit}>{submitLabel}</Button>
     </div>
   );
 }
@@ -215,6 +216,7 @@ export default function AdminTenants() {
                 setForm={(form) => setEditing({ id: t.id, form })}
                 disableSlug
                 submitLabel={updateMutation.isPending ? "Saving…" : "Save changes"}
+                submitDisabled={updateMutation.isPending}
                 onSubmit={() => updateMutation.mutate({ id: t.id, payload: toPayload(editing.form) })}
               />
             )}
@@ -229,6 +231,7 @@ export default function AdminTenants() {
             form={createForm}
             setForm={setCreateForm}
             submitLabel={createMutation.isPending ? "Creating…" : "Create tenant"}
+            submitDisabled={createMutation.isPending}
             onSubmit={() => createMutation.mutate(toPayload(createForm))}
           />
         </CardContent>
