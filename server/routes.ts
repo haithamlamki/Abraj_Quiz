@@ -307,6 +307,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Quiz not found" });
       }
       const callerId = (req as any).authUserId as number | undefined;
+      // A private quiz is visible only to its creator. Players never reach a
+      // quiz through this route (they receive questions over the WebSocket),
+      // and a private quiz can only be hosted by its owner, so restricting to
+      // the creator does not break gameplay. Respond 404 (not 403) so the
+      // existence of a private quiz at this id is not disclosed.
+      if (!quiz.isPublic && callerId !== quiz.createdBy) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
       res.json(sanitizeQuizForCaller(quiz, callerId));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch quiz" });
@@ -611,27 +619,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const playerName = playerNameValidation.data;
 
-      const game = await storage.getGameByPin(tctx(req), pin);
-      if (!game) {
+      // Atomic, row-locked append — prevents two concurrent joins from
+      // overwriting each other's entry or both passing the duplicate check.
+      const result = await storage.joinGame(tctx(req), pin, playerName);
+      if (result.status === "not_found") {
         return res.status(404).json({ message: "Game not found" });
       }
-
-      if (game.status !== "waiting") {
+      if (result.status === "not_waiting") {
         return res.status(400).json({ message: "Game is not accepting new players" });
       }
-
-      // Check if player name already exists
-      const players = (game.players as any[]) || [];
-      if (players.some((p: any) => typeof p.name === "string" && p.name.toLowerCase() === playerName.toLowerCase())) {
+      if (result.status === "duplicate") {
         return res.status(400).json({ message: "Player name already taken" });
       }
-
-      // Add player to game
-      const updatedPlayers = [...players, { name: playerName, score: 0 }];
-      const updatedGame = await storage.updateGame(tctx(req), game.id, { players: updatedPlayers });
-      if (!updatedGame) {
-        return res.status(500).json({ message: "Failed to join game" });
-      }
+      const updatedGame = result.game;
       await gameRoomManager.addPersistedPlayer(pin, playerName, 0);
 
       // Broadcast player joined to active runtime room clients.
