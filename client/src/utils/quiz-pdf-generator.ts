@@ -2,12 +2,14 @@ import jsPDF from 'jspdf';
 import QRCode from 'qrcode';
 import type { Quiz } from '@shared/schema';
 import logo from '@assets/logo.jpg';
+import type { PdfBranding } from "./enhanced-pdf-generator";
 
 interface QuizPDFOptions {
   quiz: Quiz;
   includeQRCode?: boolean;
   orientation?: 'portrait' | 'landscape';
   includeAnswerKey?: boolean;
+  branding?: PdfBranding;
 }
 
 export class QuizPDFGenerator {
@@ -84,7 +86,7 @@ export class QuizPDFGenerator {
     });
     
     this.pdf.text(
-      `Quiz created on ${creationDate} • © 2025 Abraj Quiz Platform`,
+      `Quiz created on ${creationDate} • ${this.options.branding?.footerText ?? '© 2025 Abraj Quiz Platform'}`,
       this.leftMargin,
       footerY
     );
@@ -112,22 +114,22 @@ export class QuizPDFGenerator {
           canvas.width = img.width;
           canvas.height = img.height;
           ctx?.drawImage(img, 0, 0);
-          
+
           try {
             const dataURL = canvas.toDataURL('image/png', 0.8);
             const logoWidth = 25;
             const logoHeight = 20;
             const logoX = this.pageWidth - this.rightMargin - logoWidth;
-            
+
             this.pdf.addImage(dataURL, 'PNG', logoX, this.yPosition, logoWidth, logoHeight);
           } catch (error) {
             console.warn('Could not add logo to PDF:', error);
           }
           resolve();
         };
-        
+
         img.onerror = () => resolve();
-        img.src = logo;
+        img.src = this.options.branding?.logoDataUrl || logo;
       } catch (error) {
         console.warn('Logo processing failed:', error);
         resolve();

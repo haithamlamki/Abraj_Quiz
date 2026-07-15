@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import Leaderboard from "@/components/leaderboard";
 import { Trophy, Home, RotateCcw, Star, Award, Crown, Download } from "lucide-react";
 import { getBackgroundStyle } from "@/utils/backgrounds";
+import { useTenant, tenantPdfBranding } from "@/lib/tenant";
 
 export default function GameResults() {
   const { pin } = useParams();
   const [, setLocation] = useLocation();
   const [showCelebration, setShowCelebration] = useState(false);
+  const tenant = useTenant();
   
   // Get player name from URL params if viewing as player
   const urlParams = new URLSearchParams(window.location.search);
@@ -48,7 +50,7 @@ export default function GameResults() {
 
     try {
       const { generateEnhancedPDF } = await import('@/utils/enhanced-pdf-generator');
-      await generateEnhancedPDF(results);
+      await generateEnhancedPDF(results, await tenantPdfBranding(tenant));
     } catch (error) {
       console.error('PDF generation failed:', error);
       // Simple fallback PDF generation

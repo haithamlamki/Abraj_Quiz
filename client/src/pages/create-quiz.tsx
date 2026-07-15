@@ -12,7 +12,7 @@ import { Plus, Trash2, Triangle, Diamond, Circle, Square, Upload, Link as LinkIc
 import { apiRequest, buildApiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import { useTenant } from "@/lib/tenant";
+import { useTenant, tenantPdfBranding } from "@/lib/tenant";
 import type { Question } from "@shared/schema";
 import { generateQuizPDF } from "@/utils/quiz-pdf-generator";
 
@@ -638,7 +638,8 @@ export default function CreateQuiz() {
       await generateQuizPDF(quizForPDF, {
         includeQRCode: true,
         includeAnswerKey: true,
-        orientation: 'portrait'
+        orientation: 'portrait',
+        branding: await tenantPdfBranding(tenant)
       });
 
       toast({

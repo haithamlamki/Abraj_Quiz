@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
+import type { PdfBranding } from "@/utils/enhanced-pdf-generator";
 
 export interface TenantConfig {
   slug: string;
@@ -61,4 +62,31 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   }, [tenant]);
 
   return <TenantContext.Provider value={tenant}>{children}</TenantContext.Provider>;
+}
+
+async function resolveLogoDataUrl(url: string): Promise<string | undefined> {
+  if (!url) return undefined;
+  if (url.startsWith("data:")) return url;
+  try {
+    const res = await fetch(url);
+    const blob = await res.blob();
+    return await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return undefined; // caller falls back to the bundled logo
+  }
+}
+
+export async function tenantPdfBranding(tenant: TenantConfig): Promise<PdfBranding> {
+  return {
+    appName: tenant.branding.appName,
+    headerText: tenant.branding.pdf.headerText,
+    footerText: tenant.branding.pdf.footerText,
+    primaryColor: tenant.branding.pdf.primaryColor,
+    logoDataUrl: await resolveLogoDataUrl(tenant.branding.logoUrl),
+  };
 }

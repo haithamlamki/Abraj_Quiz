@@ -10,11 +10,13 @@ import { ArrowLeft, Download, FileText, Eye, Settings } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Quiz } from "@shared/schema";
 import { generateQuizPDF } from "@/utils/quiz-pdf-generator";
+import { useTenant, tenantPdfBranding } from "@/lib/tenant";
 
 export default function QuizPDF() {
   const { id } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const tenant = useTenant();
   
   const [options, setOptions] = useState({
     includeAnswerKey: true,
@@ -44,7 +46,8 @@ export default function QuizPDF() {
       await generateQuizPDF(quiz, {
         includeQRCode: options.includeQRCode,
         includeAnswerKey: options.includeAnswerKey,
-        orientation: options.orientation
+        orientation: options.orientation,
+        branding: await tenantPdfBranding(tenant)
       });
 
       toast({
