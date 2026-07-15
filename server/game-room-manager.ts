@@ -56,6 +56,9 @@ interface RegisterClientInput {
   ws: WebSocket;
   gamePin: string;
   userId?: number;
+  // Tenant the caller's bearer token was minted for (undefined for session/no
+  // token). When present it must match the game's tenant.
+  tokenTenantId?: number;
   wantsHostRole: boolean;
   playerName?: string;
 }
@@ -89,6 +92,19 @@ export class GameRoomManager {
   async registerClient(input: RegisterClientInput): Promise<{ isHost: boolean; room: RuntimeRoom }> {
     const room = await this.getOrCreateRoom(input.gamePin);
     this.touch(room);
+
+    // A bearer token is bound to the tenant it was minted on. Reject a host
+    // whose token belongs to a different tenant than the game — defense in
+    // depth alongside the userId === hostId check below (hostId is a globally
+    // unique serial, so takeover is already blocked, but this keeps the WS
+    // tenant boundary consistent with the HTTP layer).
+    if (
+      input.wantsHostRole &&
+      input.tokenTenantId !== undefined &&
+      input.tokenTenantId !== room.tenantId
+    ) {
+      throw new RoomError("HOST_REQUIRED", "Host session required", 403);
+    }
 
     const isHost = input.wantsHostRole && input.userId === room.hostId;
     if (input.wantsHostRole && !isHost) {
@@ -408,6 +424,12 @@ export class GameRoomManager {
     this.touch(room);
 
     if (!room.persistedQuestionIndexes.has(questionIndex)) {
+      // Claim this question synchronously — before any await — so a concurrent
+      // closeQuestion (e.g. the close timer firing at the same moment the host
+      // advances, or two late answers both triggering a close) cannot re-enter
+      // this block and double-persist responses or double-count player scores.
+      room.persistedQuestionIndexes.add(questionIndex);
+
       const responses = Array.from(room.acceptedAnswers.values())
         .filter((answer) => answer.questionIndex === questionIndex);
 
@@ -428,8 +450,6 @@ export class GameRoomManager {
           player.score += response.pointsEarned;
         }
       }
-
-      room.persistedQuestionIndexes.add(questionIndex);
     }
 
     const result = this.buildQuestionResult(room, questionIndex, question?.correctAnswer ?? 0);
