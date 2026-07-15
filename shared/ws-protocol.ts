@@ -64,7 +64,7 @@ export const wsServerMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("question_started"),
     gamePin: z.string(),
     questionIndex: z.number().int().min(0),
-    durationSeconds: z.number().int().min(1),
+    durationSeconds: z.number().int().min(0),
     startedAt: z.number().int().min(0),
     closesAt: z.number().int().min(0),
     timeRemaining: z.number().int().min(0),
