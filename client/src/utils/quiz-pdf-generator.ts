@@ -238,8 +238,11 @@ export class QuizPDFGenerator {
       this.pdf.setFontSize(11);
       this.pdf.setFont('helvetica', 'normal');
       
+      const correctIdx: number[] = Array.isArray(question.correctAnswers)
+        ? question.correctAnswers
+        : typeof question.correctAnswer === "number" ? [question.correctAnswer] : [];
       question.answers.forEach((answer: string, answerIndex: number) => {
-        const isCorrect = answerIndex === question.correctAnswer;
+        const isCorrect = correctIdx.includes(answerIndex);
         const optionLabel = String.fromCharCode(65 + answerIndex); // A, B, C, D
         
         if (isCorrect && this.options.includeAnswerKey !== false) {
@@ -286,8 +289,11 @@ export class QuizPDFGenerator {
     const tableData: string[][] = [];
     
     questions.forEach((question, index) => {
-      const correctAnswerLabel = String.fromCharCode(65 + question.correctAnswer);
-      const correctAnswerText = question.answers[question.correctAnswer];
+      const correctIdx: number[] = Array.isArray(question.correctAnswers)
+        ? question.correctAnswers
+        : typeof question.correctAnswer === "number" ? [question.correctAnswer] : [];
+      const correctAnswerLabel = correctIdx.map((i) => String.fromCharCode(65 + i)).join(", ");
+      const correctAnswerText = correctIdx.map((i) => question.answers[i]).join(", ");
       
       tableData.push([
         `${index + 1}`,

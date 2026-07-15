@@ -10,6 +10,7 @@ import classroomBg from "@assets/classroom-background.jpg";
 
 const Home = lazy(() => import("@/pages/home"));
 const QuizEditor = lazy(() => import("@/pages/quiz-editor"));
+const QuizPreview = lazy(() => import("@/pages/quiz-preview"));
 const HostGame = lazy(() => import("@/pages/host-game"));
 const JoinGame = lazy(() => import("@/pages/join-game"));
 const PlayGame = lazy(() => import("@/pages/play-game"));
@@ -45,6 +46,7 @@ function Router() {
         <Route path="/host/:pin" component={HostGame} />
         <Route path="/host-quiz/:quizId" component={HostQuizSetup} />
         <Route path="/edit-quiz/:quizId" component={QuizEditor} />
+        <Route path="/preview/:quizId" component={QuizPreview} />
         <Route path="/quiz-pdf/:id" component={QuizPDF} />
         <Route path="/join/:pin?" component={JoinGame} />
         <Route path="/play/:pin" component={PlayGame} />

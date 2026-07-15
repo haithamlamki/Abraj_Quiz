@@ -282,17 +282,28 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
       // Calculate dynamic answer position based on question length
       let answerYPos = cardStartY + 22 + questionHeight + 8;
 
-      // Answer choices with color-coded styling like the web UI
+      // Answer choices with color-coded styling like the web UI (up to 6).
       const answerColors = [
         { bg: [255, 77, 79], light: [255, 235, 235], label: 'A' }, // Red
         { bg: [45, 136, 255], light: [230, 242, 255], label: 'B' }, // Blue
-        { bg: [255, 192, 0], light: [255, 250, 230], label: 'C' }, // Yellow
-        { bg: [38, 208, 124], light: [230, 252, 242], label: 'D' }  // Green
+        { bg: [38, 208, 124], light: [230, 252, 242], label: 'C' }, // Green
+        { bg: [255, 192, 0], light: [255, 250, 230], label: 'D' }, // Yellow
+        { bg: [20, 184, 166], light: [224, 250, 246], label: 'E' }, // Teal
+        { bg: [147, 51, 234], light: [243, 232, 255], label: 'F' }  // Purple
       ];
+
+      // Correct-answer set: supports single- and multi-correct (and legacy shape).
+      const correctSet = new Set<number>(
+        Array.isArray(question.correctAnswers)
+          ? question.correctAnswers
+          : typeof question.correctAnswer === "number"
+            ? [question.correctAnswer]
+            : []
+      );
 
       // Render answers using pre-calculated sizes
       question.answers.forEach((answer: string, answerIndex: number) => {
-        const isCorrect = answerIndex === question.correctAnswer;
+        const isCorrect = correctSet.has(answerIndex);
         const color = answerColors[answerIndex];
         const xPos = answerIndex % 2 === 0 ? 32 : pageWidth / 2 + 12;
         const yPos = answerYPos + Math.floor(answerIndex / 2) * (answerBoxHeight + 2);
@@ -339,7 +350,8 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
 
       // Question analytics card - dynamic position based on content
       const questionResponses = responses?.filter(r => r.questionIndex === index) || [];
-      const correctResponses = questionResponses.filter(r => r.selectedAnswer === question.correctAnswer).length;
+      // Use the authoritative per-response isCorrect (works for single & multi).
+      const correctResponses = questionResponses.filter(r => r.isCorrect).length;
       const totalResponses = questionResponses.length;
       const accuracyRate = totalResponses > 0 ? (correctResponses / totalResponses * 100).toFixed(0) : '0';
       
@@ -362,7 +374,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
       pdf.text(`Avg Time: ${avgResponseTime}s`, pageWidth / 2 + 12, analyticsY + 5);
       
       const fastestPlayer = questionResponses
-        .filter(r => r.selectedAnswer === question.correctAnswer)
+        .filter(r => r.isCorrect)
         .sort((a, b) => (a.responseTime || 0) - (b.responseTime || 0))[0];
       
       if (fastestPlayer) {

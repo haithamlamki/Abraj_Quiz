@@ -556,8 +556,15 @@ export default function HostGame() {
             </CardContent>
           </Card>
 
-          {/* Answer Options - 2x2 Grid Layout */}
-          <div className="grid grid-cols-2 gap-2 mb-3 flex-1 min-h-0">
+          {/* Question image (if any) */}
+          {currentQuestion?.imageUrl && (
+            <div className="flex-shrink-0 flex justify-center mb-3">
+              <img src={currentQuestion.imageUrl} alt="Question" className="max-h-36 rounded-xl object-contain shadow-lg" />
+            </div>
+          )}
+
+          {/* Answer Options — fixed-size grid (uniform boxes for 2-6 answers). */}
+          <div className="grid grid-cols-2 auto-rows-fr gap-2 mb-3 flex-1 min-h-0">
             {currentQuestion?.answers.map((answer, index) => {
               const style = answerStyle(index);
               const SymbolIcon = style.icon;
@@ -566,19 +573,19 @@ export default function HostGame() {
               // Reveal uses the runtime correct-set from the WS message (works for
               // players too), falling back to the owner-visible quiz question.
               const isCorrect = (runtimeState.correctAnswers ?? currentQuestion.correctAnswers ?? []).includes(index);
-              
+
               return (
                 <div
                   key={index}
-                  className={`${style.bg} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced cursor-pointer relative overflow-hidden h-full flex ${
-                    showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce shadow-lg shadow-yellow-400/50' : 
-                    showResults && !isCorrect ? 'opacity-75 animate-pulse ring-2 ring-gray-400' : ''
+                  className={`${style.bg} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced cursor-pointer relative overflow-hidden h-full min-h-[64px] flex ${
+                    showResults && isCorrect ? 'ring-4 ring-yellow-400 shadow-lg shadow-yellow-400/50' :
+                    showResults && !isCorrect ? 'opacity-75 ring-2 ring-gray-400' : ''
                   }`}
 
                 >
                   <div className="flex flex-col items-center justify-center w-full gap-1">
                     <SymbolIcon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="white" strokeWidth={0} />
-                    <span className="text-center text-xs sm:text-sm md:text-base leading-tight break-words overflow-wrap-anywhere hyphens-auto px-1 font-semibold">{answer}</span>
+                    <span className="text-center text-xs sm:text-sm md:text-base leading-tight line-clamp-2 px-1 font-semibold">{answer}</span>
                   
                     {showResults && questionResults && (
                       <>
