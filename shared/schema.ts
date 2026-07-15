@@ -2,6 +2,57 @@ import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizz
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// ── Multi-tenancy ────────────────────────────────────────────────
+export const brandingSchema = z.object({
+  appName: z.string().default("Abraj Quiz"),
+  logoUrl: z.string().default(""),      // URL or data: URL; empty = bundled default logo
+  faviconUrl: z.string().default(""),
+  colors: z
+    .object({
+      primary: z.string().default("hsl(184, 100%, 47%)"),
+      secondary: z.string().default("hsl(184, 85%, 35%)"),
+    })
+    .default({}),
+  pdf: z
+    .object({
+      headerText: z.string().default("ABRAJ QUIZ COMPLETE REPORT"),
+      footerText: z.string().default("© 2025 Abraj Quiz Platform"),
+      primaryColor: z.array(z.number()).length(3).default([1, 158, 189]),
+    })
+    .default({}),
+  emailFromName: z.string().default(""),
+});
+export type TenantBranding = z.infer<typeof brandingSchema>;
+
+export const featuresSchema = z.object({
+  aiGeneration: z.boolean().default(true),
+  pdfReports: z.boolean().default(true),
+  publicQuizzes: z.boolean().default(true),
+});
+export type TenantFeatures = z.infer<typeof featuresSchema>;
+
+export const tenants = pgTable("tenants", {
+  id: serial("id").primaryKey(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  domains: jsonb("domains").$type<string[]>().notNull().default([]),
+  branding: jsonb("branding").$type<Partial<TenantBranding>>().notNull().default({}),
+  features: jsonb("features").$type<Partial<TenantFeatures>>().notNull().default({}),
+  status: text("status").notNull().default("active"), // 'active' | 'suspended'
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const insertTenantSchema = z.object({
+  slug: z.string().min(1).regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, digits, hyphens"),
+  name: z.string().min(1),
+  domains: z.array(z.string()).default([]),
+  branding: brandingSchema.partial().default({}),
+  features: featuresSchema.partial().default({}),
+  status: z.enum(["active", "suspended"]).default("active"),
+});
+export type Tenant = typeof tenants.$inferSelect;
+export type InsertTenant = z.infer<typeof insertTenantSchema>;
+
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
