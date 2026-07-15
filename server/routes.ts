@@ -11,7 +11,7 @@ import multer from "multer";
 import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText, generateBackgroundImage } from "./openai-service";
 import { gameWS } from "./websocket";
 import { gameRoomManager } from "./game-room-manager";
-import { tenantMiddleware } from "./tenant";
+import { tenantMiddleware, requireFeature } from "./tenant";
 import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
 import { getAllowedOrigins } from "./origins";
 
@@ -232,6 +232,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Quiz routes
   app.get("/api/quizzes", async (req, res) => {
     try {
+      const features = featuresSchema.parse(((req as any).tenant?.features as object) ?? {});
+      if (!features.publicQuizzes) {
+        return res.json([]);
+      }
       const callerId = (req as any).session?.userId as number | undefined;
       const quizzes = await storage.getPublicQuizzes(tctx(req));
       res.json(quizzes.map((q) => sanitizeQuizForCaller(q, callerId)));
@@ -285,7 +289,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Auto-generation routes
-  app.post("/api/generate-quiz/pdf", requireAuth, upload.single('pdf'), async (req, res) => {
+  app.post("/api/generate-quiz/pdf", requireAuth, requireFeature("aiGeneration"), upload.single('pdf'), async (req, res) => {
     try {
       console.log("PDF quiz generation request - User ID:", (req as any).session.userId);
       
@@ -305,7 +309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/generate-quiz/url", requireAuth, async (req, res) => {
+  app.post("/api/generate-quiz/url", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
       console.log("URL quiz generation request - User ID:", (req as any).session.userId);
       
@@ -334,7 +338,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/generate-quiz/topics", requireAuth, async (req, res) => {
+  app.post("/api/generate-quiz/topics", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
       console.log("Topics quiz generation request - User ID:", (req as any).session.userId);
       
@@ -356,7 +360,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/generate-quiz/text", requireAuth, async (req, res) => {
+  app.post("/api/generate-quiz/text", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
       console.log("Text quiz generation request - User ID:", (req as any).session.userId);
       
@@ -378,7 +382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/generate-background", requireAuth, async (req, res) => {
+  app.post("/api/generate-background", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
       console.log("Background image generation request - User ID:", (req as any).session.userId);
       
