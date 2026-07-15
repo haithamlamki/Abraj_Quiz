@@ -261,6 +261,16 @@ async function runSystemDeletes(literalPrefix: string): Promise<void> {
   try {
     await client.query("begin");
     await client.query("select set_config('app.role', 'system', true)");
+    // game_players and game_responses both FK-reference games — delete them
+    // before the games they point at, or the games delete fails on the FK.
+    await client.query(
+      `DELETE FROM game_players WHERE game_id IN (
+         SELECT g.id FROM games g
+         JOIN users u ON u.id = g.host_id
+         WHERE u.username LIKE $1 ESCAPE '\\'
+       )`,
+      [like],
+    );
     await client.query(
       `DELETE FROM game_responses WHERE game_id IN (
          SELECT g.id FROM games g

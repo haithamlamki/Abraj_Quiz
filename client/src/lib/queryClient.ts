@@ -11,6 +11,14 @@ export function buildApiUrl(url: string): string {
   return `${apiBaseUrl}${url.startsWith("/") ? url : `/${url}`}`;
 }
 
+function parseRetryAfterMs(header: string | null): number | undefined {
+  if (!header) return undefined;
+  const seconds = Number(header);
+  if (Number.isFinite(seconds)) return Math.max(0, seconds * 1000);
+  const dateMs = Date.parse(header);
+  return Number.isFinite(dateMs) ? Math.max(0, dateMs - Date.now()) : undefined;
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     let errorData;
@@ -20,10 +28,57 @@ async function throwIfResNotOk(res: Response) {
     } catch {
       errorData = { message: res.statusText };
     }
-    
+
     const error = new Error(`${res.status}: ${errorData.message || res.statusText}`);
-    (error as any).response = { status: res.status, data: errorData };
+    (error as any).response = {
+      status: res.status,
+      data: errorData,
+      code: errorData?.code as string | undefined,
+      retryAfterMs: parseRetryAfterMs(res.headers.get("retry-after")),
+    };
     throw error;
+  }
+}
+
+export interface BackoffOptions {
+  retries?: number; // extra attempts after the first (default 5)
+  baseDelayMs?: number; // default 300
+  maxDelayMs?: number; // default 4000
+  // Which HTTP statuses are safe to retry. Default: 503 (GAME_BUSY) only.
+  retryOn?: (status: number) => boolean;
+}
+
+// apiRequest with automatic retry and exponential backoff + full jitter.
+// Purpose-built for the join storm: when the server sheds load with 503
+// GAME_BUSY, the client transparently retries instead of surfacing an error.
+// Full jitter (random 0..window) is deliberate — 400 clients retrying in
+// lockstep would just re-collide; jitter spreads them out. A server-sent
+// Retry-After is honored (plus jitter) when present. Non-retryable outcomes
+// (400 duplicate, 409 GAME_FULL, 404) throw immediately.
+export async function apiRequestWithBackoff(
+  method: string,
+  url: string,
+  data?: unknown,
+  opts: BackoffOptions = {},
+): Promise<Response> {
+  const { retries = 5, baseDelayMs = 300, maxDelayMs = 4000, retryOn = (s) => s === 503 } = opts;
+  let attempt = 0;
+  for (;;) {
+    try {
+      return await apiRequest(method, url, data);
+    } catch (err) {
+      const resp = (err as any)?.response;
+      const status = resp?.status;
+      if (attempt >= retries || typeof status !== "number" || !retryOn(status)) {
+        throw err;
+      }
+      const window = Math.min(maxDelayMs, baseDelayMs * 2 ** attempt);
+      const jitter = Math.random() * window;
+      const retryAfter = resp?.retryAfterMs as number | undefined;
+      const delay = typeof retryAfter === "number" ? retryAfter + jitter : jitter;
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      attempt++;
+    }
   }
 }
 

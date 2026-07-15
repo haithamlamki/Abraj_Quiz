@@ -46,19 +46,26 @@ test("games: tenant-scoped pin lookup, system sees all", async () => {
   assert.equal((await s.getGameByPin(SYSTEM_CTX, "654321"))?.id, g.id);
 });
 
-test("joinGame appends players and rejects duplicates, closed games, and unknown pins", async () => {
+test("joinGame inserts into game_players and rejects duplicates, closed games, and unknown pins", async () => {
   const s = new MemStorage();
   const g = await s.createGame(T2, { quizId: 1, gamePin: "222333", hostId: 1, status: "waiting" });
 
   const first = await s.joinGame(T2, "222333", "Alice");
   assert.equal(first.status, "ok");
-  assert.equal((first as any).game.players.length, 1);
+  assert.equal((first as any).playerCount, 1);
+  assert.equal((first as any).player.name, "Alice");
 
   const second = await s.joinGame(T2, "222333", "Bob");
   assert.equal(second.status, "ok");
-  assert.deepEqual((second as any).game.players.map((p: any) => p.name), ["Alice", "Bob"]);
+  assert.equal((second as any).playerCount, 2);
 
-  // Case-insensitive duplicate rejection.
+  // The authoritative roster lives in game_players, NOT games.players (frozen).
+  const roster = await s.getGamePlayers(T2, g.id);
+  assert.deepEqual(roster.map((p) => p.name), ["Alice", "Bob"]);
+  assert.deepEqual(((await s.getGame(T2, g.id))?.players as any[]) ?? [], []);
+  assert.equal(await s.countGamePlayers(T2, g.id), 2);
+
+  // Case-insensitive duplicate rejection (DB unique index on lower(name)).
   assert.equal((await s.joinGame(T2, "222333", "alice")).status, "duplicate");
 
   // Wrong tenant cannot see the game.
@@ -70,6 +77,41 @@ test("joinGame appends players and rejects duplicates, closed games, and unknown
   // Not accepting players once started.
   await s.updateGame(T2, g.id, { status: "active" });
   assert.equal((await s.joinGame(T2, "222333", "Carol")).status, "not_waiting");
+});
+
+test("joinGame enforces the configurable player cap with status 'full'", async () => {
+  const prev = process.env.MAX_PLAYERS_PER_GAME;
+  process.env.MAX_PLAYERS_PER_GAME = "2";
+  try {
+    const s = new MemStorage();
+    await s.createGame(T2, { quizId: 1, gamePin: "770077", hostId: 1, status: "waiting" });
+
+    assert.equal((await s.joinGame(T2, "770077", "P1")).status, "ok");
+    assert.equal((await s.joinGame(T2, "770077", "P2")).status, "ok");
+    // Third joiner exceeds the cap of 2.
+    assert.equal((await s.joinGame(T2, "770077", "P3")).status, "full");
+    // The over-cap joiner left no row behind.
+    assert.equal((await s.countGamePlayers(T2, (await s.getGameByPin(T2, "770077"))!.id)), 2);
+  } finally {
+    if (prev === undefined) delete process.env.MAX_PLAYERS_PER_GAME;
+    else process.env.MAX_PLAYERS_PER_GAME = prev;
+  }
+});
+
+test("setGamePlayerScores updates roster scores by case-insensitive name", async () => {
+  const s = new MemStorage();
+  const g = await s.createGame(T2, { quizId: 1, gamePin: "556677", hostId: 1, status: "waiting" });
+  await s.joinGame(T2, "556677", "Alice");
+  await s.joinGame(T2, "556677", "Bob");
+
+  await s.setGamePlayerScores(SYSTEM_CTX, g.id, [
+    { name: "alice", score: 900 },
+    { name: "BOB", score: 400 },
+  ]);
+
+  const roster = await s.getGamePlayers(T2, g.id);
+  assert.equal(roster.find((p) => p.name === "Alice")?.score, 900);
+  assert.equal(roster.find((p) => p.name === "Bob")?.score, 400);
 });
 
 test("game responses carry explicit tenantId and latest-completed is tenant-scoped", async () => {

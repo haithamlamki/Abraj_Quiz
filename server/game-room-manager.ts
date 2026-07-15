@@ -338,14 +338,15 @@ export class GameRoomManager {
       throw new RoomError("ROOM_NOT_FOUND", "Quiz not found", 404);
     }
 
+    // Roster is sourced from the authoritative game_players table (SYSTEM_CTX —
+    // the engine keys rooms by globally-unique pin), not the legacy JSON array.
+    const dbPlayers = await this.storage.getGamePlayers(SYSTEM_CTX, game.id);
     const players = new Map<string, RuntimePlayer>();
-    for (const player of ((game.players as any[]) || [])) {
-      if (player?.name) {
-        players.set(this.playerKey(player.name), {
-          name: String(player.name),
-          score: Number(player.score || 0),
-        });
-      }
+    for (const player of dbPlayers) {
+      players.set(this.playerKey(player.name), {
+        name: player.name,
+        score: player.score || 0,
+      });
     }
 
     const room: RuntimeRoom = {
@@ -433,8 +434,12 @@ export class GameRoomManager {
       const responses = Array.from(room.acceptedAnswers.values())
         .filter((answer) => answer.questionIndex === questionIndex);
 
-      for (const response of responses) {
-        await this.storage.createGameResponse(SYSTEM_CTX, {
+      // One multi-row INSERT instead of a per-answer loop: a 400-player question
+      // was ~400 sequential round-trips (~5-6 min for a full game); this is a
+      // single statement. Scores are tallied in-memory (never a DB bottleneck).
+      await this.storage.createGameResponses(
+        SYSTEM_CTX,
+        responses.map((response) => ({
           tenantId: room.tenantId,
           gameId: room.gameId,
           playerName: response.playerName,
@@ -443,8 +448,10 @@ export class GameRoomManager {
           responseTime: response.responseTime,
           isCorrect: response.isCorrect,
           pointsEarned: response.pointsEarned,
-        });
+        })),
+      );
 
+      for (const response of responses) {
         const player = this.findPlayer(room, response.playerName);
         if (player) {
           player.score += response.pointsEarned;
@@ -478,9 +485,15 @@ export class GameRoomManager {
     this.touch(room);
 
     const players = this.runtimePlayers(room);
+    // Persist final scores to the authoritative roster (game_players), not the
+    // frozen games.players JSON. One bulk statement, not N updates.
+    await this.storage.setGamePlayerScores(
+      SYSTEM_CTX,
+      room.gameId,
+      players.map((p) => ({ name: p.name, score: p.score })),
+    );
     const updatedGame = await this.storage.updateGame(SYSTEM_CTX, room.gameId, {
       status: "completed",
-      players,
     });
     const game = this.applyRuntimeState(updatedGame);
     this.broadcast(room, { type: "game_completed", game });
