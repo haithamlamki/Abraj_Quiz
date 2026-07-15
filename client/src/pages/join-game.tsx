@@ -4,7 +4,7 @@ import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, apiRequestWithBackoff } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
@@ -44,7 +44,11 @@ export default function JoinGame() {
 
   const joinGameMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest("POST", `/api/games/${gamePin}/join`, {
+      // Auto-retry on 503 GAME_BUSY (transient DB contention during a join
+      // storm) with exponential backoff + full jitter. A full lobby (409
+      // GAME_FULL) or duplicate name (400) is not retried — it throws straight
+      // to onError.
+      const response = await apiRequestWithBackoff("POST", `/api/games/${gamePin}/join`, {
         playerName: playerName.trim()
       });
       return response.json();
