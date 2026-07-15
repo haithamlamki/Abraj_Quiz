@@ -20,6 +20,7 @@ const QuizHistory = lazy(() => import("@/pages/quiz-history"));
 const HostQuizSetup = lazy(() => import("./pages/host-quiz-setup"));
 const EditQuiz = lazy(() => import("@/pages/edit-quiz"));
 const QuizPDF = lazy(() => import("@/pages/quiz-pdf"));
+const AdminTenants = lazy(() => import("@/pages/admin-tenants"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
 function LoadingFallback() {
@@ -49,6 +50,7 @@ function Router() {
         <Route path="/join/:pin?" component={JoinGame} />
         <Route path="/play/:pin" component={PlayGame} />
         <Route path="/results/:pin" component={GameResults} />
+        <Route path="/admin/tenants" component={AdminTenants} />
         <Route component={NotFound} />
       </Switch>
     </Suspense>
