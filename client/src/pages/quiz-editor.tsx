@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Question } from "@shared/schema";
 import { answerStyle } from "@/lib/answer-style";
+import { ANSWER_CARD_MIN_H } from "@/components/quiz/AnswerCard";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { resolveQuizTheme, type QuizTheme } from "@shared/quiz-theme";
 import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
@@ -505,30 +506,31 @@ export default function QuizEditor() {
             </div>
 
             {/* Answers */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 auto-rows-fr gap-2 sm:gap-3">
               {current.answers.map((answer, index) => {
                 const style = answerStyle(index);
                 const Icon = style.icon;
                 const isCorrect = current.correctAnswers.includes(index);
                 return (
-                  <div key={index} className={`${style.bg} rounded-xl p-3 flex items-center gap-2 text-white`}>
+                  <div key={index} className={`${style.bg} ${ANSWER_CARD_MIN_H} rounded-xl p-2 sm:p-3 flex items-center gap-2 text-white`}>
                     <Icon className="w-5 h-5 shrink-0" fill="white" strokeWidth={0} />
                     <Input
                       value={answer}
                       onChange={(e) => setAnswerText(index, e.target.value)}
                       placeholder={`Answer ${index + 1}`}
                       disabled={current.type === "true_false"}
-                      className="bg-white/90 text-gray-900 border-0"
+                      className="bg-white/90 text-gray-900 border-0 h-9"
                     />
                     <button
                       title={isCorrect ? "Correct" : "Mark correct"}
                       onClick={() => toggleCorrect(index)}
+                      aria-pressed={isCorrect}
                       className={`shrink-0 w-7 h-7 rounded-full border-2 border-white flex items-center justify-center ${isCorrect ? "bg-white" : "bg-transparent"}`}
                     >
                       {isCorrect && <Check className="w-4 h-4 text-green-600" />}
                     </button>
                     {current.type !== "true_false" && current.answers.length > 2 && (
-                      <button title="Remove answer" onClick={() => removeAnswer(index)}>
+                      <button title="Remove answer" aria-label={`Remove answer ${index + 1}`} onClick={() => removeAnswer(index)}>
                         <X className="w-4 h-4" />
                       </button>
                     )}
