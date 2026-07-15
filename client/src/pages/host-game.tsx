@@ -272,6 +272,7 @@ export default function HostGame() {
 
   const questions = quiz.questions as Question[];
   const currentQuestion = questions[game.currentQuestion || 0];
+  const noLimit = currentQuestion?.timeLimit === 0;
   const players = runtimeState.players || (game.players as any[]) || [];
 
   // Countdown overlay component
@@ -535,7 +536,7 @@ export default function HostGame() {
                 theme={theme}
                 questionNumber={(game.currentQuestion || 0) + 1}
                 totalQuestions={questions.length}
-                timeRemaining={!showResults ? timeLeft : null}
+                timeRemaining={!showResults && !noLimit ? timeLeft : null}
                 reveal={showResults}
                 correctAnswers={runtimeState.correctAnswers ?? (currentQuestion as any).correctAnswers ?? []}
                 distribution={

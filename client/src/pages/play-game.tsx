@@ -441,6 +441,7 @@ export default function PlayGame() {
   const questions = quiz.questions as Question[];
   const currentQuestionIndex = runtimeState.questionIndex ?? game.currentQuestion ?? 0;
   const currentQuestion = questions[currentQuestionIndex];
+  const noLimit = currentQuestion?.timeLimit === 0;
   const isMulti = currentQuestion?.answerType === "multiple";
   const players = runtimeState.players || (game.players as any[]) || [];
   const currentPlayer = players.find(p => p.name === playerName);
@@ -583,7 +584,7 @@ export default function PlayGame() {
               theme={theme}
               questionNumber={currentQuestionIndex + 1}
               totalQuestions={questions.length}
-              timeRemaining={timeLeft}
+              timeRemaining={noLimit ? null : timeLeft}
               selectedIndices={isMulti ? selectedIndices : (selectedAnswer != null ? [selectedAnswer] : [])}
               onSelect={handleAnswerSelect}
               disabled={hasAnswered || timeLeft === 0 || runtimeState.status !== "open"}

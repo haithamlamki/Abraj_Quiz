@@ -472,6 +472,15 @@ export default function QuizEditor() {
                 </div>
               </div>
               <div className="line-clamp-2 font-medium text-gray-800">{q.question || "Untitled"}</div>
+              <div className="mt-1 flex items-center justify-between">
+                <div className="grid grid-cols-2 gap-0.5">
+                  {q.answers.slice(0, 6).map((_, ai) => {
+                    const Icon = answerStyle(ai).icon;
+                    return <span key={ai} className={`${answerStyle(ai).bg} w-3 h-3 rounded-sm flex items-center justify-center`}><Icon className="w-2 h-2" fill="white" strokeWidth={0} /></span>;
+                  })}
+                </div>
+                <span className="text-[10px] text-gray-400">{q.timeLimit === 0 ? "∞" : `${q.timeLimit}s`}</span>
+              </div>
             </div>
           ))}
           <Button variant="outline" className="w-full" size="sm" onClick={addQuestion}>
