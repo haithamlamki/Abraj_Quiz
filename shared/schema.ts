@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -53,14 +53,20 @@ export const insertTenantSchema = z.object({
 export type Tenant = typeof tenants.$inferSelect;
 export type InsertTenant = z.infer<typeof insertTenantSchema>;
 
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
+    username: text("username").notNull(),
+    password: text("password").notNull(),
+  },
+  (t) => [uniqueIndex("users_tenant_username_uq").on(t.tenantId, t.username)],
+);
 
 export const quizzes = pgTable("quizzes", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   title: text("title").notNull(),
   description: text("description"),
   createdBy: integer("created_by").notNull(),
@@ -72,6 +78,7 @@ export const quizzes = pgTable("quizzes", {
 
 export const games = pgTable("games", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   quizId: integer("quiz_id").notNull(),
   gamePin: text("game_pin").notNull().unique(),
   hostId: integer("host_id").notNull(),
@@ -83,6 +90,7 @@ export const games = pgTable("games", {
 
 export const gameResponses = pgTable("game_responses", {
   id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().default(1).references(() => tenants.id),
   gameId: integer("game_id").notNull(),
   playerName: text("player_name").notNull(),
   questionIndex: integer("question_index").notNull(),
@@ -126,6 +134,7 @@ export const insertGameSchema = createInsertSchema(games).pick({
 });
 
 export const insertGameResponseSchema = createInsertSchema(gameResponses).pick({
+  tenantId: true,
   gameId: true,
   playerName: true,
   questionIndex: true,

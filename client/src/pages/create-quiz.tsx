@@ -618,6 +618,7 @@ export default function CreateQuiz() {
       // Create a mock quiz object with proper structure for PDF generation
       const quizForPDF = {
         id: Date.now(), // Temporary ID for PDF generation
+        tenantId: 1, // Default tenant ID for PDF generation
         title: quiz.title,
         description: quiz.description || null,
         questions: quiz.questions.filter(q => q.question.trim()), // Only include questions with content

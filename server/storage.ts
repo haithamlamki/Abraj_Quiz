@@ -231,6 +231,7 @@ export class MemStorage implements IStorage {
     // Sample user
     const sampleUser: User = {
       id: 1,
+      tenantId: 1,
       username: "demo_user",
       password: ""
     };
@@ -241,6 +242,7 @@ export class MemStorage implements IStorage {
     const sampleQuizzes: Quiz[] = [
       {
         id: 1,
+        tenantId: 1,
         title: "World Geography Challenge",
         description: "Test your knowledge of countries, capitals, and landmarks around the globe.",
         createdBy: 1,
@@ -270,6 +272,7 @@ export class MemStorage implements IStorage {
       },
       {
         id: 2,
+        tenantId: 1,
         title: "Science Trivia",
         description: "Explore fascinating facts about biology, chemistry, and physics.",
         createdBy: 1,
@@ -293,6 +296,7 @@ export class MemStorage implements IStorage {
       },
       {
         id: 3,
+        tenantId: 1,
         title: "Math Masters",
         description: "Challenge yourself with algebra, geometry, and calculus problems.",
         createdBy: 1,
@@ -329,7 +333,7 @@ export class MemStorage implements IStorage {
 
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id };
+    const user: User = { ...insertUser, id, tenantId: 1 };
     this.users.set(id, user);
     return user;
   }
@@ -355,6 +359,7 @@ export class MemStorage implements IStorage {
     const id = this.currentQuizId++;
     const newQuiz: Quiz = {
       id,
+      tenantId: 1,
       title: quiz.title,
       description: quiz.description || null,
       questions: quiz.questions,
@@ -402,9 +407,10 @@ export class MemStorage implements IStorage {
 
   async createGame(insertGame: InsertGame): Promise<Game> {
     const id = this.currentGameId++;
-    const game: Game = { 
-      ...insertGame, 
+    const game: Game = {
+      ...insertGame,
       id,
+      tenantId: 1,
       currentQuestion: 0,
       players: [],
       createdAt: new Date()
@@ -435,7 +441,7 @@ export class MemStorage implements IStorage {
 
   async createGameResponse(insertResponse: InsertGameResponse): Promise<GameResponse> {
     const id = this.currentResponseId++;
-    const response: GameResponse = { ...insertResponse, id };
+    const response: GameResponse = { ...insertResponse, id, tenantId: insertResponse.tenantId || 1 };
     this.gameResponses.set(id, response);
     return response;
   }
