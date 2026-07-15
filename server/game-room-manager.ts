@@ -2,6 +2,8 @@ import { WebSocket } from "ws";
 import { storage as defaultStorage, SYSTEM_CTX } from "./storage";
 import type { IStorage } from "./storage";
 import type { Game, Question } from "@shared/schema";
+import { quizQuestionsSchema } from "@shared/schema";
+import { isSelectionCorrect, tallyDistribution } from "@shared/quiz-scoring";
 import type { WsErrorCode, WsServerMessage } from "@shared/ws-protocol";
 
 interface RuntimePlayer {
@@ -45,7 +47,10 @@ interface RuntimeRoom {
 
 interface QuestionCloseResult {
   questionIndex: number;
+  // correctAnswer = first correct index (kept for backward-compatible clients);
+  // correctAnswers = full correct set (single- or multi-select).
   correctAnswer: number;
+  correctAnswers: number[];
   answerCounts: number[];
   answerPercentages: number[];
   totalResponses: number;
@@ -259,7 +264,9 @@ export class GameRoomManager {
     }
 
     const responseTime = Math.max(0, Date.now() - room.questionStartedAt);
-    const isCorrect = input.selectedAnswer === question.correctAnswer;
+    // Single-select: selectedAnswer is a chosen index. Multi-select: a bitmask.
+    // isSelectionCorrect handles both (multi is all-or-nothing).
+    const isCorrect = isSelectionCorrect(question, input.selectedAnswer);
     const pointsEarned = isCorrect ? this.calculatePoints(question, responseTime) : 0;
 
     room.acceptedAnswers.set(answerKey, {
@@ -338,6 +345,11 @@ export class GameRoomManager {
       throw new RoomError("ROOM_NOT_FOUND", "Quiz not found", 404);
     }
 
+    // Normalize stored questions to the canonical shape (correctAnswers / type /
+    // answerType). Legacy quizzes hold only `correctAnswer` — the engine's
+    // scoring reads `correctAnswers`, so this must run before play.
+    const normalizedQuestions = quizQuestionsSchema.parse(quiz.questions);
+
     // Roster is sourced from the authoritative game_players table (SYSTEM_CTX —
     // the engine keys rooms by globally-unique pin), not the legacy JSON array.
     const dbPlayers = await this.storage.getGamePlayers(SYSTEM_CTX, game.id);
@@ -357,7 +369,7 @@ export class GameRoomManager {
       hostId: game.hostId,
       status: game.status as RuntimeRoom["status"],
       currentQuestion: game.currentQuestion || 0,
-      questions: quiz.questions as Question[],
+      questions: normalizedQuestions,
       players,
       acceptedAnswers: new Map(),
       persistedQuestionIndexes: new Set(),
@@ -459,7 +471,7 @@ export class GameRoomManager {
       }
     }
 
-    const result = this.buildQuestionResult(room, questionIndex, question?.correctAnswer ?? 0);
+    const result = this.buildQuestionResult(room, questionIndex, question);
     room.closedResults.set(questionIndex, result);
 
     this.broadcast(room, {
@@ -467,6 +479,7 @@ export class GameRoomManager {
       gamePin: room.gamePin,
       questionIndex,
       correctAnswer: result.correctAnswer,
+      correctAnswers: result.correctAnswers,
       distribution: {
         answerCounts: result.answerCounts,
         answerPercentages: result.answerPercentages,
@@ -501,25 +514,27 @@ export class GameRoomManager {
     return game;
   }
 
-  private buildQuestionResult(room: RuntimeRoom, questionIndex: number, correctAnswer: number): QuestionCloseResult {
-    const answerCounts = [0, 0, 0, 0];
+  private buildQuestionResult(room: RuntimeRoom, questionIndex: number, question?: Question): QuestionCloseResult {
     const responses = Array.from(room.acceptedAnswers.values())
       .filter((answer) => answer.questionIndex === questionIndex);
 
-    for (const response of responses) {
-      if (response.selectedAnswer >= 0 && response.selectedAnswer < 4) {
-        answerCounts[response.selectedAnswer]++;
-      }
-    }
+    // Distribution sized to the question's answer count (was hardcoded 4);
+    // multi-select selections are decoded from their bitmask per option.
+    const answerCounts = question
+      ? tallyDistribution(question, responses.map((r) => r.selectedAnswer))
+      : [];
 
     const totalResponses = responses.length;
     const answerPercentages = answerCounts.map((count) =>
       totalResponses > 0 ? Math.round((count / totalResponses) * 100) : 0,
     );
 
+    const correctAnswers = question?.correctAnswers ?? [];
+
     return {
       questionIndex,
-      correctAnswer,
+      correctAnswer: correctAnswers[0] ?? 0,
+      correctAnswers,
       answerCounts,
       answerPercentages,
       totalResponses,
@@ -550,6 +565,7 @@ export class GameRoomManager {
         gamePin: room.gamePin,
         questionIndex: result.questionIndex,
         correctAnswer: result.correctAnswer,
+        correctAnswers: result.correctAnswers,
         distribution: {
           answerCounts: result.answerCounts,
           answerPercentages: result.answerPercentages,

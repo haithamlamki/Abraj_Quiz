@@ -9,7 +9,7 @@ import Navigation from "@/components/navigation";
 import classroomBg from "@assets/classroom-background.jpg";
 
 const Home = lazy(() => import("@/pages/home"));
-const CreateQuiz = lazy(() => import("@/pages/create-quiz"));
+const QuizEditor = lazy(() => import("@/pages/quiz-editor"));
 const HostGame = lazy(() => import("@/pages/host-game"));
 const JoinGame = lazy(() => import("@/pages/join-game"));
 const PlayGame = lazy(() => import("@/pages/play-game"));
@@ -18,7 +18,6 @@ const Login = lazy(() => import("@/pages/login"));
 const Signup = lazy(() => import("@/pages/signup"));
 const QuizHistory = lazy(() => import("@/pages/quiz-history"));
 const HostQuizSetup = lazy(() => import("./pages/host-quiz-setup"));
-const EditQuiz = lazy(() => import("@/pages/edit-quiz"));
 const QuizPDF = lazy(() => import("@/pages/quiz-pdf"));
 const AdminTenants = lazy(() => import("@/pages/admin-tenants"));
 const NotFound = lazy(() => import("@/pages/not-found"));
@@ -41,11 +40,11 @@ function Router() {
         <Route path="/" component={Home} />
         <Route path="/login" component={Login} />
         <Route path="/signup" component={Signup} />
-        <Route path="/create" component={CreateQuiz} />
+        <Route path="/create" component={QuizEditor} />
         <Route path="/my-quizzes" component={QuizHistory} />
         <Route path="/host/:pin" component={HostGame} />
         <Route path="/host-quiz/:quizId" component={HostQuizSetup} />
-        <Route path="/edit-quiz/:quizId" component={EditQuiz} />
+        <Route path="/edit-quiz/:quizId" component={QuizEditor} />
         <Route path="/quiz-pdf/:id" component={QuizPDF} />
         <Route path="/join/:pin?" component={JoinGame} />
         <Route path="/play/:pin" component={PlayGame} />

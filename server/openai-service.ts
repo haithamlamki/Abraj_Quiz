@@ -168,13 +168,13 @@ Respond with JSON in this exact format:
 
     // Validate each question
     for (const question of parsedQuiz.questions) {
-      if (!question.question || 
-          !question.answers || 
-          !Array.isArray(question.answers) || 
-          question.answers.length !== 4 ||
+      if (!question.question ||
+          !question.answers ||
+          !Array.isArray(question.answers) ||
+          question.answers.length < 2 || question.answers.length > 6 ||
           typeof question.correctAnswer !== 'number' ||
-          question.correctAnswer < 0 || 
-          question.correctAnswer >= 4) {
+          question.correctAnswer < 0 ||
+          question.correctAnswer >= question.answers.length) {
         throw new Error("Generated quiz has invalid question structure");
       }
     }
@@ -281,10 +281,10 @@ Respond with JSON in this exact format:
 
     // Validate each question
     for (const question of result.questions) {
-      if (!question.question || !Array.isArray(question.answers) || 
-          question.answers.length !== 4 || 
+      if (!question.question || !Array.isArray(question.answers) ||
+          question.answers.length < 2 || question.answers.length > 6 ||
           typeof question.correctAnswer !== 'number' ||
-          question.correctAnswer < 0 || question.correctAnswer > 3) {
+          question.correctAnswer < 0 || question.correctAnswer >= question.answers.length) {
         throw new Error("Invalid question format in AI response");
       }
       

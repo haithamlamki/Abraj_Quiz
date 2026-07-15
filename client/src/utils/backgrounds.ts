@@ -1,30 +1,75 @@
-// Utility functions for handling quiz background images and themes
+// Utility functions for handling quiz background images and themes.
+// A quiz `background` value can be:
+//  - a full image URL (Supabase Storage https URL, or a legacy base64 data URL),
+//  - a gradient preset id (see GRADIENT_THEMES), or
+//  - an image theme id (see IMAGE_THEMES).
+
+export interface ThemeOption {
+  id: string;
+  label: string;
+  kind: "gradient" | "image";
+  /** CSS value: a linear-gradient() for gradients, or an image path for images. */
+  css: string;
+}
+
+export const GRADIENT_THEMES: ThemeOption[] = [
+  { id: "aurora",   label: "Aurora",   kind: "gradient", css: "linear-gradient(135deg,#6d28d9 0%,#2563eb 50%,#0ea5e9 100%)" },
+  { id: "sunset",   label: "Sunset",   kind: "gradient", css: "linear-gradient(135deg,#f97316 0%,#db2777 60%,#7c3aed 100%)" },
+  { id: "mint",     label: "Mint",     kind: "gradient", css: "linear-gradient(135deg,#059669 0%,#14b8a6 55%,#22d3ee 100%)" },
+  { id: "grape",    label: "Grape",    kind: "gradient", css: "linear-gradient(135deg,#7c3aed 0%,#c026d3 100%)" },
+  { id: "ember",    label: "Ember",    kind: "gradient", css: "linear-gradient(135deg,#b91c1c 0%,#ea580c 55%,#f59e0b 100%)" },
+  { id: "midnight", label: "Midnight", kind: "gradient", css: "linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#334155 100%)" },
+];
+
+export const IMAGE_THEMES: ThemeOption[] = [
+  { id: "classroom", label: "Classroom", kind: "image", css: "/attached_assets/classroom-background.jpg" },
+  { id: "space",     label: "Space",     kind: "image", css: "/attached_assets/space-background.jpg" },
+  { id: "ocean",     label: "Ocean",     kind: "image", css: "/attached_assets/ocean-background.jpg" },
+  { id: "forest",    label: "Forest",    kind: "image", css: "/attached_assets/forest-background.jpg" },
+  { id: "city",      label: "City",      kind: "image", css: "/attached_assets/city-background.jpg" },
+];
+
+export const PRESET_THEMES: ThemeOption[] = [...GRADIENT_THEMES, ...IMAGE_THEMES];
+
+const gradientById = new Map(GRADIENT_THEMES.map((t) => [t.id, t]));
+const imageById = new Map(IMAGE_THEMES.map((t) => [t.id, t]));
+
+function isImageUrl(value: string): boolean {
+  return value.startsWith("data:image/") || /^https?:\/\//i.test(value);
+}
 
 export const getBackgroundImageUrl = (backgroundValue: string): string => {
-  // If it's a data URL (base64 image), return it directly
-  if (backgroundValue.startsWith('data:image/')) {
-    return backgroundValue;
-  }
-  
-  // Otherwise, return the theme-based background image
-  const themeImages: Record<string, string> = {
-    classroom: '/attached_assets/classroom-background.jpg',
-    space: '/attached_assets/space-background.jpg',
-    ocean: '/attached_assets/ocean-background.jpg', 
-    forest: '/attached_assets/forest-background.jpg',
-    city: '/attached_assets/city-background.jpg'
-  };
-  
-  return themeImages[backgroundValue] || themeImages.classroom;
+  if (isImageUrl(backgroundValue)) return backgroundValue;
+  return imageById.get(backgroundValue)?.css || imageById.get("classroom")!.css;
 };
 
 export const getBackgroundStyle = (backgroundValue: string): React.CSSProperties => {
-  const imageUrl = getBackgroundImageUrl(backgroundValue);
-  
+  const value = backgroundValue || "classroom";
+
+  // Gradient preset → CSS gradient background.
+  const gradient = gradientById.get(value);
+  if (gradient) {
+    return { backgroundImage: gradient.css, backgroundSize: "cover" };
+  }
+
+  // Uploaded/hosted image or image theme → cover image.
+  const imageUrl = getBackgroundImageUrl(value);
   return {
     backgroundImage: `url(${imageUrl})`,
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat'
+    backgroundSize: "cover",
+    backgroundPosition: "center",
+    backgroundRepeat: "no-repeat",
+  };
+};
+
+// A small preview style for theme swatches in the editor.
+export const getThemeSwatchStyle = (theme: ThemeOption): React.CSSProperties => {
+  if (theme.kind === "gradient") {
+    return { backgroundImage: theme.css, backgroundSize: "cover" };
+  }
+  return {
+    backgroundImage: `url(${theme.css})`,
+    backgroundSize: "cover",
+    backgroundPosition: "center",
   };
 };

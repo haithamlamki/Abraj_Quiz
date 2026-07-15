@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Leaderboard from "@/components/leaderboard";
-import { Clock, Users, Play, SkipForward, QrCode, Copy, Share2, Triangle, Diamond, Circle, Square } from "lucide-react";
+import { Clock, Users, Play, SkipForward, QrCode, Copy, Share2 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
 import QRCode from "qrcode";
 import { getBackgroundStyle } from "@/utils/backgrounds";
+import { answerStyle } from "@/lib/answer-style";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
 
 export default function HostGame() {
@@ -558,17 +559,18 @@ export default function HostGame() {
           {/* Answer Options - 2x2 Grid Layout */}
           <div className="grid grid-cols-2 gap-2 mb-3 flex-1 min-h-0">
             {currentQuestion?.answers.map((answer, index) => {
-              const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
-              const symbols = [Triangle, Diamond, Circle, Square];
-              const SymbolIcon = symbols[index];
+              const style = answerStyle(index);
+              const SymbolIcon = style.icon;
               const percentage = showResults ? (runtimeState.answerPercentages?.[index] ?? questionResults?.answerPercentages?.[index] ?? 0) : 0;
               const count = showResults ? (runtimeState.answerCounts?.[index] ?? questionResults?.answerCounts?.[index] ?? 0) : 0;
-              const isCorrect = index === currentQuestion.correctAnswer;
+              // Reveal uses the runtime correct-set from the WS message (works for
+              // players too), falling back to the owner-visible quiz question.
+              const isCorrect = (runtimeState.correctAnswers ?? currentQuestion.correctAnswers ?? []).includes(index);
               
               return (
                 <div
                   key={index}
-                  className={`${colors[index]} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced cursor-pointer relative overflow-hidden h-full flex ${
+                  className={`${style.bg} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced cursor-pointer relative overflow-hidden h-full flex ${
                     showResults && isCorrect ? 'ring-4 ring-yellow-400 animate-bounce shadow-lg shadow-yellow-400/50' : 
                     showResults && !isCorrect ? 'opacity-75 animate-pulse ring-2 ring-gray-400' : ''
                   }`}

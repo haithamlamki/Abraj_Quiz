@@ -36,8 +36,8 @@ export const wsClientMessageSchema = z.discriminatedUnion("type", [
 export type WsClientMessage = z.infer<typeof wsClientMessageSchema>;
 
 export const wsAnswerDistributionSchema = z.object({
-  answerCounts: z.array(z.number().int().min(0)).length(4),
-  answerPercentages: z.array(z.number().int().min(0).max(100)).length(4),
+  answerCounts: z.array(z.number().int().min(0)).min(2).max(6),
+  answerPercentages: z.array(z.number().int().min(0).max(100)).min(2).max(6),
   totalResponses: z.number().int().min(0),
 });
 
@@ -79,7 +79,9 @@ export const wsServerMessageSchema = z.discriminatedUnion("type", [
     type: z.literal("question_closed"),
     gamePin: z.string(),
     questionIndex: z.number().int().min(0),
-    correctAnswer: z.number().int().min(0).max(3),
+    // correctAnswer = first correct index (back-compat); correctAnswers = full set.
+    correctAnswer: z.number().int().min(0).max(5),
+    correctAnswers: z.array(z.number().int().min(0).max(5)).default([]),
     distribution: wsAnswerDistributionSchema,
     players: z.array(z.any()),
   }),
