@@ -16,24 +16,54 @@ export interface TenantConfig {
   features: { aiGeneration: boolean; pdfReports: boolean; publicQuizzes: boolean };
 }
 
+// Brand-neutral fallback shown only before the tenant config resolves on a
+// first-ever visit (no cached config yet). It must NOT carry any single
+// tenant's branding, or that tenant's name/colors/logo flash on other domains.
 export const DEFAULT_TENANT_CONFIG: TenantConfig = {
-  slug: "abraj",
-  name: "Abraj Quiz",
+  slug: "",
+  name: "Quiz",
   branding: {
-    appName: "Abraj Quiz",
+    appName: "Quiz",
     logoUrl: "",
     faviconUrl: "",
-    colors: { primary: "hsl(184, 100%, 47%)", secondary: "hsl(184, 85%, 35%)" },
+    colors: { primary: "hsl(215, 16%, 47%)", secondary: "hsl(215, 19%, 35%)" },
     pdf: {
-      headerText: "ABRAJ QUIZ COMPLETE REPORT",
-      footerText: "© 2025 Abraj Quiz Platform",
-      footerTagline: "Enhancing Education Through Interactive Technology",
-      primaryColor: [1, 158, 189],
+      headerText: "QUIZ COMPLETE REPORT",
+      footerText: "© Quiz Platform",
+      footerTagline: "",
+      primaryColor: [71, 85, 105],
     },
     emailFromName: "",
   },
   features: { aiGeneration: true, pdfReports: true, publicQuizzes: true },
 };
+
+// Persist the resolved config per hostname so a page refresh paints the correct
+// brand immediately from cache instead of flashing the neutral default while the
+// (possibly cold-starting) backend responds. Keyed by hostname because one
+// backend serves many tenant domains.
+const CACHE_PREFIX = "tenant-config:";
+
+function cacheKey(): string {
+  return CACHE_PREFIX + (typeof window !== "undefined" ? window.location.hostname : "");
+}
+
+function readCachedConfig(): TenantConfig | undefined {
+  try {
+    const raw = window.localStorage.getItem(cacheKey());
+    return raw ? (JSON.parse(raw) as TenantConfig) : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function writeCachedConfig(config: TenantConfig): void {
+  try {
+    window.localStorage.setItem(cacheKey(), JSON.stringify(config));
+  } catch {
+    // ignore private-mode / quota errors — caching is a nicety, not required
+  }
+}
 
 const TenantContext = createContext<TenantConfig>(DEFAULT_TENANT_CONFIG);
 
@@ -42,8 +72,19 @@ export function useTenant(): TenantConfig {
 }
 
 export function TenantProvider({ children }: { children: ReactNode }) {
-  const { data } = useQuery<TenantConfig>({ queryKey: ["/api/tenant/config"] });
+  // placeholderData surfaces the last-known config instantly on refresh; the
+  // network fetch still runs and replaces it, so branding changes propagate.
+  const { data } = useQuery<TenantConfig>({
+    queryKey: ["/api/tenant/config"],
+    placeholderData: readCachedConfig,
+    staleTime: 0,
+    refetchOnMount: "always",
+  });
   const tenant = data ?? DEFAULT_TENANT_CONFIG;
+
+  useEffect(() => {
+    if (data) writeCachedConfig(data);
+  }, [data]);
 
   useEffect(() => {
     const root = document.documentElement;

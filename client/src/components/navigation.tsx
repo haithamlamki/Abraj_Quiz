@@ -19,11 +19,23 @@ export default function Navigation() {
           <div className="flex items-center space-x-4">
             <Link href="/">
               <div className="flex items-center space-x-3 cursor-pointer">
-                <img
-                  src={tenant.branding.logoUrl || abrajLogo}
-                  alt={tenant.branding.appName + " Logo"}
-                  className="w-10 h-10 object-contain"
-                />
+                {(() => {
+                  // Use the tenant's own logo; fall back to the bundled Abraj
+                  // logo only for the Abraj tenant (its logoUrl is intentionally
+                  // empty). Other tenants without a logo render a blank slot
+                  // rather than flashing the Abraj mark.
+                  const logoSrc =
+                    tenant.branding.logoUrl || (tenant.slug === "abraj" ? abrajLogo : "");
+                  return logoSrc ? (
+                    <img
+                      src={logoSrc}
+                      alt={tenant.branding.appName + " Logo"}
+                      className="w-10 h-10 object-contain"
+                    />
+                  ) : (
+                    <div className="w-10 h-10" aria-hidden="true" />
+                  );
+                })()}
                 <h1 className="font-bold text-2xl text-gray-800">{tenant.branding.appName}</h1>
               </div>
             </Link>
