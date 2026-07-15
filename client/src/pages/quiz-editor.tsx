@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye,
+  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye, Settings,
 } from "lucide-react";
 import { apiRequest, buildApiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -22,6 +22,7 @@ import { ANSWER_CARD_MIN_H } from "@/components/quiz/AnswerCard";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { resolveQuizTheme, type QuizTheme } from "@shared/quiz-theme";
 import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
+import { QuizSettingsDialog } from "@/components/quiz/QuizSettingsDialog";
 
 interface QuizForm {
   title: string;
@@ -32,7 +33,7 @@ interface QuizForm {
   questions: Question[];
 }
 
-const TIME_OPTIONS = [5, 10, 20, 30, 60, 90, 120];
+const TIME_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120];
 
 function blankQuestion(): Question {
   return {
@@ -90,6 +91,7 @@ export default function QuizEditor() {
   });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect unauthenticated users.
@@ -124,6 +126,7 @@ export default function QuizEditor() {
               ? q.correctAnswers
               : [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
             timeLimit: q.timeLimit ?? 20,
+            points: q.points === "double" ? "double" : "standard",
           }))
         : [blankQuestion()];
       setQuiz({
@@ -385,6 +388,9 @@ export default function QuizEditor() {
           />
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setSettingsOpen(true)}>
+            <Settings className="w-4 h-4 mr-1" /> Settings
+          </Button>
           <Dialog open={aiOpen} onOpenChange={setAiOpen}>
             <DialogTrigger asChild>
               <Button variant="outline"><Wand2 className="w-4 h-4 mr-1" /> Create with AI</Button>
@@ -437,6 +443,15 @@ export default function QuizEditor() {
           </Button>
         </div>
       </header>
+
+      <QuizSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        title={quiz.title}
+        description={quiz.description}
+        isPublic={quiz.isPublic}
+        onChange={(patch) => setQuiz((p) => ({ ...p, ...patch }))}
+      />
 
       <div className="flex-1 flex min-h-0">
         {/* Left: question rail */}
@@ -569,6 +584,7 @@ export default function QuizEditor() {
             <Select value={String(current.timeLimit)} onValueChange={(v) => patchQuestion(currentIndex, { timeLimit: parseInt(v, 10) })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="0">No limit</SelectItem>
                 {TIME_OPTIONS.map((t) => <SelectItem key={t} value={String(t)}>{t} seconds</SelectItem>)}
               </SelectContent>
             </Select>
@@ -598,6 +614,17 @@ export default function QuizEditor() {
             </p>
           </div>
 
+          <div>
+            <label className="text-xs text-gray-500">Points</label>
+            <Select value={current.points} onValueChange={(v) => patchQuestion(currentIndex, { points: v as Question["points"] })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="double">Double points</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Theme picker */}
           <div>
             <label className="text-xs text-gray-500 flex items-center gap-1"><Palette className="w-3 h-3" /> Theme</label>
@@ -615,16 +642,6 @@ export default function QuizEditor() {
                 />
               </DialogContent>
             </Dialog>
-          </div>
-
-          <div>
-            <label className="text-xs text-gray-500">Description</label>
-            <Textarea
-              value={quiz.description}
-              onChange={(e) => setQuiz((p) => ({ ...p, description: e.target.value }))}
-              placeholder="Optional description"
-              rows={3}
-            />
           </div>
         </aside>
       </div>
