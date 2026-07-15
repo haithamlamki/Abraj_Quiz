@@ -49,6 +49,25 @@ alter table public.tenants        no force row level security; alter table publi
 alter table public.session        no force row level security; alter table public.session        disable row level security;
 ```
 
+### IMPORTANT: the `postgres` role bypasses RLS on Supabase
+
+Supabase's `postgres` role has `BYPASSRLS`, so RLS policies do NOT constrain
+connections made as `postgres` — including the SQL editor and any backend
+whose `DATABASE_URL` uses the `postgres` user. Tenant isolation still holds at
+the application layer (every storage call filters by tenant), but for RLS to be
+genuinely load-bearing the backend must connect as the dedicated `quiz_app`
+role (LOGIN, NOBYPASSRLS, full DML grants on `public`, created 2026-07-15):
+
+```bash
+# Render DATABASE_URL — session pooler (IPv4-friendly):
+DATABASE_URL=postgres://quiz_app.bvtbjijbebhubowvhbrp:<QUIZ_APP_PASSWORD>@aws-0-eu-north-1.pooler.supabase.com:5432/postgres
+```
+
+After swapping, verify `/api/readyz`, login, and a full game round — those
+flows now run under RLS. To hand-test the role in the SQL editor first, run
+`grant quiz_app to postgres;` once, then `set role quiz_app;` and confirm
+`select count(*) from public.quizzes` returns 0 without the GUC.
+
 ### Manual SQL after RLS
 
 Every manual session must start with:
