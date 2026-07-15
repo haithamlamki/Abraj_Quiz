@@ -90,6 +90,31 @@ jobs:
       - name: Apply schema (drizzle-kit push)
         run: npx drizzle-kit push --force
 
+      - name: Apply RLS migrations (match production security setup)
+        # drizzle-kit push creates the tables but NOT the hand-written security
+        # layer: the RLS functions/policies (0003), the quiz_app role (0005), and
+        # game_players' FORCE RLS + tenant_isolation policy (0006). Apply them so
+        # the integration + migration tests verify the REAL tenant-isolation
+        # setup rather than a bare schema. The ephemeral CI DB is fresh, so
+        # pre-create the Supabase-style roles the migrations revoke from / grant
+        # to (anon, authenticated); 0005 creates quiz_app itself.
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "create role anon; create role authenticated;"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/0003_rls.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/0005_quiz_app_role.sql
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/0006_game_players.sql
+
+      - name: Seed CI tenant
+        # tenantMiddleware resolves req.tenant from Origin/Host; with an empty
+        # DB nothing resolves and every /api route 404s (breaking assertServerUp).
+        # In non-production it falls back to the slug in DEFAULT_TENANT_SLUG
+        # (default "abraj"), so seed exactly that. Other columns use their schema
+        # defaults (domains [], features {} → all flags default true). Runs as the
+        # postgres superuser, which bypasses the tenants RLS policy from 0003.
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c \
+            "insert into tenants (slug, name) values ('abraj', 'Abraj CI') on conflict (slug) do nothing;"
+
       - name: Start dev server in background
         run: |
           npm run dev > /tmp/dev.log 2>&1 &
