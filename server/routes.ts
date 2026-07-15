@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, SYSTEM_CTX, type StorageCtx } from "./storage";
-import { insertQuizSchema, insertGameSchema, insertGameResponseSchema, quizQuestionsSchema, insertUserSchema } from "@shared/schema";
+import { insertQuizSchema, insertGameSchema, quizQuestionsSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import session from "express-session";
@@ -91,17 +91,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   registerAdminRoutes(app);
 
-  // Authentication middleware
-  const requireAuth = (req: any, res: any, next: any) => {
-    if (!req.session.userId) {
-      console.log("Authentication failed - no session userId:", req.session);
-      return res.status(401).json({ message: "Not authenticated" });
+  // Tenant context for the current request (tenantMiddleware guarantees req.tenant on /api).
+  const tctx = (req: any): StorageCtx => {
+    const tenant = req.tenant as Tenant | undefined;
+    if (!tenant) {
+      throw new Error("Tenant context missing — tenantMiddleware not applied");
     }
-    next();
+    return { tenantId: tenant.id };
   };
 
-  // Tenant context for the current request (tenantMiddleware guarantees req.tenant on /api).
-  const tctx = (req: any): StorageCtx => ({ tenantId: (req.tenant as Tenant).id });
+  // Authentication middleware. Also verifies the session user exists IN THE REQUEST'S
+  // TENANT — a session cookie can be shared across tenant domains on this backend, so a
+  // valid session for a user in another tenant must not be treated as authenticated here.
+  const requireAuth = async (req: any, res: any, next: any) => {
+    try {
+      if (!req.session.userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const user = await storage.getUser(tctx(req), req.session.userId);
+      if (!user) {
+        // Session belongs to a user from another tenant (shared backend cookie).
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      next();
+    } catch (error) {
+      console.error("Auth check failed:", error);
+      res.status(500).json({ message: "Authentication check failed" });
+    }
+  };
 
   const gamePinSchema = z.string().regex(/^\d{6}$/, "Game PIN must be 6 digits");
   const playerNameSchema = z.string().trim().min(1).max(40);
@@ -206,15 +223,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  app.get("/api/me", (req, res) => {
-    if (!(req as any).session.userId) {
-      return res.status(401).json({ message: "Not authenticated" });
+  app.get("/api/me", async (req, res) => {
+    try {
+      const userId = (req as any).session.userId;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const user = await storage.getUser(tctx(req), userId);
+      if (!user) {
+        // Session belongs to a user from another tenant (shared backend cookie).
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      res.json({ id: user.id, username: user.username });
+    } catch (error) {
+      console.error("Failed to fetch current user:", error);
+      res.status(500).json({ message: "Failed to fetch current user" });
     }
-
-    res.json({
-      id: (req as any).session.userId,
-      username: (req as any).session.username
-    });
   });
 
   // correctAnswer must only be visible to the quiz's creator (so the editor UI works);

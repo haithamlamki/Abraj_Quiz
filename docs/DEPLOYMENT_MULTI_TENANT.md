@@ -15,14 +15,21 @@ GET /api/tenant/config.
 
 1. `migrations/0001_tenants.sql` and `migrations/0002_tenant_id.sql` in the Supabase
    SQL editor. Both are backward compatible with the live pre-multi-tenant backend
-   (tenant_id has DEFAULT 1 until 0004). Note: `0001_tenants.sql` was amended during
+   (tenant_id has DEFAULT 1 until 0004). 0002 also adds `users.is_super_admin`
+   (defaulted false) — the merged backend's Drizzle schema selects this column, so it
+   must exist before that deploy; the old backend never references it, so this is
+   backward compatible. Note: `0001_tenants.sql` was amended during
    development to include `"footerTagline": ""` in the PDO seed row; environments that
    ran an earlier version should re-check the PDO tenant row (re-running won't update
    it due to the `on conflict do nothing` clause).
 2. Deploy the backend from the feature branch (Tasks 1-6 code minimum). Smoke test
    abrajquiz production: login, quizzes list, host+join a game.
 3. `migrations/0003_rls.sql`. Re-run the smoke test immediately. Rollback if broken (below).
-4. Deploy the Task 10/11 backend+frontend, then `migrations/0004_admin_hardening.sql`.
+   - After applying 0003, verify from a staging/dev backend session that authenticated
+     flows still work (the withCtx GUC path is now load-bearing); the SQL verification
+     block below covers the DB side.
+4. Deploy the Task 10/11 backend+frontend, then `migrations/0004_admin_hardening.sql`
+   (drops transitional tenant_id defaults).
 5. Promote your super admin (single SQL batch):
    ```sql
    select set_config('app.role', 'system', false);

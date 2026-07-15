@@ -76,6 +76,18 @@ test("tenant CRUD requires system context", async () => {
   assert.equal((await s.getTenant(SYSTEM_CTX, t.id))?.name, "Acme Inc");
 });
 
+test("updateTenant shallow-merges branding and features instead of replacing them", async () => {
+  const s = new MemStorage();
+  const t = await s.createTenant(SYSTEM_CTX, {
+    slug: "merge-co", name: "Merge Co", domains: [],
+    branding: { appName: "X", pdf: { headerText: "H" } } as any,
+    features: {}, status: "active",
+  });
+  const updated = await s.updateTenant(SYSTEM_CTX, t.id, { branding: { appName: "Y" } as any });
+  assert.equal((updated?.branding as any)?.appName, "Y");
+  assert.equal((updated?.branding as any)?.pdf?.headerText, "H");
+});
+
 test("createUser defaults isSuperAdmin to false", async () => {
   const s = new MemStorage();
   const u = await s.createUser(T1, { username: "regular", password: "x" });

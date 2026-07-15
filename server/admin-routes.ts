@@ -7,15 +7,20 @@ import { tenantCache } from "./tenant-cache";
 // Super admins manage the tenant registry across all tenants (system context).
 export function registerAdminRoutes(app: Express) {
   const requireSuperAdmin = async (req: Request, res: Response, next: NextFunction) => {
-    const userId = (req as any).session?.userId as number | undefined;
-    if (!userId) {
-      return res.status(401).json({ message: "Not authenticated" });
+    try {
+      const userId = (req as any).session?.userId as number | undefined;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      const user = await storage.getUser(SYSTEM_CTX, userId);
+      if (!user?.isSuperAdmin) {
+        return res.status(403).json({ message: "Super admin required" });
+      }
+      next();
+    } catch (error) {
+      console.error("Authorization check failed:", error);
+      res.status(500).json({ message: "Authorization check failed" });
     }
-    const user = await storage.getUser(SYSTEM_CTX, userId);
-    if (!user?.isSuperAdmin) {
-      return res.status(403).json({ message: "Super admin required" });
-    }
-    next();
   };
 
   app.get("/api/admin/tenants", requireSuperAdmin, async (_req, res) => {

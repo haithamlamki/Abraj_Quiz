@@ -54,7 +54,7 @@ function toPayload(form: TenantFormState) {
     name: form.name.trim(),
     domains: form.domains.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean),
     branding: {
-      appName: form.appName.trim(),
+      ...(form.appName.trim() ? { appName: form.appName.trim() } : {}),
       ...(form.primaryColor || form.secondaryColor
         ? { colors: { ...(form.primaryColor ? { primary: form.primaryColor } : {}), ...(form.secondaryColor ? { secondary: form.secondaryColor } : {}) } }
         : {}),

@@ -7,6 +7,10 @@ alter table public.quizzes        add column if not exists tenant_id integer not
 alter table public.games          add column if not exists tenant_id integer not null default 1 references public.tenants(id);
 alter table public.game_responses add column if not exists tenant_id integer not null default 1 references public.tenants(id);
 
+-- The merged backend's Drizzle schema selects this column, so it must exist before that
+-- deploy; backward compatible with the old backend (which never references it).
+alter table public.users add column if not exists is_super_admin boolean not null default false;
+
 -- Existing rows all belong to Abraj; the DEFAULT 1 on ADD COLUMN already backfilled them.
 
 create index if not exists users_tenant_idx          on public.users (tenant_id);

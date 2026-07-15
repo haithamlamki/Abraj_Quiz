@@ -291,7 +291,18 @@ export class DatabaseStorage implements IStorage {
   async updateTenant(ctx: StorageCtx, id: number, updates: Partial<InsertTenant>): Promise<Tenant | undefined> {
     requireSystem(ctx);
     return withCtx(ctx, async (tx) => {
-      const [tenant] = await tx.update(tenants).set(updates).where(eq(tenants.id, id)).returning();
+      const [existing] = await tx.select().from(tenants).where(eq(tenants.id, id));
+      if (!existing) return undefined;
+      const merged = {
+        ...updates,
+        ...(updates.branding !== undefined
+          ? { branding: { ...(existing.branding as object), ...updates.branding } }
+          : {}),
+        ...(updates.features !== undefined
+          ? { features: { ...(existing.features as object), ...updates.features } }
+          : {}),
+      };
+      const [tenant] = await tx.update(tenants).set(merged).where(eq(tenants.id, id)).returning();
       return tenant || undefined;
     });
   }
@@ -632,7 +643,16 @@ export class MemStorage implements IStorage {
     requireSystem(ctx);
     const existing = this.tenants.get(id);
     if (!existing) return undefined;
-    const updated: Tenant = { ...existing, ...updates, id: existing.id, createdAt: existing.createdAt };
+    const merged = {
+      ...updates,
+      ...(updates.branding !== undefined
+        ? { branding: { ...(existing.branding as object), ...updates.branding } }
+        : {}),
+      ...(updates.features !== undefined
+        ? { features: { ...(existing.features as object), ...updates.features } }
+        : {}),
+    };
+    const updated: Tenant = { ...existing, ...merged, id: existing.id, createdAt: existing.createdAt };
     this.tenants.set(id, updated);
     return updated;
   }

@@ -19,6 +19,10 @@ $$;
 -- Revoke anon/authenticated so the anon key grants nothing, then force RLS as layer two.
 revoke all on all tables in schema public from anon, authenticated;
 alter default privileges in schema public revoke all on tables from anon, authenticated;
+revoke all on all sequences in schema public from anon, authenticated;
+alter default privileges in schema public revoke all on sequences from anon, authenticated;
+-- Note: ALTER DEFAULT PRIVILEGES applies to objects created by the executing role;
+-- if future migrations run as a different role, repeat these revokes FOR ROLE that role.
 
 -- users
 alter table public.users enable row level security;
