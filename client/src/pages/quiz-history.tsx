@@ -102,7 +102,7 @@ export default function QuizHistory() {
                   <p className="text-gray-600 mb-6">
                     You haven't created any quizzes yet. Start building your first quiz to engage your audience!
                   </p>
-                  <Link href="/create-quiz">
+                  <Link href="/create">
                     <Button className="abraj-primary hover:abraj-secondary text-white font-medium btn-glow">
                       Create Your First Quiz
                     </Button>
@@ -169,7 +169,7 @@ export default function QuizHistory() {
           )}
           
           <div className="text-center mt-12">
-            <Link href="/create-quiz">
+            <Link href="/create">
               <Button className="abraj-primary hover:abraj-secondary text-white font-medium px-8 py-3 btn-glow">
                 Create New Quiz
               </Button>
