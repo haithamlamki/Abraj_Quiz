@@ -388,7 +388,7 @@ export default function PlayGame() {
   };
 
   const handleAnswerSelect = (answerIndex: number) => {
-    if (hasAnswered || timeLeft === 0 || runtimeState.status !== "open") return;
+    if (hasAnswered || (!noLimit && timeLeft === 0) || runtimeState.status !== "open") return;
     playClickSound();
 
     if (currentQuestion?.answerType === "multiple") {
@@ -406,7 +406,7 @@ export default function PlayGame() {
   };
 
   const handleSubmitMulti = () => {
-    if (hasAnswered || timeLeft === 0 || runtimeState.status !== "open" || selectedIndices.length === 0) return;
+    if (hasAnswered || (!noLimit && timeLeft === 0) || runtimeState.status !== "open" || selectedIndices.length === 0) return;
     setHasAnswered(true);
     // Encode the chosen options as a bitmask for the multi-select answer.
     submitAnswerMutation.mutate({ selectedAnswer: encodeSelection("multiple", selectedIndices), responseTime: 0 });
@@ -587,7 +587,7 @@ export default function PlayGame() {
               timeRemaining={noLimit ? null : timeLeft}
               selectedIndices={isMulti ? selectedIndices : (selectedAnswer != null ? [selectedAnswer] : [])}
               onSelect={handleAnswerSelect}
-              disabled={hasAnswered || timeLeft === 0 || runtimeState.status !== "open"}
+              disabled={hasAnswered || (!noLimit && timeLeft === 0) || runtimeState.status !== "open"}
             />
           </div>
         )}
