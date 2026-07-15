@@ -75,6 +75,9 @@ export const quizzes = pgTable("quizzes", {
   createdBy: integer("created_by").notNull(),
   questions: jsonb("questions").notNull(),
   background: text("background").default("classroom"), // Can store theme name or base64 data URL
+  // Custom theme config (colors/font/card style). NULL → derive from `background`
+  // preset (backward compatible). Validated by shared/quiz-theme.ts at read time.
+  theme: jsonb("theme"),
   isPublic: boolean("is_public").default(true),
   createdAt: timestamp("created_at").defaultNow(),
 });
@@ -155,6 +158,7 @@ export const insertQuizSchema = createInsertSchema(quizzes).pick({
   description: z.string().optional(),
   background: z.string().default("classroom"), // Can store theme name or base64 data URL
   isPublic: z.boolean().default(true),
+  theme: z.record(z.any()).optional(),
 });
 
 export const insertGameSchema = createInsertSchema(games).pick({
@@ -194,6 +198,7 @@ export const insertGameResponseSchema = createInsertSchema(gameResponses).pick({
 // Question schema
 export const questionTypeSchema = z.enum(["quiz", "true_false"]);
 export const answerModeSchema = z.enum(["single", "multiple"]);
+export const questionPointsSchema = z.enum(["standard", "double"]);
 
 export const MAX_ANSWERS = 6;
 
@@ -216,7 +221,18 @@ const questionObjectSchema = z
     correctAnswers: z
       .array(z.number().int().min(0))
       .min(1, "Mark at least one correct answer"),
-    timeLimit: z.number().min(5).max(120).default(20),
+    // 0 = no limit (host advances manually); otherwise 5..120 seconds.
+    timeLimit: z
+      .number()
+      .int()
+      .min(0)
+      .max(120)
+      .refine((t) => t === 0 || t >= 5, {
+        message: "Time limit must be 0 (no limit) or between 5 and 120 seconds",
+      })
+      .default(20),
+    // Score multiplier: standard = 1x, double = 2x on the time-based score.
+    points: questionPointsSchema.default("standard"),
   })
   .superRefine((q, ctx) => {
     const n = q.answers.length;
