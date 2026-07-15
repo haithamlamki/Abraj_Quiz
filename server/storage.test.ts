@@ -59,3 +59,25 @@ test("game responses carry explicit tenantId and latest-completed is tenant-scop
   const latestT1 = await s.getLatestCompletedGame(T1);
   assert.notEqual(latestT1?.game.id, g.id);
 });
+
+test("tenant CRUD requires system context", async () => {
+  const s = new MemStorage();
+  await assert.rejects(
+    () => s.createTenant(T1, { slug: "acme", name: "Acme", domains: [], branding: {}, features: {}, status: "active" }),
+    /System context required/,
+  );
+  const t = await s.createTenant(SYSTEM_CTX, {
+    slug: "acme", name: "Acme", domains: ["acmequiz.com"], branding: {}, features: {}, status: "active",
+  });
+  assert.ok(t.id > 0);
+  assert.ok((await s.getTenants(SYSTEM_CTX)).some((x) => x.slug === "acme"));
+  const updated = await s.updateTenant(SYSTEM_CTX, t.id, { name: "Acme Inc" });
+  assert.equal(updated?.name, "Acme Inc");
+  assert.equal((await s.getTenant(SYSTEM_CTX, t.id))?.name, "Acme Inc");
+});
+
+test("createUser defaults isSuperAdmin to false", async () => {
+  const s = new MemStorage();
+  const u = await s.createUser(T1, { username: "regular", password: "x" });
+  assert.equal(u.isSuperAdmin, false);
+});

@@ -14,6 +14,7 @@ import { gameRoomManager } from "./game-room-manager";
 import { tenantMiddleware, requireFeature } from "./tenant";
 import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
 import { getAllowedOrigins } from "./origins";
+import { registerAdminRoutes } from "./admin-routes";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -87,6 +88,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       features: featuresSchema.parse((tenant.features as object) ?? {}),
     });
   });
+
+  registerAdminRoutes(app);
 
   // Authentication middleware
   const requireAuth = (req: any, res: any, next: any) => {

@@ -1,9 +1,10 @@
 import {
-  users, quizzes, games, gameResponses,
+  users, quizzes, games, gameResponses, tenants,
   type User, type InsertUser,
   type Quiz, type InsertQuiz,
   type Game, type InsertGame,
-  type GameResponse, type InsertGameResponse
+  type GameResponse, type InsertGameResponse,
+  type Tenant, type InsertTenant
 } from "@shared/schema";
 import { db } from "./db";
 import { and, desc, eq, sql, type SQL } from "drizzle-orm";
@@ -19,6 +20,12 @@ export function requireTenantId(ctx: StorageCtx): number {
     throw new Error("Tenant context required");
   }
   return ctx.tenantId;
+}
+
+function requireSystem(ctx: StorageCtx): void {
+  if (!("system" in ctx)) {
+    throw new Error("System context required");
+  }
 }
 
 function tenantFilter(ctx: StorageCtx, column: typeof users.tenantId | typeof quizzes.tenantId | typeof games.tenantId | typeof gameResponses.tenantId): SQL | undefined {
@@ -55,6 +62,12 @@ export interface IStorage {
 
   // Latest Game Results
   getLatestCompletedGame(ctx: StorageCtx): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined>;
+
+  // Tenants (system context only — used by the super-admin API)
+  getTenants(ctx: StorageCtx): Promise<Tenant[]>;
+  getTenant(ctx: StorageCtx, id: number): Promise<Tenant | undefined>;
+  createTenant(ctx: StorageCtx, tenant: InsertTenant): Promise<Tenant>;
+  updateTenant(ctx: StorageCtx, id: number, updates: Partial<InsertTenant>): Promise<Tenant | undefined>;
 }
 
 // Every DB call runs in a transaction that sets the RLS GUC:
@@ -253,6 +266,36 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  // Tenants
+  async getTenants(ctx: StorageCtx): Promise<Tenant[]> {
+    requireSystem(ctx);
+    return withCtx(ctx, async (tx) => tx.select().from(tenants));
+  }
+
+  async getTenant(ctx: StorageCtx, id: number): Promise<Tenant | undefined> {
+    requireSystem(ctx);
+    return withCtx(ctx, async (tx) => {
+      const [tenant] = await tx.select().from(tenants).where(eq(tenants.id, id));
+      return tenant || undefined;
+    });
+  }
+
+  async createTenant(ctx: StorageCtx, insertTenant: InsertTenant): Promise<Tenant> {
+    requireSystem(ctx);
+    return withCtx(ctx, async (tx) => {
+      const [tenant] = await tx.insert(tenants).values(insertTenant).returning();
+      return tenant;
+    });
+  }
+
+  async updateTenant(ctx: StorageCtx, id: number, updates: Partial<InsertTenant>): Promise<Tenant | undefined> {
+    requireSystem(ctx);
+    return withCtx(ctx, async (tx) => {
+      const [tenant] = await tx.update(tenants).set(updates).where(eq(tenants.id, id)).returning();
+      return tenant || undefined;
+    });
+  }
+
   // Helper method to generate unique game PIN
   generateGamePin(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -264,10 +307,12 @@ export class MemStorage implements IStorage {
   private quizzes: Map<number, Quiz>;
   private games: Map<number, Game>;
   private gameResponses: Map<number, GameResponse>;
+  private tenants: Map<number, Tenant> = new Map();
   private currentUserId: number;
   private currentQuizId: number;
   private currentGameId: number;
   private currentResponseId: number;
+  private currentTenantId = 1;
 
   constructor() {
     this.users = new Map();
@@ -288,6 +333,7 @@ export class MemStorage implements IStorage {
     const sampleUser: User = {
       id: 1,
       tenantId: 1,
+      isSuperAdmin: false,
       username: "demo_user",
       password: ""
     };
@@ -394,7 +440,7 @@ export class MemStorage implements IStorage {
 
   async createUser(ctx: StorageCtx, insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id, tenantId: requireTenantId(ctx) };
+    const user: User = { ...insertUser, id, tenantId: requireTenantId(ctx), isSuperAdmin: false };
     this.users.set(id, user);
     return user;
   }
@@ -552,6 +598,43 @@ export class MemStorage implements IStorage {
       players: players.sort((a, b) => (b.score || 0) - (a.score || 0)),
       totalQuestions
     };
+  }
+
+  // Tenants
+  async getTenants(ctx: StorageCtx): Promise<Tenant[]> {
+    requireSystem(ctx);
+    return Array.from(this.tenants.values());
+  }
+
+  async getTenant(ctx: StorageCtx, id: number): Promise<Tenant | undefined> {
+    requireSystem(ctx);
+    return this.tenants.get(id);
+  }
+
+  async createTenant(ctx: StorageCtx, insertTenant: InsertTenant): Promise<Tenant> {
+    requireSystem(ctx);
+    const id = this.currentTenantId++;
+    const tenant: Tenant = {
+      id,
+      slug: insertTenant.slug,
+      name: insertTenant.name,
+      domains: insertTenant.domains ?? [],
+      branding: insertTenant.branding ?? {},
+      features: insertTenant.features ?? {},
+      status: insertTenant.status ?? "active",
+      createdAt: new Date(),
+    };
+    this.tenants.set(id, tenant);
+    return tenant;
+  }
+
+  async updateTenant(ctx: StorageCtx, id: number, updates: Partial<InsertTenant>): Promise<Tenant | undefined> {
+    requireSystem(ctx);
+    const existing = this.tenants.get(id);
+    if (!existing) return undefined;
+    const updated: Tenant = { ...existing, ...updates, id: existing.id, createdAt: existing.createdAt };
+    this.tenants.set(id, updated);
+    return updated;
   }
 
   // Helper method to generate unique game PIN
