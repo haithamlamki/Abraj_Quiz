@@ -17,6 +17,7 @@ export const brandingSchema = z.object({
     .object({
       headerText: z.string().default("ABRAJ QUIZ COMPLETE REPORT"),
       footerText: z.string().default("© 2025 Abraj Quiz Platform"),
+      footerTagline: z.string().default("Enhancing Education Through Interactive Technology"),
       primaryColor: z.array(z.number()).length(3).default([1, 158, 189]),
     })
     .default({}),

@@ -5,6 +5,7 @@ export interface PdfBranding {
   appName: string;
   headerText: string;
   footerText: string;
+  footerTagline?: string;
   primaryColor: number[];
   logoDataUrl?: string;
 }
@@ -570,7 +571,9 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(140, 140, 140);
   pdf.text(`${new Date().toLocaleString()} • Complete Interactive Learning Report`, 25, yPosition + 11);
-  pdf.text(branding?.footerText ?? '© 2025 Abraj Quiz Platform - Enhancing Education Through Interactive Technology', 25, yPosition + 15);
+  const footerBase = branding?.footerText ?? '© 2025 Abraj Quiz Platform';
+  const footerTagline = branding?.footerTagline ?? 'Enhancing Education Through Interactive Technology';
+  pdf.text(footerTagline ? `${footerBase} - ${footerTagline}` : footerBase, 25, yPosition + 15);
 
   // Save with enhanced filename
   const fileName = `${(game.quiz?.title || 'Quiz').replace(/[^a-zA-Z0-9]/g, '_')}_Report_${game.gamePin}_${new Date().toISOString().split('T')[0]}_${Date.now()}.pdf`;

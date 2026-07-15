@@ -22,7 +22,7 @@ insert into public.tenants (id, slug, name, domains, branding, features) values
    '{}'::jsonb),
   (2, 'pdo', 'PDO Quiz',
    '["pdoquiz.com", "www.pdoquiz.com"]'::jsonb,
-   '{"appName": "PDO Quiz", "colors": {"primary": "hsl(356, 74%, 44%)", "secondary": "hsl(356, 74%, 32%)"}, "pdf": {"headerText": "PDO QUIZ COMPLETE REPORT", "footerText": "© 2026 PDO Quiz Platform", "primaryColor": [196, 30, 58]}}'::jsonb,
+   '{"appName": "PDO Quiz", "colors": {"primary": "hsl(356, 74%, 44%)", "secondary": "hsl(356, 74%, 32%)"}, "pdf": {"headerText": "PDO QUIZ COMPLETE REPORT", "footerText": "© 2026 PDO Quiz Platform", "footerTagline": "", "primaryColor": [196, 30, 58]}}'::jsonb,
    '{}'::jsonb)
 on conflict (slug) do nothing;
 

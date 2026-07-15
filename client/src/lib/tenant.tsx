@@ -10,7 +10,7 @@ export interface TenantConfig {
     logoUrl: string;
     faviconUrl: string;
     colors: { primary: string; secondary: string };
-    pdf: { headerText: string; footerText: string; primaryColor: number[] };
+    pdf: { headerText: string; footerText: string; footerTagline: string; primaryColor: number[] };
     emailFromName: string;
   };
   features: { aiGeneration: boolean; pdfReports: boolean; publicQuizzes: boolean };
@@ -27,6 +27,7 @@ export const DEFAULT_TENANT_CONFIG: TenantConfig = {
     pdf: {
       headerText: "ABRAJ QUIZ COMPLETE REPORT",
       footerText: "© 2025 Abraj Quiz Platform",
+      footerTagline: "Enhancing Education Through Interactive Technology",
       primaryColor: [1, 158, 189],
     },
     emailFromName: "",
@@ -86,6 +87,7 @@ export async function tenantPdfBranding(tenant: TenantConfig): Promise<PdfBrandi
     appName: tenant.branding.appName,
     headerText: tenant.branding.pdf.headerText,
     footerText: tenant.branding.pdf.footerText,
+    footerTagline: tenant.branding.pdf.footerTagline,
     primaryColor: tenant.branding.pdf.primaryColor,
     logoDataUrl: await resolveLogoDataUrl(tenant.branding.logoUrl),
   };
