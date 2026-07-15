@@ -7,6 +7,9 @@
 - Live game state: in-memory `Map<gamePin, RuntimeRoom>` in `server/game-room-manager.ts`. Single-process only.
 - WebSocket server: `server/websocket.ts` at path `/game-ws`.
 - Shared schemas: `shared/ws-protocol.ts` (Zod).
+- Multi-tenant: tenants table maps hostnames to tenants; server/tenant.ts resolves
+  req.tenant from Origin/Host; storage calls take a StorageCtx ({tenantId} or SYSTEM_CTX);
+  Postgres RLS (GUCs app.tenant_id / app.role) enforces isolation as the second layer.
 
 ## Hard rules
 - Never deploy backend to Vercel.
@@ -16,6 +19,11 @@
 - Server is authoritative for timing. Client renders, never decides.
 - Host-only routes must validate `session.userId === game.hostId`.
 - WebSocket origin must match `CLIENT_ORIGIN` in production.
+- Never call storage methods without a StorageCtx. Request paths use tctx(req);
+  only the game engine and admin/registry code use SYSTEM_CTX.
+- games.game_pin stays globally unique across tenants (runtime rooms are keyed by pin).
+- Never hardcode tenant branding in the client; use useTenant() from client/src/lib/tenant.tsx.
+- New business tables MUST have tenant_id + the tenant_isolation RLS policy pair.
 
 ## Error codes (from shared/ws-protocol.ts)
 - `ROOM_NOT_FOUND`

@@ -1,0 +1,92 @@
+# Multi-Tenant Deployment
+
+## Topology
+
+- ONE backend (Render or similar persistent Node host) serving ALL tenants.
+- ONE Supabase Postgres (project bvtbjijbebhubowvhbrp) with forced RLS tenant isolation.
+- ONE Vercel project PER TENANT DOMAIN, all importing the same GitHub repo
+  (haithamlamki/Abraj_Quiz). Static frontend only — the backend NEVER deploys to Vercel.
+
+Tenant resolution is by request Origin/Host hostname against tenants.domains.
+The frontend is tenant-agnostic at build time; branding loads at runtime from
+GET /api/tenant/config.
+
+## Production migration runbook (order matters)
+
+1. `migrations/0001_tenants.sql` and `migrations/0002_tenant_id.sql` in the Supabase
+   SQL editor. Both are backward compatible with the live pre-multi-tenant backend
+   (tenant_id has DEFAULT 1 until 0004). Note: `0001_tenants.sql` was amended during
+   development to include `"footerTagline": ""` in the PDO seed row; environments that
+   ran an earlier version should re-check the PDO tenant row (re-running won't update
+   it due to the `on conflict do nothing` clause).
+2. Deploy the backend from the feature branch (Tasks 1-6 code minimum). Smoke test
+   abrajquiz production: login, quizzes list, host+join a game.
+3. `migrations/0003_rls.sql`. Re-run the smoke test immediately. Rollback if broken (below).
+4. Deploy the Task 10/11 backend+frontend, then `migrations/0004_admin_hardening.sql`.
+5. Promote your super admin (single SQL batch):
+   ```sql
+   select set_config('app.role', 'system', false);
+   update public.users set is_super_admin = true
+    where tenant_id = 1 and username = 'YOUR_ADMIN_USERNAME';
+   ```
+6. Verify tenant domains in the tenants table match reality (edit at /admin/tenants).
+
+### RLS rollback (emergency only)
+
+```sql
+alter table public.users          no force row level security; alter table public.users          disable row level security;
+alter table public.quizzes        no force row level security; alter table public.quizzes        disable row level security;
+alter table public.games          no force row level security; alter table public.games          disable row level security;
+alter table public.game_responses no force row level security; alter table public.game_responses disable row level security;
+alter table public.tenants        no force row level security; alter table public.tenants        disable row level security;
+alter table public.session        no force row level security; alter table public.session        disable row level security;
+```
+
+### Manual SQL after RLS
+
+Every manual session must start with:
+```sql
+select set_config('app.role', 'system', false);
+```
+
+## Backend environment (Render)
+
+Everything from DEPLOYMENT.md, plus:
+
+```bash
+# Bootstrap CORS allowlist: Vercel default domains + local dev.
+# Tenant CUSTOM domains come from tenants.domains in the DB (no redeploy needed).
+CLIENT_ORIGIN=https://abraj-quiz.vercel.app,https://pdo-quiz.vercel.app
+# Optional; dev-only fallback when the hostname resolves no tenant (default: abraj)
+# DEFAULT_TENANT_SLUG=abraj
+```
+
+## Vercel: one project per tenant
+
+For each tenant (example: PDO):
+
+1. Vercel dashboard → Add New… → Project → import haithamlamki/Abraj_Quiz
+   (the repo already has vercel.json: build `npm run build:client`, output `dist/public`).
+2. Name it `pdo-quiz`.
+3. Environment variables (Production):
+   - `VITE_API_BASE_URL=https://<your-backend-host>`
+   - `VITE_WS_URL=wss://<your-backend-host>/game-ws`
+   (Same values for every tenant project — the backend is shared.)
+4. Deploy, then Settings → Domains → add `pdoquiz.com` and `www.pdoquiz.com`.
+   Configure DNS at the registrar as Vercel instructs (A 76.76.21.21 for apex or
+   the shown ALIAS/CNAME; CNAME cname.vercel-dns.com for www).
+5. Add the tenant's Vercel default domain (`pdo-quiz.vercel.app`) to BOTH:
+   - the tenant's `domains` array (via /admin/tenants) — so hostname resolution works, and
+   - `CLIENT_ORIGIN` on the backend — so preview/default-domain access works pre-DNS.
+6. Onboard the tenant in /admin/tenants first (or seed via SQL) BEFORE pointing DNS:
+   slug, name, domains, branding, features.
+
+Adding tenant #3 later = one /admin/tenants entry + one Vercel project + DNS. No code.
+
+## Smoke test per tenant
+
+1. https://pdoquiz.com loads with PDO name/colors/favicon (view /api/tenant/config in devtools).
+2. Register `testuser` on pdoquiz.com — succeeds even though `testuser` may exist on abrajquiz.com.
+3. Create a quiz on pdoquiz.com → it must NOT appear on abrajquiz.com.
+4. Host a game on pdoquiz.com, join from a phone, play a round, download the PDF → PDO branding.
+5. Enter the pdoquiz game PIN on abrajquiz.com/join → "Game not found".
