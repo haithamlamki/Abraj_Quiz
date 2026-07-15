@@ -132,4 +132,28 @@ describe("GET /api/quizzes/:id — private quizzes are owner-only", () => {
     const pubBody = await pubRes.json();
     expect(pubBody.questions[0].correctAnswer).toBeUndefined();
   });
+
+  it("prevents a non-owner from hosting (creating a game from) a private quiz", async () => {
+    const { agent: owner, prefix: ownerPrefix } = await createTestUser("privhost");
+    usedPrefixes.push(ownerPrefix);
+    const priv = await createTestQuiz(owner, { isPublic: false });
+
+    const { agent: other, prefix: otherPrefix } = await createTestUser("privhost");
+    usedPrefixes.push(otherPrefix);
+
+    // Non-owner cannot create a game from someone else's private quiz — this
+    // closes the /results-based read of a private quiz.
+    const attackRes = await other.fetch("/api/games", {
+      method: "POST",
+      body: JSON.stringify({ quizId: priv.id }),
+    });
+    expect(attackRes.status).toBe(404);
+
+    // The owner still can.
+    const ownerRes = await owner.fetch("/api/games", {
+      method: "POST",
+      body: JSON.stringify({ quizId: priv.id }),
+    });
+    expect(ownerRes.status).toBe(201);
+  });
 });
