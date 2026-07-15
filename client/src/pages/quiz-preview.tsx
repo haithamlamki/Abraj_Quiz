@@ -18,6 +18,7 @@ function normalize(q: any): Question {
       ? q.correctAnswers
       : [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
     timeLimit: q.timeLimit ?? 20,
+    points: q.points === "double" ? "double" : "standard",
   };
 }
 

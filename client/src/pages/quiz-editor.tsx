@@ -39,6 +39,7 @@ function blankQuestion(): Question {
     answers: ["", "", "", ""],
     correctAnswers: [0],
     timeLimit: 20,
+    points: "standard",
   };
 }
 
@@ -51,6 +52,7 @@ function trueFalseQuestion(existing?: Partial<Question>): Question {
     answers: ["True", "False"],
     correctAnswers: [0],
     timeLimit: existing?.timeLimit ?? 20,
+    points: existing?.points ?? "standard",
   };
 }
 
@@ -63,6 +65,7 @@ function fromGenerated(q: any): Question {
     answers: Array.isArray(q.answers) && q.answers.length >= 2 ? q.answers : ["", "", "", ""],
     correctAnswers: [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
     timeLimit: q.timeLimit ?? 20,
+    points: q.points === "double" ? "double" : "standard",
   };
 }
 
