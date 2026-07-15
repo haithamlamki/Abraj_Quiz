@@ -10,8 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
-import { answerStyle } from "@/lib/answer-style";
 import { encodeSelection } from "@shared/quiz-scoring";
+import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 
 export default function PlayGame() {
   const { pin } = useParams();
@@ -568,79 +568,24 @@ export default function PlayGame() {
   }
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col p-4" style={getBackgroundStyle(quiz?.background || 'classroom')}>
+    <div className="h-screen overflow-hidden flex flex-col p-3 sm:p-4 bg-slate-900">
       <TimeUpOverlay />
       <div className="max-w-4xl mx-auto flex-1 flex flex-col min-h-0">
-        {/* Header */}
-        <div className="text-center mb-3 flex-shrink-0">
-          <Badge variant="secondary" className="mb-1">
-            Question {currentQuestionIndex + 1} of {questions.length}
-          </Badge>
-          
-          {timeLeft !== null && timeLeft > 0 && !hasAnswered && (
-            <div 
-              className={`text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl mx-auto mb-1 hover:scale-110 transition-transform cursor-pointer ${
-                timeLeft <= 10 ? 'pulse-ring' : ''
-              } ${
-                timeLeft <= 3 ? 'bg-red-600 animate-ping shadow-lg shadow-red-500/50' : 
-                timeLeft <= 5 ? 'bg-orange-500 animate-bounce' : 
-                'abraj-red animate-pulse'
-              }`}
-              onClick={() => playCountdownSound(timeLeft)}
-            >
-              {timeLeft}
-            </div>
-          )}
-          
-          <p className="text-gray-600 text-xs">
-            {hasAnswered ? "Answer submitted!" : timeLeft === 0 ? "Time's up!" : "seconds left"}
-          </p>
-        </div>
-
-        {/* Question */}
-        <Card className="mb-3 glass card-3d-enhanced flex-shrink-0">
-          <CardContent className="p-2 sm:p-3 text-center">
-            <h2 className="font-bold text-sm sm:text-base md:text-lg text-gray-800 leading-snug">{currentQuestion?.question}</h2>
-          </CardContent>
-        </Card>
-
-        {/* Question image (if any) */}
-        {currentQuestion?.imageUrl && (
-          <div className="flex-shrink-0 flex justify-center mb-3">
-            <img
-              src={currentQuestion.imageUrl}
-              alt="Question"
-              className="max-h-32 sm:max-h-40 rounded-xl object-contain shadow-lg"
+        {/* Shared question stage — identical component to preview + host */}
+        {currentQuestion && (
+          <div className="flex-1 min-h-0 mb-3">
+            <QuizQuestionRenderer
+              question={currentQuestion}
+              background={quiz?.background || "classroom"}
+              questionNumber={currentQuestionIndex + 1}
+              totalQuestions={questions.length}
+              timeRemaining={timeLeft}
+              selectedIndices={isMulti ? selectedIndices : (selectedAnswer != null ? [selectedAnswer] : [])}
+              onSelect={handleAnswerSelect}
+              disabled={hasAnswered || timeLeft === 0 || runtimeState.status !== "open"}
             />
           </div>
         )}
-
-        {/* Answer Options — fixed-size grid (boxes stay uniform regardless of
-            text length, Kahoot-style; auto-rows-fr keeps rows equal for 2-6). */}
-        <div className="grid grid-cols-2 auto-rows-fr gap-2 mb-3 flex-1 min-h-0">
-          {currentQuestion?.answers.map((answer, index) => {
-            const style = answerStyle(index);
-            const SymbolIcon = style.icon;
-            const isSelected = isMulti ? selectedIndices.includes(index) : selectedAnswer === index;
-            const isDisabled = hasAnswered || timeLeft === 0 || runtimeState.status !== "open";
-
-            return (
-              <Button
-                key={index}
-                onClick={() => handleAnswerSelect(index)}
-                disabled={isDisabled}
-                className={`${style.bg} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced h-full min-h-[64px] flex overflow-hidden ${
-                  isSelected ? 'ring-4 ring-white' : ''
-                } ${isDisabled && !isSelected ? 'opacity-60' : ''}`}
-              >
-                <div className="flex items-center justify-center w-full gap-2">
-                  <SymbolIcon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="white" strokeWidth={0} />
-                  <span className="text-center text-xs sm:text-sm md:text-base leading-tight line-clamp-3 px-1 font-semibold">{answer}</span>
-                </div>
-              </Button>
-            );
-          })}
-        </div>
 
         {/* Multi-select confirm */}
         {isMulti && !hasAnswered && runtimeState.status === "open" && (
