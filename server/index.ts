@@ -3,6 +3,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { pool } from "./db";
+import { tenantCache } from "./tenant-cache";
 
 const app = express();
 
@@ -98,6 +99,13 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  try {
+    await tenantCache.refresh();
+  } catch (err) {
+    console.error("Initial tenant cache load failed (will retry on interval):", err);
+  }
+  tenantCache.start();
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

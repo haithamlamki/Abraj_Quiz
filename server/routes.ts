@@ -11,6 +11,8 @@ import multer from "multer";
 import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText, generateBackgroundImage } from "./openai-service";
 import { gameWS } from "./websocket";
 import { gameRoomManager } from "./game-room-manager";
+import { tenantMiddleware } from "./tenant";
+import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -70,6 +72,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.use(sessionMiddleware);
+
+  // Resolve the tenant for every API request. /api/healthz and /api/readyz are
+  // registered earlier in server/index.ts and are unaffected.
+  app.use("/api", tenantMiddleware);
+
+  app.get("/api/tenant/config", (req, res) => {
+    const tenant = req.tenant as Tenant;
+    res.json({
+      slug: tenant.slug,
+      name: tenant.name,
+      branding: brandingSchema.parse((tenant.branding as object) ?? {}),
+      features: featuresSchema.parse((tenant.features as object) ?? {}),
+    });
+  });
 
   // Authentication middleware
   const requireAuth = (req: any, res: any, next: any) => {
