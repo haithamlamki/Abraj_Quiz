@@ -4,6 +4,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { pool } from "./db";
 import { tenantCache } from "./tenant-cache";
+import { envOrigins, getAllowedOrigins } from "./origins";
 
 const app = express();
 
@@ -36,20 +37,14 @@ app.get("/api/readyz", async (_req, res) => {
   }
 });
 
-// TODO: consolidate into shared origin parsing util — duplicated in server/routes.ts:34. See BACKLOG.md.
-const allowedOrigins = (process.env.CLIENT_ORIGIN || process.env.CORS_ORIGIN || "")
-  .split(",")
-  .map((origin) => origin.trim())
-  .filter(Boolean);
-
-if (process.env.NODE_ENV === "production" && allowedOrigins.length === 0) {
+if (process.env.NODE_ENV === "production" && envOrigins.length === 0) {
   throw new Error("CLIENT_ORIGIN must be set in production");
 }
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
 
-  if (origin && allowedOrigins.includes(origin)) {
+  if (origin && getAllowedOrigins().includes(origin)) {
     res.header("Access-Control-Allow-Origin", origin);
     res.header("Access-Control-Allow-Credentials", "true");
     res.header("Vary", "Origin");

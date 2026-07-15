@@ -22,6 +22,7 @@ type SessionRequest = IncomingMessage & {
 
 interface InitializeOptions {
   allowedOrigins?: string[];
+  getAllowedOrigins?: () => string[];
   sessionMiddleware?: (req: any, res: any, next: (err?: unknown) => void) => void;
 }
 
@@ -43,6 +44,7 @@ class GameWebSocketServer {
   private messageTimestamps: WeakMap<WebSocket, number[]> = new WeakMap();
   private heartbeatInterval: NodeJS.Timeout | null = null;
   private allowedOrigins: string[] = [];
+  private originProvider: () => string[] = () => this.allowedOrigins;
   private sessionMiddleware?: InitializeOptions["sessionMiddleware"];
 
   private readonly gamePinPattern = /^\d{6}$/;
@@ -52,6 +54,7 @@ class GameWebSocketServer {
 
   initialize(server: Server, options: InitializeOptions = {}) {
     this.allowedOrigins = options.allowedOrigins || [];
+    this.originProvider = options.getAllowedOrigins ?? (() => this.allowedOrigins);
     this.sessionMiddleware = options.sessionMiddleware;
 
     this.wss = new WebSocketServer({
@@ -281,7 +284,7 @@ class GameWebSocketServer {
 
   private isAllowedOrigin(origin: string | undefined): boolean {
     return isOriginAllowed(
-      this.allowedOrigins,
+      this.originProvider(),
       origin,
       process.env.NODE_ENV === "production",
     );

@@ -13,6 +13,7 @@ import { gameWS } from "./websocket";
 import { gameRoomManager } from "./game-room-manager";
 import { tenantMiddleware } from "./tenant";
 import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
+import { getAllowedOrigins } from "./origins";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -785,7 +786,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const httpServer = createServer(app);
 
-  gameWS.initialize(httpServer, { sessionMiddleware, allowedOrigins });
-  
+  gameWS.initialize(httpServer, { sessionMiddleware, allowedOrigins, getAllowedOrigins });
+
   return httpServer;
 }
