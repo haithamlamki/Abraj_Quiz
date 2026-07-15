@@ -23,6 +23,7 @@ import { getBackgroundStyle } from "@/utils/backgrounds";
 import { resolveQuizTheme, type QuizTheme } from "@shared/quiz-theme";
 import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
 import { QuizSettingsDialog } from "@/components/quiz/QuizSettingsDialog";
+import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 
 interface QuizForm {
   title: string;
@@ -90,6 +91,8 @@ export default function QuizEditor() {
     questions: [blankQuestion()],
   });
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewIdx, setPreviewIdx] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
@@ -432,11 +435,9 @@ export default function QuizEditor() {
               <p className="text-xs text-gray-400">Generated questions replace the current ones — review and edit before saving.</p>
             </DialogContent>
           </Dialog>
-          {isEditMode && (
-            <Button variant="outline" onClick={() => setLocation(`/preview/${quizId}`)}>
-              <Eye className="w-4 h-4 mr-1" /> Preview
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => { setPreviewIdx(currentIndex); setPreviewOpen(true); }}>
+            <Eye className="w-4 h-4 mr-1" /> Preview
+          </Button>
           <Button className="abraj-primary text-white" onClick={handleSave} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
             {isEditMode ? "Save changes" : "Save"}
@@ -452,6 +453,27 @@ export default function QuizEditor() {
         isPublic={quiz.isPublic}
         onChange={(patch) => setQuiz((p) => ({ ...p, ...patch }))}
       />
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Preview</DialogTitle></DialogHeader>
+          <div className="h-[460px]">
+            <QuizQuestionRenderer
+              question={quiz.questions[Math.min(previewIdx, quiz.questions.length - 1)]}
+              theme={quiz.theme}
+              questionNumber={Math.min(previewIdx, quiz.questions.length - 1) + 1}
+              totalQuestions={quiz.questions.length}
+              reveal
+              correctAnswers={quiz.questions[Math.min(previewIdx, quiz.questions.length - 1)]?.correctAnswers}
+            />
+          </div>
+          <div className="flex items-center justify-center gap-4">
+            <Button variant="ghost" size="sm" disabled={previewIdx === 0} onClick={() => setPreviewIdx((i) => i - 1)}>Prev</Button>
+            <span className="text-sm text-gray-500">{Math.min(previewIdx, quiz.questions.length - 1) + 1} / {quiz.questions.length}</span>
+            <Button variant="ghost" size="sm" disabled={previewIdx >= quiz.questions.length - 1} onClick={() => setPreviewIdx((i) => i + 1)}>Next</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex-1 flex min-h-0">
         {/* Left: question rail */}
