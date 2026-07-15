@@ -52,7 +52,8 @@ export function AnswerCard({
       onClick={onClick}
       disabled={disabled || !onClick}
       aria-pressed={selected}
-      className={`${style.bg} ${ANSWER_CARD_MIN_H} w-full h-full rounded-xl text-white font-bold shadow-md relative overflow-hidden flex items-center transition-all ${revealRing} ${selectedRing} ${interactive} ${disabled && !selected && reveal === "none" ? "opacity-70" : ""} ${className}`}
+      className={`${style.bg} ${ANSWER_CARD_MIN_H} w-full h-full text-white font-bold relative overflow-hidden flex items-center transition-all ${revealRing} ${selectedRing} ${interactive} ${disabled && !selected && reveal === "none" ? "opacity-70" : ""} ${className}`}
+      style={{ borderRadius: "var(--quiz-card-radius, 0.75rem)", boxShadow: "var(--quiz-card-shadow, 0 4px 6px rgba(0,0,0,0.15))" }}
     >
       {shapeOnly ? (
         <div className="flex items-center justify-center w-full">

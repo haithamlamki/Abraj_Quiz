@@ -1,11 +1,14 @@
 import type { Question } from "@shared/schema";
 import { getBackgroundStyle } from "@/utils/backgrounds";
+import type { QuizTheme } from "@shared/quiz-theme";
+import { QuizThemeProvider } from "./QuizThemeProvider";
 import { AnswerGrid } from "./AnswerGrid";
 import { Clock } from "lucide-react";
 
 export interface QuizQuestionRendererProps {
   question: Pick<Question, "question" | "imageUrl" | "answers" | "answerType" | "type">;
   background?: string;
+  theme?: QuizTheme;
   questionNumber?: number;
   totalQuestions?: number;
   timeRemaining?: number | null;
@@ -32,6 +35,7 @@ export interface QuizQuestionRendererProps {
 export function QuizQuestionRenderer({
   question,
   background = "aurora",
+  theme,
   questionNumber,
   totalQuestions,
   timeRemaining,
@@ -46,23 +50,31 @@ export function QuizQuestionRenderer({
 }: QuizQuestionRendererProps) {
   // Participant view: just the colored shape grid, filling the container.
   if (shapeOnly) {
+    const shapeClass = `h-full rounded-2xl overflow-hidden p-3 flex ${className}`;
+    const shapeInner = (
+      <AnswerGrid answers={question.answers} shapeOnly onSelect={onSelect} selectedIndices={selectedIndices} disabled={disabled} className="flex-1" />
+    );
+    if (theme) {
+      return <QuizThemeProvider theme={theme} className={shapeClass}>{shapeInner}</QuizThemeProvider>;
+    }
     return (
-      <div className={`h-full rounded-2xl overflow-hidden p-3 flex ${className}`} style={getBackgroundStyle(background)}>
-        <AnswerGrid answers={question.answers} shapeOnly onSelect={onSelect} selectedIndices={selectedIndices} disabled={disabled} className="flex-1" />
+      <div className={shapeClass} style={getBackgroundStyle(background)}>
+        {shapeInner}
       </div>
     );
   }
 
-  return (
-    <div
-      className={`h-full w-full rounded-2xl overflow-hidden flex flex-col p-3 sm:p-5 gap-3 sm:gap-4 ${className}`}
-      style={getBackgroundStyle(background)}
-    >
+  const stageClass = `h-full w-full rounded-2xl overflow-hidden flex flex-col p-3 sm:p-5 gap-3 sm:gap-4 ${className}`;
+  const stageInner = (
+    <>
       {/* Progress + timer bar */}
       {(questionNumber != null || timeRemaining != null) && (
         <div className="flex items-center justify-between shrink-0">
           {questionNumber != null ? (
-            <span className="bg-white/90 text-slate-800 text-xs sm:text-sm font-semibold rounded-full px-3 py-1">
+            <span
+              className="text-white text-xs sm:text-sm font-semibold rounded-full px-3 py-1"
+              style={{ backgroundColor: theme ? "var(--quiz-accent)" : "rgba(255,255,255,0.9)", color: theme ? "#fff" : "#1e293b" }}
+            >
               Question {questionNumber}{totalQuestions ? ` of ${totalQuestions}` : ""}
             </span>
           ) : <span />}
@@ -75,8 +87,14 @@ export function QuizQuestionRenderer({
       )}
 
       {/* Question text — fixed, centered, never grows the answers */}
-      <div className="shrink-0 bg-white rounded-xl px-4 sm:px-6 py-3 sm:py-4 text-center shadow">
-        <h2 className="font-bold text-base sm:text-xl md:text-2xl text-slate-800 leading-snug line-clamp-3">
+      <div
+        className="shrink-0 rounded-xl px-4 sm:px-6 py-3 sm:py-4 text-center shadow"
+        style={{ backgroundColor: theme ? "var(--quiz-question-card)" : "#fff" }}
+      >
+        <h2
+          className="font-bold text-base sm:text-xl md:text-2xl leading-snug line-clamp-3"
+          style={{ color: theme ? "var(--quiz-question-text)" : "#1e293b" }}
+        >
           {question.question || "Untitled question"}
         </h2>
       </div>
@@ -101,6 +119,15 @@ export function QuizQuestionRenderer({
         distribution={distribution}
         className="flex-1 min-h-0"
       />
+    </>
+  );
+
+  if (theme) {
+    return <QuizThemeProvider theme={theme} className={stageClass}>{stageInner}</QuizThemeProvider>;
+  }
+  return (
+    <div className={stageClass} style={getBackgroundStyle(background)}>
+      {stageInner}
     </div>
   );
 }
