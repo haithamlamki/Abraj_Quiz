@@ -288,7 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!features.publicQuizzes) {
         return res.json([]);
       }
-      const callerId = (req as any).session?.userId as number | undefined;
+      const callerId = (req as any).authUserId as number | undefined;
       const quizzes = await storage.getPublicQuizzes(tctx(req));
       res.json(quizzes.map((q) => sanitizeQuizForCaller(q, callerId)));
     } catch (error) {
@@ -298,12 +298,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/quizzes/:id", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
+      const id = parseInt(req.params.id, 10);
+      if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({ message: "Invalid quiz id" });
+      }
       const quiz = await storage.getQuiz(tctx(req), id);
       if (!quiz) {
         return res.status(404).json({ message: "Quiz not found" });
       }
-      const callerId = (req as any).session?.userId as number | undefined;
+      const callerId = (req as any).authUserId as number | undefined;
       res.json(sanitizeQuizForCaller(quiz, callerId));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch quiz" });
@@ -502,7 +505,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.put("/api/quizzes/:id", requireAuth, async (req, res) => {
     try {
-      const quizId = parseInt(req.params.id);
+      const quizId = parseInt(req.params.id, 10);
+      if (!Number.isInteger(quizId) || quizId <= 0) {
+        return res.status(400).json({ message: "Invalid quiz id" });
+      }
       const userId = (req as any).authUserId;
 
       // Check if quiz exists and user owns it
@@ -669,6 +675,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pin = getValidatedGamePin(req.params.pin, res);
       if (!pin) return;
 
+      // Validate the PIN belongs to the caller's tenant before touching the
+      // runtime room (the engine resolves rooms by globally-unique PIN under
+      // SYSTEM_CTX, so without this a caller on tenant B could submit answers
+      // into tenant A's game). Mirrors /start and /next-question.
+      const game = await storage.getGameByPin(tctx(req), pin);
+      if (!game) {
+        return res.status(404).json({ message: "Game not found" });
+      }
+
       const submission = answerSubmissionSchema.safeParse(req.body);
       if (!submission.success) {
         return res.status(400).json({ message: "Invalid answer submission", errors: submission.error.errors });
@@ -723,7 +738,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Game not found" });
       }
 
-      const quiz = await storage.getQuiz(tctx(req), game.quizId);
+      const rawQuiz = await storage.getQuiz(tctx(req), game.quizId);
+      // Never expose correctAnswer while the game is still in progress. This
+      // endpoint has no host gate (players load their own results here), so a
+      // player polling it mid-game could otherwise read every upcoming answer.
+      // Correct answers are attached only once the game is completed, for the
+      // final review screen and the host PDF report.
+      const quiz =
+        rawQuiz && game.status !== "completed"
+          ? sanitizeQuizForCaller(rawQuiz, undefined)
+          : rawQuiz;
       const responses = await storage.getGameResponses(tctx(req), game.id);
       const players = (game.players as any[]) || [];
       
