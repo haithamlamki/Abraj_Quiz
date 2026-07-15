@@ -8,6 +8,7 @@ import { Trophy, Clock, Image, Users, BarChart, BookOpen, Play, QrCode, X, Crown
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useTenant } from "@/lib/tenant";
 
 interface Quiz {
   id: number;
@@ -46,6 +47,7 @@ export default function Home() {
   const [, setLocation] = useLocation();
   const { user, isAuthenticated } = useAuth();
   const { toast } = useToast();
+  const tenant = useTenant();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -174,7 +176,7 @@ export default function Home() {
             {/* Main Content */}
             <div className="animate-scale-in">
               <h1 className="font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl gradient-text">Powered by Our Dedicated Team</h1>
-              <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px]">Abraj's innovative employees work tirelessly to create engaging educational experiences for learners worldwide.</p>
+              <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px]">{tenant.name}'s innovative team works tirelessly to create engaging educational experiences for learners worldwide.</p>
               
               {/* Game PIN Entry */}
               <Card className="mt-8 card-3d-enhanced glass max-w-lg mx-auto">
@@ -466,7 +468,7 @@ export default function Home() {
       <footer className="py-4 bg-[#11182700] text-[#0f0000]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-sm text-gray-400">
-            <p>© 2025 Abraj Quiz. All rights reserved. Built for educational purposes by Haitham Al-Lamki.</p>
+            <p>© {new Date().getFullYear()} {tenant.branding.appName}. All rights reserved.</p>
           </div>
         </div>
       </footer>

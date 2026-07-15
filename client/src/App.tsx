@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { TenantProvider } from "@/lib/tenant";
 import Navigation from "@/components/navigation";
 import classroomBg from "@assets/classroom-background.jpg";
 
@@ -57,22 +58,24 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <div className="min-h-screen relative">
-          {/* Classroom background */}
-          <div 
-            className="classroom-background"
-            style={{ backgroundImage: `url(${classroomBg})` }}
-          />
-          
-          {/* Content */}
-          <div className="relative z-10">
-            <Navigation />
-            <Router />
+      <TenantProvider>
+        <TooltipProvider>
+          <div className="min-h-screen relative">
+            {/* Classroom background */}
+            <div
+              className="classroom-background"
+              style={{ backgroundImage: `url(${classroomBg})` }}
+            />
+
+            {/* Content */}
+            <div className="relative z-10">
+              <Navigation />
+              <Router />
+            </div>
+            <Toaster />
           </div>
-          <Toaster />
-        </div>
-      </TooltipProvider>
+        </TooltipProvider>
+      </TenantProvider>
     </QueryClientProvider>
   );
 }

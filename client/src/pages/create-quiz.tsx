@@ -12,6 +12,7 @@ import { Plus, Trash2, Triangle, Diamond, Circle, Square, Upload, Link as LinkIc
 import { apiRequest, buildApiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useTenant } from "@/lib/tenant";
 import type { Question } from "@shared/schema";
 import { generateQuizPDF } from "@/utils/quiz-pdf-generator";
 
@@ -30,6 +31,7 @@ export default function CreateQuiz() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const tenant = useTenant();
 
   // All hooks must be called before any conditional returns
   const [quiz, setQuiz] = useState<QuizForm>({
@@ -671,9 +673,12 @@ export default function CreateQuiz() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="h-10 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground grid w-full grid-cols-2 mt-[21px] mb-[21px] pt-[0px] pb-[0px]">
             <TabsTrigger value="manual" className="ml-[8px] mr-[8px] data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">Manual Creation</TabsTrigger>
-            <TabsTrigger value="generate" className="ml-[8px] mr-[8px] pt-[5px] pb-[5px] data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">Auto Generate</TabsTrigger>
+            {tenant.features.aiGeneration && (
+              <TabsTrigger value="generate" className="ml-[8px] mr-[8px] pt-[5px] pb-[5px] data-[state=active]:bg-[#019ebd] data-[state=active]:text-white">Auto Generate</TabsTrigger>
+            )}
           </TabsList>
 
+          {tenant.features.aiGeneration && (
           <TabsContent value="generate" className="animate-scale-in">
             <Card className="mb-8 card-3d-enhanced glass">
               <CardHeader>
@@ -858,6 +863,7 @@ export default function CreateQuiz() {
               </CardContent>
             </Card>
           </TabsContent>
+          )}
 
           <TabsContent value="manual">
             <div className="grid lg:grid-cols-3 gap-8">

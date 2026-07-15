@@ -7,11 +7,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { useTenant } from "@/lib/tenant";
 
 export default function Login() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const tenant = useTenant();
   const [formData, setFormData] = useState({
     username: "",
     password: ""
@@ -66,7 +68,7 @@ export default function Login() {
           <CardTitle className="text-2xl font-bold gradient-text">
             Welcome Back
           </CardTitle>
-          <p className="text-gray-600">Sign in to your Abraj Quiz account</p>
+          <p className="text-gray-600">Sign in to your {tenant.branding.appName} account</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
