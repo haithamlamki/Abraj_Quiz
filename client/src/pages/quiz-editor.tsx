@@ -273,12 +273,15 @@ export default function QuizEditor() {
         background: quiz.background,
         questions: quiz.questions,
         isPublic: true,
+        // insertQuizSchema requires createdBy for BOTH create and update. The
+        // server ignores it on create (it stamps the authed user) and never
+        // changes ownership on update; owner is enforced server-side.
+        createdBy: (isEditMode ? loaded?.createdBy : undefined) ?? user?.id,
       };
       if (isEditMode) {
         const res = await apiRequest("PUT", `/api/quizzes/${quizId}`, payload);
         return res.json();
       }
-      payload.createdBy = user?.id;
       const res = await apiRequest("POST", "/api/quizzes", payload);
       return res.json();
     },
