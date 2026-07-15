@@ -131,6 +131,61 @@ test("runtime room rejects late answers after the question is closed", async () 
   assert.equal(lateAnswer.body.code, "QUESTION_CLOSED");
 });
 
+test("concurrent closeQuestion does not double-count scores or double-persist", async () => {
+  const { manager, storage } = await createRuntimeFixture();
+
+  await manager.startGame("123456", 1);
+  await manager.submitAnswer({
+    gamePin: "123456",
+    playerName: "Alice",
+    questionIndex: 0,
+    selectedAnswer: 0,
+  });
+
+  // Simulate the race: the close timer firing at the same instant the host
+  // advances (both funnel into closeQuestion for the same question).
+  const room = (manager as any).rooms.get("123456");
+  await Promise.all([
+    (manager as any).closeQuestion(room, "timer"),
+    (manager as any).closeQuestion(room, "host"),
+  ]);
+
+  const responses = await storage.getGameResponses({ tenantId: 1 }, 1);
+  assert.equal(responses.length, 1, "answer must be persisted exactly once");
+
+  const player = (room.players as Map<string, { score: number }>).get("alice");
+  const single = responses[0].pointsEarned;
+  assert.equal(player?.score, single, "score must be counted exactly once");
+});
+
+test("registerClient rejects a host whose token tenant does not match the game's tenant", async () => {
+  const { manager } = await createRuntimeFixture();
+
+  const foreign = new FakeSocket();
+  const rejected = await manager
+    .registerClient({
+      ws: foreign as unknown as WebSocket,
+      gamePin: "123456",
+      userId: 1,
+      wantsHostRole: true,
+      tokenTenantId: 999, // room's tenant is 1
+    })
+    .catch((error) => manager.toHttpError(error));
+  assert.equal(rejected.status, 403);
+  assert.equal(rejected.body.code, "HOST_REQUIRED");
+
+  // A matching token tenant is accepted.
+  const okSocket = new FakeSocket();
+  const ok = await manager.registerClient({
+    ws: okSocket as unknown as WebSocket,
+    gamePin: "123456",
+    userId: 1,
+    wantsHostRole: true,
+    tokenTenantId: 1,
+  });
+  assert.equal(ok.isHost, true);
+});
+
 test("runtime room persists final scores when completing the game", async () => {
   const { manager, storage } = await createRuntimeFixture();
 

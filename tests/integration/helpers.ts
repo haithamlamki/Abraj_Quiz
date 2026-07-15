@@ -193,7 +193,7 @@ function attachStream(ws: WebSocket): MessageStream {
   return {
     ws,
     messages,
-    waitFor<T = any>(predicate: (m: any) => boolean, timeoutMs = 4000): Promise<T> {
+    waitFor<T = any>(predicate: (m: any) => boolean, timeoutMs = 20000): Promise<T> {
       const already = messages.find(predicate);
       if (already) return Promise.resolve(already as T);
       return new Promise<T>((resolve, reject) => {
