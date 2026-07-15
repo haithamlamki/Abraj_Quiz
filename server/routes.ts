@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
+import { storage, SYSTEM_CTX, type StorageCtx } from "./storage";
 import { insertQuizSchema, insertGameSchema, insertGameResponseSchema, quizQuestionsSchema, insertUserSchema } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -96,6 +96,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   };
 
+  // Tenant context for the current request (tenantMiddleware guarantees req.tenant on /api).
+  const tctx = (req: any): StorageCtx => ({ tenantId: (req.tenant as Tenant).id });
+
   const gamePinSchema = z.string().regex(/^\d{6}$/, "Game PIN must be 6 digits");
   const playerNameSchema = z.string().trim().min(1).max(40);
   const answerSubmissionSchema = z.object({
@@ -126,7 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { username, password } = validation.data;
 
       // Check if user already exists
-      const existingUser = await storage.getUserByUsername(username);
+      const existingUser = await storage.getUserByUsername(tctx(req), username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
@@ -135,7 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create user
-      const user = await storage.createUser({
+      const user = await storage.createUser(tctx(req), {
         username,
         password: hashedPassword
       });
@@ -164,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Find user
-      const user = await storage.getUserByUsername(username);
+      const user = await storage.getUserByUsername(tctx(req), username);
       if (!user) {
         return res.status(401).json({ message: "Invalid username or password" });
       }
@@ -229,7 +232,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/quizzes", async (req, res) => {
     try {
       const callerId = (req as any).session?.userId as number | undefined;
-      const quizzes = await storage.getPublicQuizzes();
+      const quizzes = await storage.getPublicQuizzes(tctx(req));
       res.json(quizzes.map((q) => sanitizeQuizForCaller(q, callerId)));
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch quizzes" });
@@ -239,7 +242,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/quizzes/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
-      const quiz = await storage.getQuiz(id);
+      const quiz = await storage.getQuiz(tctx(req), id);
       if (!quiz) {
         return res.status(404).json({ message: "Quiz not found" });
       }
@@ -253,7 +256,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/my-quizzes", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).session.userId;
-      const quizzes = await storage.getUserQuizzes(userId);
+      const quizzes = await storage.getUserQuizzes(tctx(req), userId);
       res.json(quizzes);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user quizzes" });
@@ -426,7 +429,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid questions format", errors: questionsValidation.error.errors });
       }
 
-      const quiz = await storage.createQuiz({
+      const quiz = await storage.createQuiz(tctx(req), {
         title: validation.data.title,
         description: validation.data.description,
         questions: validation.data.questions,
@@ -446,7 +449,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = (req as any).session.userId;
 
       // Check if quiz exists and user owns it
-      const existingQuiz = await storage.getQuiz(quizId);
+      const existingQuiz = await storage.getQuiz(tctx(req), quizId);
       if (!existingQuiz) {
         return res.status(404).json({ message: "Quiz not found" });
       }
@@ -466,7 +469,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid questions format", errors: questionsValidation.error.errors });
       }
 
-      const updatedQuiz = await storage.updateQuiz(quizId, {
+      const updatedQuiz = await storage.updateQuiz(tctx(req), quizId, {
         title: validation.data.title,
         description: validation.data.description,
         questions: validation.data.questions,
@@ -488,7 +491,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check if quiz exists
-      const quiz = await storage.getQuiz(quizId);
+      const quiz = await storage.getQuiz(tctx(req), quizId);
       if (!quiz) {
         return res.status(404).json({ message: "Quiz not found" });
       }
@@ -499,7 +502,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       do {
         gamePin = (storage as any).generateGamePin();
         attempts++;
-      } while (await storage.getGameByPin(gamePin) && attempts < 10);
+      } while (await storage.getGameByPin(SYSTEM_CTX, gamePin) && attempts < 10);
 
       if (attempts >= 10) {
         return res.status(500).json({ message: "Failed to generate unique game PIN" });
@@ -512,7 +515,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         status: "waiting" as const
       };
 
-      const game = await storage.createGame(gameData);
+      const game = await storage.createGame(tctx(req), gameData);
       res.status(201).json(game);
     } catch (error) {
       res.status(500).json({ message: "Failed to create game" });
@@ -524,7 +527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pin = getValidatedGamePin(req.params.pin, res);
       if (!pin) return;
 
-      const game = await storage.getGameByPin(pin);
+      const game = await storage.getGameByPin(tctx(req), pin);
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
       }
@@ -545,7 +548,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       const playerName = playerNameValidation.data;
 
-      const game = await storage.getGameByPin(pin);
+      const game = await storage.getGameByPin(tctx(req), pin);
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
       }
@@ -562,7 +565,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Add player to game
       const updatedPlayers = [...players, { name: playerName, score: 0 }];
-      const updatedGame = await storage.updateGame(game.id, { players: updatedPlayers });
+      const updatedGame = await storage.updateGame(tctx(req), game.id, { players: updatedPlayers });
       if (!updatedGame) {
         return res.status(500).json({ message: "Failed to join game" });
       }
@@ -582,8 +585,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pin = getValidatedGamePin(req.params.pin, res);
       if (!pin) return;
 
-      const game = await storage.getGameByPin(pin);
-      
+      const game = await storage.getGameByPin(tctx(req), pin);
+
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
       }
@@ -634,8 +637,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pin = getValidatedGamePin(req.params.pin, res);
       if (!pin) return;
 
-      const game = await storage.getGameByPin(pin);
-      
+      const game = await storage.getGameByPin(tctx(req), pin);
+
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
       }
@@ -657,14 +660,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const pin = getValidatedGamePin(req.params.pin, res);
       if (!pin) return;
 
-      const game = await storage.getGameByPin(pin);
-      
+      const game = await storage.getGameByPin(tctx(req), pin);
+
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
       }
 
-      const quiz = await storage.getQuiz(game.quizId);
-      const responses = await storage.getGameResponses(game.id);
+      const quiz = await storage.getQuiz(tctx(req), game.quizId);
+      const responses = await storage.getGameResponses(tctx(req), game.id);
       const players = (game.players as any[]) || [];
       
       // Sort players by score
@@ -697,7 +700,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid question index" });
       }
 
-      const game = await storage.getGameByPin(pin);
+      const game = await storage.getGameByPin(tctx(req), pin);
       if (!game) {
         return res.status(404).json({ message: "Game not found" });
       }
@@ -706,7 +709,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "Only the game host can view question results" });
       }
 
-      const responses = await storage.getGameResponses(game.id);
+      const responses = await storage.getGameResponses(tctx(req), game.id);
       const questionResponses = responses.filter(r => r.questionIndex === questionIndex);
       const runtimeResults = gameRoomManager.getQuestionResults(pin, questionIndex);
 
@@ -748,7 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get latest quiz results for home page
   app.get("/api/latest-results", async (req, res) => {
     try {
-      const result = await storage.getLatestCompletedGame();
+      const result = await storage.getLatestCompletedGame(tctx(req));
       
       if (!result) {
         return res.json({ hasResults: false });
@@ -758,7 +761,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const top3Players = players.slice(0, 3);
 
       // Get quiz details
-      const quiz = await storage.getQuiz(game.quizId);
+      const quiz = await storage.getQuiz(tctx(req), game.quizId);
       
       res.json({
         hasResults: true,

@@ -1,4 +1,4 @@
-import { 
+import {
   users, quizzes, games, gameResponses,
   type User, type InsertUser,
   type Quiz, type InsertQuiz,
@@ -6,195 +6,251 @@ import {
   type GameResponse, type InsertGameResponse
 } from "@shared/schema";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, sql, type SQL } from "drizzle-orm";
+
+// ── Tenant context ───────────────────────────────────────────────
+// Request paths carry the resolved tenant. The in-memory game engine
+// (keyed by globally-unique game PIN) runs in system context.
+export type StorageCtx = { tenantId: number } | { system: true };
+export const SYSTEM_CTX: StorageCtx = { system: true };
+
+export function requireTenantId(ctx: StorageCtx): number {
+  if ("system" in ctx) {
+    throw new Error("Tenant context required");
+  }
+  return ctx.tenantId;
+}
+
+function tenantFilter(ctx: StorageCtx, column: typeof users.tenantId | typeof quizzes.tenantId | typeof games.tenantId | typeof gameResponses.tenantId): SQL | undefined {
+  return "system" in ctx ? undefined : eq(column, ctx.tenantId);
+}
 
 export interface IStorage {
   // Users
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  getUser(ctx: StorageCtx, id: number): Promise<User | undefined>;
+  getUserByUsername(ctx: StorageCtx, username: string): Promise<User | undefined>;
+  createUser(ctx: StorageCtx, user: InsertUser): Promise<User>;
 
   // Quizzes
-  getQuiz(id: number): Promise<Quiz | undefined>;
-  getQuizzes(): Promise<Quiz[]>;
-  getPublicQuizzes(): Promise<Quiz[]>;
-  getUserQuizzes(userId: number): Promise<Quiz[]>;
-  createQuiz(quiz: InsertQuiz): Promise<Quiz>;
-  updateQuiz(id: number, quiz: Partial<InsertQuiz>): Promise<Quiz>;
-  deleteQuiz(id: number): Promise<boolean>;
+  getQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined>;
+  getQuizzes(ctx: StorageCtx): Promise<Quiz[]>;
+  getPublicQuizzes(ctx: StorageCtx): Promise<Quiz[]>;
+  getUserQuizzes(ctx: StorageCtx, userId: number): Promise<Quiz[]>;
+  createQuiz(ctx: StorageCtx, quiz: InsertQuiz): Promise<Quiz>;
+  updateQuiz(ctx: StorageCtx, id: number, quiz: Partial<InsertQuiz>): Promise<Quiz>;
+  deleteQuiz(ctx: StorageCtx, id: number): Promise<boolean>;
 
   // Games
-  getGame(id: number): Promise<Game | undefined>;
-  getGameByPin(pin: string): Promise<Game | undefined>;
-  createGame(game: InsertGame): Promise<Game>;
-  updateGame(id: number, game: Partial<Game>): Promise<Game | undefined>;
-  deleteGame(id: number): Promise<boolean>;
+  getGame(ctx: StorageCtx, id: number): Promise<Game | undefined>;
+  getGameByPin(ctx: StorageCtx, pin: string): Promise<Game | undefined>;
+  createGame(ctx: StorageCtx, game: InsertGame): Promise<Game>;
+  updateGame(ctx: StorageCtx, id: number, game: Partial<Game>): Promise<Game | undefined>;
+  deleteGame(ctx: StorageCtx, id: number): Promise<boolean>;
 
   // Game Responses
-  getGameResponses(gameId: number): Promise<GameResponse[]>;
-  createGameResponse(response: InsertGameResponse): Promise<GameResponse>;
-  updateGameResponse(id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined>;
-  getPlayerResponses(gameId: number, playerName: string): Promise<GameResponse[]>;
-  
+  getGameResponses(ctx: StorageCtx, gameId: number): Promise<GameResponse[]>;
+  createGameResponse(ctx: StorageCtx, response: InsertGameResponse): Promise<GameResponse>;
+  updateGameResponse(ctx: StorageCtx, id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined>;
+  getPlayerResponses(ctx: StorageCtx, gameId: number, playerName: string): Promise<GameResponse[]>;
+
   // Latest Game Results
-  getLatestCompletedGame(): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined>;
+  getLatestCompletedGame(ctx: StorageCtx): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined>;
+}
+
+// Every DB call runs in a transaction that sets the RLS GUC:
+//   app.tenant_id for request paths, app.role='system' for the game engine.
+// Inert until migration 0003 forces RLS; load-bearing after.
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function withCtx<T>(ctx: StorageCtx, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  return db.transaction(async (tx) => {
+    if ("system" in ctx) {
+      await tx.execute(sql`select set_config('app.role', 'system', true)`);
+    } else {
+      await tx.execute(sql`select set_config('app.tenant_id', ${String(ctx.tenantId)}, true)`);
+    }
+    return fn(tx);
+  });
 }
 
 export class DatabaseStorage implements IStorage {
   // Users
-  async getUser(id: number): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user || undefined;
+  async getUser(ctx: StorageCtx, id: number): Promise<User | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [user] = await tx.select().from(users)
+        .where(and(eq(users.id, id), tenantFilter(ctx, users.tenantId)));
+      return user || undefined;
+    });
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.username, username));
-    return user || undefined;
+  async getUserByUsername(ctx: StorageCtx, username: string): Promise<User | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [user] = await tx.select().from(users)
+        .where(and(eq(users.username, username), tenantFilter(ctx, users.tenantId)));
+      return user || undefined;
+    });
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(insertUser)
-      .returning();
-    return user;
+  async createUser(ctx: StorageCtx, insertUser: InsertUser): Promise<User> {
+    const tenantId = requireTenantId(ctx);
+    return withCtx(ctx, async (tx) => {
+      const [user] = await tx.insert(users).values({ ...insertUser, tenantId }).returning();
+      return user;
+    });
   }
 
   // Quizzes
-  async getQuiz(id: number): Promise<Quiz | undefined> {
-    const [quiz] = await db.select().from(quizzes).where(eq(quizzes.id, id));
-    return quiz || undefined;
+  async getQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [quiz] = await tx.select().from(quizzes)
+        .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)));
+      return quiz || undefined;
+    });
   }
 
-  async getQuizzes(): Promise<Quiz[]> {
-    return await db.select().from(quizzes);
+  async getQuizzes(ctx: StorageCtx): Promise<Quiz[]> {
+    return withCtx(ctx, async (tx) => {
+      return tx.select().from(quizzes).where(tenantFilter(ctx, quizzes.tenantId));
+    });
   }
 
-  async getPublicQuizzes(): Promise<Quiz[]> {
-    return await db.select().from(quizzes).where(eq(quizzes.isPublic, true));
+  async getPublicQuizzes(ctx: StorageCtx): Promise<Quiz[]> {
+    return withCtx(ctx, async (tx) => {
+      return tx.select().from(quizzes)
+        .where(and(eq(quizzes.isPublic, true), tenantFilter(ctx, quizzes.tenantId)));
+    });
   }
 
-  async getUserQuizzes(userId: number): Promise<Quiz[]> {
-    return await db.select().from(quizzes).where(eq(quizzes.createdBy, userId));
+  async getUserQuizzes(ctx: StorageCtx, userId: number): Promise<Quiz[]> {
+    return withCtx(ctx, async (tx) => {
+      return tx.select().from(quizzes)
+        .where(and(eq(quizzes.createdBy, userId), tenantFilter(ctx, quizzes.tenantId)));
+    });
   }
 
-  async createQuiz(insertQuiz: InsertQuiz): Promise<Quiz> {
-    const [quiz] = await db
-      .insert(quizzes)
-      .values(insertQuiz)
-      .returning();
-    return quiz;
+  async createQuiz(ctx: StorageCtx, insertQuiz: InsertQuiz): Promise<Quiz> {
+    const tenantId = requireTenantId(ctx);
+    return withCtx(ctx, async (tx) => {
+      const [quiz] = await tx.insert(quizzes).values({ ...insertQuiz, tenantId }).returning();
+      return quiz;
+    });
   }
 
-  async updateQuiz(id: number, updates: Partial<InsertQuiz>): Promise<Quiz> {
-    const [quiz] = await db
-      .update(quizzes)
-      .set(updates)
-      .where(eq(quizzes.id, id))
-      .returning();
-    return quiz;
+  async updateQuiz(ctx: StorageCtx, id: number, updates: Partial<InsertQuiz>): Promise<Quiz> {
+    return withCtx(ctx, async (tx) => {
+      const [quiz] = await tx.update(quizzes).set(updates)
+        .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)))
+        .returning();
+      return quiz;
+    });
   }
 
-  async deleteQuiz(id: number): Promise<boolean> {
-    const result = await db.delete(quizzes).where(eq(quizzes.id, id));
-    return (result.rowCount || 0) > 0;
+  async deleteQuiz(ctx: StorageCtx, id: number): Promise<boolean> {
+    return withCtx(ctx, async (tx) => {
+      const result = await tx.delete(quizzes)
+        .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)));
+      return (result.rowCount || 0) > 0;
+    });
   }
 
   // Games
-  async getGame(id: number): Promise<Game | undefined> {
-    const [game] = await db.select().from(games).where(eq(games.id, id));
-    return game || undefined;
+  async getGame(ctx: StorageCtx, id: number): Promise<Game | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [game] = await tx.select().from(games)
+        .where(and(eq(games.id, id), tenantFilter(ctx, games.tenantId)));
+      return game || undefined;
+    });
   }
 
-  async getGameByPin(pin: string): Promise<Game | undefined> {
-    const [game] = await db.select().from(games).where(eq(games.gamePin, pin));
-    return game || undefined;
+  async getGameByPin(ctx: StorageCtx, pin: string): Promise<Game | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [game] = await tx.select().from(games)
+        .where(and(eq(games.gamePin, pin), tenantFilter(ctx, games.tenantId)));
+      return game || undefined;
+    });
   }
 
-  async createGame(insertGame: InsertGame): Promise<Game> {
-    const [game] = await db
-      .insert(games)
-      .values(insertGame)
-      .returning();
-    return game;
+  async createGame(ctx: StorageCtx, insertGame: InsertGame): Promise<Game> {
+    const tenantId = requireTenantId(ctx);
+    return withCtx(ctx, async (tx) => {
+      const [game] = await tx.insert(games).values({ ...insertGame, tenantId }).returning();
+      return game;
+    });
   }
 
-  async updateGame(id: number, updates: Partial<Game>): Promise<Game | undefined> {
-    const [game] = await db
-      .update(games)
-      .set(updates)
-      .where(eq(games.id, id))
-      .returning();
-    return game || undefined;
+  async updateGame(ctx: StorageCtx, id: number, updates: Partial<Game>): Promise<Game | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [game] = await tx.update(games).set(updates)
+        .where(and(eq(games.id, id), tenantFilter(ctx, games.tenantId)))
+        .returning();
+      return game || undefined;
+    });
   }
 
-  async deleteGame(id: number): Promise<boolean> {
-    const result = await db.delete(games).where(eq(games.id, id));
-    return (result.rowCount || 0) > 0;
+  async deleteGame(ctx: StorageCtx, id: number): Promise<boolean> {
+    return withCtx(ctx, async (tx) => {
+      const result = await tx.delete(games)
+        .where(and(eq(games.id, id), tenantFilter(ctx, games.tenantId)));
+      return (result.rowCount || 0) > 0;
+    });
   }
 
   // Game Responses
-  async getGameResponses(gameId: number): Promise<GameResponse[]> {
-    return await db.select().from(gameResponses).where(eq(gameResponses.gameId, gameId));
+  async getGameResponses(ctx: StorageCtx, gameId: number): Promise<GameResponse[]> {
+    return withCtx(ctx, async (tx) => {
+      return tx.select().from(gameResponses)
+        .where(and(eq(gameResponses.gameId, gameId), tenantFilter(ctx, gameResponses.tenantId)));
+    });
   }
 
-  async createGameResponse(insertResponse: InsertGameResponse): Promise<GameResponse> {
-    const [response] = await db
-      .insert(gameResponses)
-      .values(insertResponse)
-      .returning();
-    return response;
+  async createGameResponse(ctx: StorageCtx, insertResponse: InsertGameResponse): Promise<GameResponse> {
+    return withCtx(ctx, async (tx) => {
+      const [response] = await tx.insert(gameResponses).values(insertResponse).returning();
+      return response;
+    });
   }
 
-  async updateGameResponse(id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined> {
-    const [response] = await db
-      .update(gameResponses)
-      .set(updates)
-      .where(eq(gameResponses.id, id))
-      .returning();
-    return response || undefined;
+  async updateGameResponse(ctx: StorageCtx, id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [response] = await tx.update(gameResponses).set(updates)
+        .where(and(eq(gameResponses.id, id), tenantFilter(ctx, gameResponses.tenantId)))
+        .returning();
+      return response || undefined;
+    });
   }
 
-  async getPlayerResponses(gameId: number, playerName: string): Promise<GameResponse[]> {
-    const { and } = await import("drizzle-orm");
-    return await db
-      .select()
-      .from(gameResponses)
-      .where(and(
+  async getPlayerResponses(ctx: StorageCtx, gameId: number, playerName: string): Promise<GameResponse[]> {
+    return withCtx(ctx, async (tx) => {
+      return tx.select().from(gameResponses).where(and(
         eq(gameResponses.gameId, gameId),
-        eq(gameResponses.playerName, playerName)
+        eq(gameResponses.playerName, playerName),
+        tenantFilter(ctx, gameResponses.tenantId),
       ));
+    });
   }
 
-  async getLatestCompletedGame(): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined> {
-    const { desc } = await import("drizzle-orm");
-    
-    // Get the most recent completed game
-    const [latestGame] = await db
-      .select()
-      .from(games)
-      .where(eq(games.status, "completed"))
-      .orderBy(desc(games.id))
-      .limit(1);
+  async getLatestCompletedGame(ctx: StorageCtx): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [latestGame] = await tx.select().from(games)
+        .where(and(eq(games.status, "completed"), tenantFilter(ctx, games.tenantId)))
+        .orderBy(desc(games.id))
+        .limit(1);
 
-    if (!latestGame) {
-      return undefined;
-    }
+      if (!latestGame) return undefined;
 
-    // Get the quiz to determine total questions
-    const quiz = await this.getQuiz(latestGame.quizId);
-    if (!quiz) {
-      return undefined;
-    }
+      const [quiz] = await tx.select().from(quizzes)
+        .where(and(eq(quizzes.id, latestGame.quizId), tenantFilter(ctx, quizzes.tenantId)));
+      if (!quiz) return undefined;
 
-    const players = (latestGame.players as any[]) || [];
-    const totalQuestions = (quiz.questions as any[])?.length || 0;
+      const players = (latestGame.players as any[]) || [];
+      const totalQuestions = (quiz.questions as any[])?.length || 0;
 
-    return {
-      game: latestGame,
-      players: players.sort((a, b) => (b.score || 0) - (a.score || 0)),
-      totalQuestions
-    };
+      return {
+        game: latestGame,
+        players: players.sort((a, b) => (b.score || 0) - (a.score || 0)),
+        totalQuestions,
+      };
+    });
   }
 
   // Helper method to generate unique game PIN
@@ -320,46 +376,56 @@ export class MemStorage implements IStorage {
     this.currentQuizId = 4;
   }
 
-  // Users
-  async getUser(id: number): Promise<User | undefined> {
-    return this.users.get(id);
+  private inTenant(ctx: StorageCtx, row: { tenantId: number }): boolean {
+    return "system" in ctx || row.tenantId === ctx.tenantId;
   }
 
-  async getUserByUsername(username: string): Promise<User | undefined> {
+  // Users
+  async getUser(ctx: StorageCtx, id: number): Promise<User | undefined> {
+    const user = this.users.get(id);
+    return user && this.inTenant(ctx, user) ? user : undefined;
+  }
+
+  async getUserByUsername(ctx: StorageCtx, username: string): Promise<User | undefined> {
     return Array.from(this.users.values()).find(
-      (user) => user.username === username,
+      (user) => user.username === username && this.inTenant(ctx, user),
     );
   }
 
-  async createUser(insertUser: InsertUser): Promise<User> {
+  async createUser(ctx: StorageCtx, insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
-    const user: User = { ...insertUser, id, tenantId: 1 };
+    const user: User = { ...insertUser, id, tenantId: requireTenantId(ctx) };
     this.users.set(id, user);
     return user;
   }
 
   // Quizzes
-  async getQuiz(id: number): Promise<Quiz | undefined> {
-    return this.quizzes.get(id);
+  async getQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined> {
+    const quiz = this.quizzes.get(id);
+    return quiz && this.inTenant(ctx, quiz) ? quiz : undefined;
   }
 
-  async getQuizzes(): Promise<Quiz[]> {
-    return Array.from(this.quizzes.values());
+  async getQuizzes(ctx: StorageCtx): Promise<Quiz[]> {
+    return Array.from(this.quizzes.values()).filter((q) => this.inTenant(ctx, q));
   }
 
-  async getPublicQuizzes(): Promise<Quiz[]> {
-    return Array.from(this.quizzes.values()).filter(quiz => quiz.isPublic);
+  async getPublicQuizzes(ctx: StorageCtx): Promise<Quiz[]> {
+    return Array.from(this.quizzes.values()).filter(
+      (quiz) => quiz.isPublic && this.inTenant(ctx, quiz),
+    );
   }
 
-  async getUserQuizzes(userId: number): Promise<Quiz[]> {
-    return Array.from(this.quizzes.values()).filter(quiz => quiz.createdBy === userId);
+  async getUserQuizzes(ctx: StorageCtx, userId: number): Promise<Quiz[]> {
+    return Array.from(this.quizzes.values()).filter(
+      (quiz) => quiz.createdBy === userId && this.inTenant(ctx, quiz),
+    );
   }
 
-  async createQuiz(quiz: InsertQuiz): Promise<Quiz> {
+  async createQuiz(ctx: StorageCtx, quiz: InsertQuiz): Promise<Quiz> {
     const id = this.currentQuizId++;
     const newQuiz: Quiz = {
       id,
-      tenantId: 1,
+      tenantId: requireTenantId(ctx),
       title: quiz.title,
       description: quiz.description || null,
       questions: quiz.questions,
@@ -372,45 +438,49 @@ export class MemStorage implements IStorage {
     return newQuiz;
   }
 
-  async updateQuiz(id: number, updates: Partial<InsertQuiz>): Promise<Quiz> {
+  async updateQuiz(ctx: StorageCtx, id: number, updates: Partial<InsertQuiz>): Promise<Quiz> {
     const existing = this.quizzes.get(id);
-    if (!existing) {
+    if (!existing || !this.inTenant(ctx, existing)) {
       throw new Error("Quiz not found");
     }
-    
+
     const updated: Quiz = {
       ...existing,
       ...updates,
       id: existing.id,
+      tenantId: existing.tenantId,
       createdBy: existing.createdBy,
       createdAt: existing.createdAt
     };
-    
+
     this.quizzes.set(id, updated);
     return updated;
   }
 
-
-
-  async deleteQuiz(id: number): Promise<boolean> {
+  async deleteQuiz(ctx: StorageCtx, id: number): Promise<boolean> {
+    const existing = this.quizzes.get(id);
+    if (!existing || !this.inTenant(ctx, existing)) return false;
     return this.quizzes.delete(id);
   }
 
   // Games
-  async getGame(id: number): Promise<Game | undefined> {
-    return this.games.get(id);
+  async getGame(ctx: StorageCtx, id: number): Promise<Game | undefined> {
+    const game = this.games.get(id);
+    return game && this.inTenant(ctx, game) ? game : undefined;
   }
 
-  async getGameByPin(pin: string): Promise<Game | undefined> {
-    return Array.from(this.games.values()).find(game => game.gamePin === pin);
+  async getGameByPin(ctx: StorageCtx, pin: string): Promise<Game | undefined> {
+    return Array.from(this.games.values()).find(
+      (game) => game.gamePin === pin && this.inTenant(ctx, game),
+    );
   }
 
-  async createGame(insertGame: InsertGame): Promise<Game> {
+  async createGame(ctx: StorageCtx, insertGame: InsertGame): Promise<Game> {
     const id = this.currentGameId++;
     const game: Game = {
       ...insertGame,
       id,
-      tenantId: 1,
+      tenantId: requireTenantId(ctx),
       currentQuestion: 0,
       players: [],
       createdAt: new Date()
@@ -419,65 +489,60 @@ export class MemStorage implements IStorage {
     return game;
   }
 
-  async updateGame(id: number, updates: Partial<Game>): Promise<Game | undefined> {
+  async updateGame(ctx: StorageCtx, id: number, updates: Partial<Game>): Promise<Game | undefined> {
     const game = this.games.get(id);
-    if (!game) return undefined;
-    
+    if (!game || !this.inTenant(ctx, game)) return undefined;
+
     const updatedGame = { ...game, ...updates };
     this.games.set(id, updatedGame);
     return updatedGame;
   }
 
-  async deleteGame(id: number): Promise<boolean> {
+  async deleteGame(ctx: StorageCtx, id: number): Promise<boolean> {
+    const game = this.games.get(id);
+    if (!game || !this.inTenant(ctx, game)) return false;
     return this.games.delete(id);
   }
 
   // Game Responses
-  async getGameResponses(gameId: number): Promise<GameResponse[]> {
+  async getGameResponses(ctx: StorageCtx, gameId: number): Promise<GameResponse[]> {
     return Array.from(this.gameResponses.values()).filter(
-      response => response.gameId === gameId
+      (response) => response.gameId === gameId && this.inTenant(ctx, response)
     );
   }
 
-  async createGameResponse(insertResponse: InsertGameResponse): Promise<GameResponse> {
+  async createGameResponse(ctx: StorageCtx, insertResponse: InsertGameResponse): Promise<GameResponse> {
     const id = this.currentResponseId++;
-    const response: GameResponse = { ...insertResponse, id, tenantId: insertResponse.tenantId || 1 };
+    const response: GameResponse = { ...insertResponse, id };
     this.gameResponses.set(id, response);
     return response;
   }
 
-  async updateGameResponse(id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined> {
+  async updateGameResponse(ctx: StorageCtx, id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined> {
     const response = this.gameResponses.get(id);
-    if (!response) return undefined;
-    
+    if (!response || !this.inTenant(ctx, response)) return undefined;
+
     const updatedResponse = { ...response, ...updates };
     this.gameResponses.set(id, updatedResponse);
     return updatedResponse;
   }
 
-  async getPlayerResponses(gameId: number, playerName: string): Promise<GameResponse[]> {
+  async getPlayerResponses(ctx: StorageCtx, gameId: number, playerName: string): Promise<GameResponse[]> {
     return Array.from(this.gameResponses.values()).filter(
-      response => response.gameId === gameId && response.playerName === playerName
+      (response) => response.gameId === gameId && response.playerName === playerName && this.inTenant(ctx, response)
     );
   }
 
-  async getLatestCompletedGame(): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined> {
-    // Get the most recent completed game
+  async getLatestCompletedGame(ctx: StorageCtx): Promise<{ game: Game; players: any[]; totalQuestions: number } | undefined> {
     const completedGames = Array.from(this.games.values())
-      .filter(game => game.status === "completed")
+      .filter((game) => game.status === "completed" && this.inTenant(ctx, game))
       .sort((a, b) => b.id - a.id);
 
-    if (completedGames.length === 0) {
-      return undefined;
-    }
+    if (completedGames.length === 0) return undefined;
 
     const latestGame = completedGames[0];
-    
-    // Get the quiz to determine total questions
-    const quiz = await this.getQuiz(latestGame.quizId);
-    if (!quiz) {
-      return undefined;
-    }
+    const quiz = await this.getQuiz(ctx, latestGame.quizId);
+    if (!quiz) return undefined;
 
     const players = (latestGame.players as any[]) || [];
     const totalQuestions = (quiz.questions as any[])?.length || 0;

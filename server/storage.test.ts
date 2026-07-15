@@ -1,0 +1,61 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+
+process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
+
+const { MemStorage, SYSTEM_CTX, requireTenantId } = await import("./storage");
+
+const T1 = { tenantId: 1 } as const;
+const T2 = { tenantId: 2 } as const;
+
+test("requireTenantId throws on system context", () => {
+  assert.equal(requireTenantId(T1), 1);
+  assert.throws(() => requireTenantId(SYSTEM_CTX), /Tenant context required/);
+});
+
+test("users are isolated per tenant and usernames are per-tenant", async () => {
+  const s = new MemStorage();
+  const u1 = await s.createUser(T1, { username: "haitham", password: "x" });
+  const u2 = await s.createUser(T2, { username: "haitham", password: "y" });
+  assert.notEqual(u1.id, u2.id);
+  assert.equal((await s.getUserByUsername(T1, "haitham"))?.id, u1.id);
+  assert.equal((await s.getUserByUsername(T2, "haitham"))?.id, u2.id);
+  assert.equal(await s.getUser(T2, u1.id), undefined);
+  assert.equal((await s.getUser(SYSTEM_CTX, u1.id))?.id, u1.id);
+});
+
+test("quizzes are isolated per tenant", async () => {
+  const s = new MemStorage();
+  const q = await s.createQuiz(T2, {
+    title: "PDO Safety", description: "", questions: [], background: "classroom",
+    isPublic: true, createdBy: 1,
+  });
+  assert.equal(q.tenantId, 2);
+  assert.equal(await s.getQuiz(T1, q.id), undefined);
+  assert.equal((await s.getQuiz(T2, q.id))?.id, q.id);
+  const t1Public = await s.getPublicQuizzes(T1);
+  assert.ok(!t1Public.some((row) => row.id === q.id));
+});
+
+test("games: tenant-scoped pin lookup, system sees all", async () => {
+  const s = new MemStorage();
+  const g = await s.createGame(T2, { quizId: 1, gamePin: "654321", hostId: 1, status: "waiting" });
+  assert.equal(g.tenantId, 2);
+  assert.equal(await s.getGameByPin(T1, "654321"), undefined);
+  assert.equal((await s.getGameByPin(T2, "654321"))?.id, g.id);
+  assert.equal((await s.getGameByPin(SYSTEM_CTX, "654321"))?.id, g.id);
+});
+
+test("game responses carry explicit tenantId and latest-completed is tenant-scoped", async () => {
+  const s = new MemStorage();
+  const g = await s.createGame(T2, { quizId: 1, gamePin: "111222", hostId: 1, status: "waiting" });
+  const r = await s.createGameResponse(SYSTEM_CTX, {
+    tenantId: 2, gameId: g.id, playerName: "A", questionIndex: 0,
+    selectedAnswer: 1, responseTime: 500, isCorrect: true, pointsEarned: 100,
+  });
+  assert.equal(r.tenantId, 2);
+  await s.updateGame(SYSTEM_CTX, g.id, { status: "completed" });
+  // quiz 1 exists in sample data (tenant 1); latest completed for T1 must not be tenant 2's game
+  const latestT1 = await s.getLatestCompletedGame(T1);
+  assert.notEqual(latestT1?.game.id, g.id);
+});

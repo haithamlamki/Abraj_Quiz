@@ -1,5 +1,5 @@
 import { WebSocket } from "ws";
-import { storage as defaultStorage } from "./storage";
+import { storage as defaultStorage, SYSTEM_CTX } from "./storage";
 import type { IStorage } from "./storage";
 import type { Game, Question } from "@shared/schema";
 import type { WsErrorCode, WsServerMessage } from "@shared/ws-protocol";
@@ -22,6 +22,7 @@ interface RuntimeAnswer {
 interface RuntimeRoom {
   gamePin: string;
   gameId: number;
+  tenantId: number;
   quizId: number;
   hostId: number;
   status: "waiting" | "active" | "completed";
@@ -202,7 +203,7 @@ export class GameRoomManager {
     this.clearQuestionTimers(room);
     this.touch(room);
 
-    const updatedGame = await this.storage.updateGame(room.gameId, {
+    const updatedGame = await this.storage.updateGame(SYSTEM_CTX, room.gameId, {
       status: "active",
       currentQuestion: 0,
     });
@@ -282,7 +283,7 @@ export class GameRoomManager {
     room.questionOpen = false;
     this.clearQuestionTimers(room);
 
-    const updatedGame = await this.storage.updateGame(room.gameId, { currentQuestion: nextQuestion });
+    const updatedGame = await this.storage.updateGame(SYSTEM_CTX, room.gameId, { currentQuestion: nextQuestion });
     const game = this.applyRuntimeState(updatedGame);
     this.broadcast(room, { type: "next_question", game });
     this.startQuestion(room, nextQuestion, game);
@@ -311,12 +312,12 @@ export class GameRoomManager {
     const existing = this.rooms.get(gamePin);
     if (existing) return existing;
 
-    const game = await this.storage.getGameByPin(gamePin);
+    const game = await this.storage.getGameByPin(SYSTEM_CTX, gamePin);
     if (!game) {
       throw new RoomError("ROOM_NOT_FOUND", "Game not found", 404);
     }
 
-    const quiz = await this.storage.getQuiz(game.quizId);
+    const quiz = await this.storage.getQuiz(SYSTEM_CTX, game.quizId);
     if (!quiz || !Array.isArray(quiz.questions)) {
       throw new RoomError("ROOM_NOT_FOUND", "Quiz not found", 404);
     }
@@ -334,6 +335,7 @@ export class GameRoomManager {
     const room: RuntimeRoom = {
       gamePin,
       gameId: game.id,
+      tenantId: game.tenantId,
       quizId: game.quizId,
       hostId: game.hostId,
       status: game.status as RuntimeRoom["status"],
@@ -410,7 +412,8 @@ export class GameRoomManager {
         .filter((answer) => answer.questionIndex === questionIndex);
 
       for (const response of responses) {
-        await this.storage.createGameResponse({
+        await this.storage.createGameResponse(SYSTEM_CTX, {
+          tenantId: room.tenantId,
           gameId: room.gameId,
           playerName: response.playerName,
           questionIndex: response.questionIndex,
@@ -455,7 +458,7 @@ export class GameRoomManager {
     this.touch(room);
 
     const players = this.runtimePlayers(room);
-    const updatedGame = await this.storage.updateGame(room.gameId, {
+    const updatedGame = await this.storage.updateGame(SYSTEM_CTX, room.gameId, {
       status: "completed",
       players,
     });

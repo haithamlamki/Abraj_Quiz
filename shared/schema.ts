@@ -142,6 +142,10 @@ export const insertGameResponseSchema = createInsertSchema(gameResponses).pick({
   responseTime: true,
   isCorrect: true,
   pointsEarned: true,
+}).extend({
+  // tenantId has a DB default(1), which drizzle-zod otherwise treats as optional;
+  // storage callers (routes.ts, game-room-manager.ts) always stamp it explicitly.
+  tenantId: z.number().int(),
 });
 
 // Question schema

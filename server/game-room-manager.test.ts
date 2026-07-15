@@ -34,13 +34,13 @@ async function createRuntimeFixture() {
   ]);
 
   const storage = new MemStorage();
-  const game = await storage.createGame({
+  const game = await storage.createGame({ tenantId: 1 }, {
     quizId: 1,
     gamePin: "123456",
     hostId: 1,
     status: "waiting",
   });
-  await storage.updateGame(game.id, {
+  await storage.updateGame({ tenantId: 1 }, game.id, {
     players: [{ name: "Alice", score: 0 }],
   });
 
@@ -106,7 +106,7 @@ test("runtime room rejects duplicate answers and flushes accepted answers on que
   assert.equal(next.gameComplete, false);
   assert.equal(next.game.currentQuestion, 1);
 
-  const responses = await storage.getGameResponses(1);
+  const responses = await storage.getGameResponses({ tenantId: 1 }, 1);
   assert.equal(responses.length, 1);
   assert.equal(responses[0].playerName, "Alice");
   assert.equal(responses[0].isCorrect, true);
@@ -149,7 +149,7 @@ test("runtime room persists final scores when completing the game", async () => 
   assert.equal(completed.gameComplete, true);
   assert.equal(completed.game.status, "completed");
 
-  const persistedGame = await storage.getGameByPin("123456");
+  const persistedGame = await storage.getGameByPin({ tenantId: 1 }, "123456");
   assert.equal(persistedGame?.status, "completed");
   const players = persistedGame?.players as any[];
   assert.ok(players[0].score > 0);
