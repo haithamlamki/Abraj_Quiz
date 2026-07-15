@@ -335,14 +335,18 @@ export class DatabaseStorage implements IStorage {
   async setGamePlayerScores(ctx: StorageCtx, gameId: number, scores: Array<{ name: string; score: number }>): Promise<void> {
     if (scores.length === 0) return;
     await withCtx(ctx, async (tx) => {
-      // One bulk UPDATE joining against an inline VALUES list keyed by lower(name)
-      // — a single statement instead of one round-trip per player at completion.
-      const names = scores.map((s) => s.name);
-      const values = scores.map((s) => Math.trunc(s.score));
+      // One bulk UPDATE joining against an inline VALUES list keyed by
+      // lower(name) — a single statement instead of one round-trip per player
+      // at completion. Each value is a scalar bind with an explicit cast; do
+      // NOT pass a JS array to unnest(...) — drizzle expands an embedded array
+      // into a (row) list, not an array parameter.
+      const rows = scores.map(
+        (s) => sql`(${s.name}::text, ${Math.trunc(s.score)}::int)`,
+      );
       await tx.execute(sql`
         update ${gamePlayers} as gp
         set score = v.score
-        from (select unnest(${names}::text[]) as name, unnest(${values}::int[]) as score) as v
+        from (values ${sql.join(rows, sql`, `)}) as v(name, score)
         where gp.game_id = ${gameId}
           and lower(gp.name) = lower(v.name)
           ${"system" in ctx ? sql`` : sql`and gp.tenant_id = ${ctx.tenantId}`}
