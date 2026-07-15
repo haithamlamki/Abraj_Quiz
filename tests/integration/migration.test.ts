@@ -81,13 +81,13 @@ describe("migration 0006_game_players — schema, RLS, and backfill", () => {
       expect(names).toContain(required);
     }
 
+    // Use pg_constraint, not information_schema.constraint_column_usage — the
+    // latter is filtered by the querying role's privileges (the test connects
+    // as quiz_app) and returns nothing here even though the FKs exist.
     const fks = await sys<{ foreign_table: string }>(
-      `select ccu.table_name as foreign_table
-       from information_schema.table_constraints tc
-       join information_schema.constraint_column_usage ccu
-         on tc.constraint_name = ccu.constraint_name
-       where tc.table_schema = 'public' and tc.table_name = 'game_players'
-         and tc.constraint_type = 'FOREIGN KEY'`,
+      `select confrelid::regclass::text as foreign_table
+       from pg_constraint
+       where conrelid = 'public.game_players'::regclass and contype = 'f'`,
     );
     const foreignTables = fks.map((f) => f.foreign_table);
     expect(foreignTables).toContain("games");
