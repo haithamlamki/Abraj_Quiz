@@ -1,5 +1,12 @@
 import jsPDF from 'jspdf';
 import logo from "@assets/ABRJ.OM - Copy_1753146533010.png";
+import { resolveQuizTheme } from "@shared/quiz-theme";
+
+function hexToRgb(hex: string): [number, number, number] {
+  const m = hex.replace("#", "");
+  const n = m.length === 3 ? m.split("").map((c) => c + c).join("") : m;
+  return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+}
 
 export interface PdfBranding {
   appName: string;
@@ -61,6 +68,13 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
     };
     currentTheme = themes[quizBackground] || currentTheme;
   }
+
+  // Override the header/accent color with the quiz's resolved theme accent
+  // (falls back to the tenant primaryColor / background-keyed theme above for
+  // secondary/name, but the accent-driven header takes precedence here).
+  const resolvedTheme = resolveQuizTheme(game.quiz ?? {});
+  const accentRgb = hexToRgb(resolvedTheme.accent);
+  currentTheme = { ...currentTheme, primary: accentRgb };
 
   // Helper function to apply background
   const applyBackground = () => {
