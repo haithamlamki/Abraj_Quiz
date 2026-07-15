@@ -433,8 +433,12 @@ export class GameRoomManager {
       const responses = Array.from(room.acceptedAnswers.values())
         .filter((answer) => answer.questionIndex === questionIndex);
 
-      for (const response of responses) {
-        await this.storage.createGameResponse(SYSTEM_CTX, {
+      // One multi-row INSERT instead of a per-answer loop: a 400-player question
+      // was ~400 sequential round-trips (~5-6 min for a full game); this is a
+      // single statement. Scores are tallied in-memory (never a DB bottleneck).
+      await this.storage.createGameResponses(
+        SYSTEM_CTX,
+        responses.map((response) => ({
           tenantId: room.tenantId,
           gameId: room.gameId,
           playerName: response.playerName,
@@ -443,8 +447,10 @@ export class GameRoomManager {
           responseTime: response.responseTime,
           isCorrect: response.isCorrect,
           pointsEarned: response.pointsEarned,
-        });
+        })),
+      );
 
+      for (const response of responses) {
         const player = this.findPlayer(room, response.playerName);
         if (player) {
           player.score += response.pointsEarned;

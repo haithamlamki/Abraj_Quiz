@@ -67,6 +67,10 @@ export interface IStorage {
   // Game Responses
   getGameResponses(ctx: StorageCtx, gameId: number): Promise<GameResponse[]>;
   createGameResponse(ctx: StorageCtx, response: InsertGameResponse): Promise<GameResponse>;
+  // Persist many responses in a single round-trip (one multi-row INSERT). Used
+  // by closeQuestion() to avoid a per-answer insert loop that scales linearly
+  // with lobby size (~400 players → 400 sequential inserts per question).
+  createGameResponses(ctx: StorageCtx, responses: InsertGameResponse[]): Promise<GameResponse[]>;
   updateGameResponse(ctx: StorageCtx, id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined>;
   getPlayerResponses(ctx: StorageCtx, gameId: number, playerName: string): Promise<GameResponse[]>;
 
@@ -257,6 +261,13 @@ export class DatabaseStorage implements IStorage {
     return withCtx(ctx, async (tx) => {
       const [response] = await tx.insert(gameResponses).values(insertResponse).returning();
       return response;
+    });
+  }
+
+  async createGameResponses(ctx: StorageCtx, responses: InsertGameResponse[]): Promise<GameResponse[]> {
+    if (responses.length === 0) return [];
+    return withCtx(ctx, async (tx) => {
+      return tx.insert(gameResponses).values(responses).returning();
     });
   }
 
@@ -630,6 +641,15 @@ export class MemStorage implements IStorage {
     const response: GameResponse = { ...insertResponse, id };
     this.gameResponses.set(id, response);
     return response;
+  }
+
+  async createGameResponses(ctx: StorageCtx, responses: InsertGameResponse[]): Promise<GameResponse[]> {
+    return responses.map((insertResponse) => {
+      const id = this.currentResponseId++;
+      const response: GameResponse = { ...insertResponse, id };
+      this.gameResponses.set(id, response);
+      return response;
+    });
   }
 
   async updateGameResponse(ctx: StorageCtx, id: number, updates: Partial<GameResponse>): Promise<GameResponse | undefined> {

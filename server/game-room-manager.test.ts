@@ -114,6 +114,46 @@ test("runtime room rejects duplicate answers and flushes accepted answers on que
   assert.ok(hostSocket.sent.some((event) => event.type === "question_closed"));
 });
 
+test("runtime room batch-persists every player's response on question close", async () => {
+  const [{ GameRoomManager }, { MemStorage }] = await Promise.all([
+    import("./game-room-manager"),
+    import("./storage"),
+  ]);
+
+  const storage = new MemStorage();
+  const players = Array.from({ length: 25 }, (_, i) => ({ name: `p${i}`, score: 0 }));
+  const game = await storage.createGame({ tenantId: 1 }, {
+    quizId: 1,
+    gamePin: "654321",
+    hostId: 1,
+    status: "waiting",
+  });
+  await storage.updateGame({ tenantId: 1 }, game.id, { players });
+
+  const manager = new GameRoomManager(storage);
+  await manager.startGame("654321", 1);
+
+  for (const player of players) {
+    await manager.submitAnswer({
+      gamePin: "654321",
+      playerName: player.name,
+      questionIndex: 0,
+      selectedAnswer: 0,
+    });
+  }
+
+  await manager.advanceQuestion("654321", 1);
+
+  // The batched INSERT must persist one row per answering player — no drops,
+  // no duplicates — exactly as the old per-answer loop did.
+  const responses = await storage.getGameResponses({ tenantId: 1 }, game.id);
+  assert.equal(responses.length, players.length);
+  assert.deepEqual(
+    responses.map((r) => r.playerName).sort(),
+    players.map((p) => p.name).sort(),
+  );
+});
+
 test("runtime room rejects late answers after the question is closed", async () => {
   const { manager } = await createRuntimeFixture();
 
