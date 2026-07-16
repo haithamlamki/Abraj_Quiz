@@ -17,6 +17,13 @@ export default function JoinGame() {
   const [gamePin, setGamePin] = useState(urlPin || "");
   const [playerName, setPlayerName] = useState("");
   const [step, setStep] = useState<"pin" | "name">(urlPin ? "name" : "pin");
+  // When the name step appeared. "Join Game" renders at the same screen
+  // position as "Continue", so a double-click on Continue (or a second tap on
+  // a slow network) lands on Join Game right after the async step flip and
+  // instantly joins with the auto-filled account name — creating a ghost
+  // player once the user renames and joins again. Submissions inside a short
+  // grace window after the flip are ignored.
+  const [nameStepReadyAt, setNameStepReadyAt] = useState(() => (urlPin ? Date.now() : 0));
 
   // Auto-fill player name if user is authenticated
   useEffect(() => {
@@ -32,6 +39,7 @@ export default function JoinGame() {
     },
     onSuccess: () => {
       setStep("name");
+      setNameStepReadyAt(Date.now());
     },
     onError: () => {
       toast({
@@ -78,6 +86,10 @@ export default function JoinGame() {
   };
 
   const handleNameSubmit = () => {
+    // Ignore click-through from the Continue button (same screen position)
+    // and double-submits while a join is already in flight.
+    if (Date.now() - nameStepReadyAt < 400) return;
+    if (joinGameMutation.isPending) return;
     if (!playerName.trim()) {
       toast({
         title: "Invalid Name",
