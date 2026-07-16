@@ -5,6 +5,7 @@ import type { Game, Question } from "@shared/schema";
 import { quizQuestionsSchema } from "@shared/schema";
 import { isSelectionCorrect, tallyDistribution } from "@shared/quiz-scoring";
 import type { WsErrorCode, WsServerMessage } from "@shared/ws-protocol";
+import { captureError } from "./instrument";
 
 interface RuntimePlayer {
   name: string;
@@ -426,7 +427,16 @@ export class GameRoomManager {
       room.tickTimer.unref();
 
       room.closeTimer = setTimeout(() => {
-        void this.closeQuestion(room, "timer");
+        // A rejection here has no caller to bubble to — the question would
+        // silently stay open for every player. Log and report it.
+        this.closeQuestion(room, "timer").catch((error) => {
+          console.error(`closeQuestion(timer) failed for game ${room.gamePin}:`, error);
+          captureError(error, {
+            scope: "question_close_timer",
+            gamePin: room.gamePin,
+            tenantId: room.tenantId,
+          });
+        });
       }, Math.max(0, room.questionClosesAt! - Date.now()));
       room.closeTimer.unref();
     }
