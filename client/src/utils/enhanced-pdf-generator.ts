@@ -1,5 +1,13 @@
 import jsPDF from 'jspdf';
 import logo from "@assets/ABRJ.OM - Copy_1753146533010.png";
+import { resolveQuizTheme } from "@shared/quiz-theme";
+
+function hexToRgb(hex: string): [number, number, number] | null {
+  if (!/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) return null;
+  const m = hex.replace("#", "");
+  const n = m.length === 3 ? m.split("").map((c) => c + c).join("") : m;
+  return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
+}
 
 export interface PdfBranding {
   appName: string;
@@ -60,6 +68,19 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
       city: { primary: [105, 105, 105], secondary: [248, 248, 255], accent: [169, 169, 169], name: 'Urban Landscape' }
     };
     currentTheme = themes[quizBackground] || currentTheme;
+  }
+
+  // Override the header/accent color with the quiz's resolved theme accent,
+  // but ONLY when the quiz has an explicit custom theme object. Un-themed
+  // quizzes (the vast majority — pre-existing quizzes and any quiz created
+  // without opening the theme builder) must keep the tenant-branded /
+  // background-keyed `primary` set above; resolveQuizTheme() falls back to
+  // the default teal accent when quiz.theme is absent, and unconditionally
+  // applying that would override every tenant's branding with teal.
+  const hasCustomTheme = !!(game.quiz && (game.quiz as any).theme && typeof (game.quiz as any).theme === "object");
+  if (hasCustomTheme) {
+    const accentRgb = hexToRgb(resolveQuizTheme(game.quiz ?? {}).accent);
+    if (accentRgb) currentTheme = { ...currentTheme, primary: accentRgb };
   }
 
   // Helper function to apply background

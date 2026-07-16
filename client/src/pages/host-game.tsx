@@ -11,8 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
 import QRCode from "qrcode";
 import { getBackgroundStyle } from "@/utils/backgrounds";
-import { answerStyle } from "@/lib/answer-style";
+import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
+import { resolveQuizTheme } from "@shared/quiz-theme";
 
 export default function HostGame() {
   const { pin } = useParams();
@@ -100,6 +101,8 @@ export default function HostGame() {
     enabled: !!game?.quizId
   });
 
+  const theme = resolveQuizTheme(quiz ?? {});
+
   const { data: questionResults } = useQuery<{answerPercentages: number[], answerCounts: number[]}>({
     queryKey: ["/api/games", pin, "question-results", game?.currentQuestion],
     enabled: !!pin && !!game && showResults && game.status === "active",
@@ -141,7 +144,10 @@ export default function HostGame() {
       } else {
         queryClient.invalidateQueries({ queryKey: ["/api/games", pin] });
         setShowResults(false);
-        setTimeLeft(null);
+        // timeLeft is owned by the runtimeState effect below. Nulling it here
+        // races the question_started broadcast: for no-limit questions there
+        // are no time_remaining ticks to repopulate it, so the host's
+        // Next/Finish button (gated on timeLeft === 0) would never render.
       }
     },
     onError: (error: any) => {
@@ -204,7 +210,10 @@ export default function HostGame() {
     console.log('Question changed to', game?.currentQuestion, 'resetting state');
     setSoundPlayed(false);
     setShowResults(false);
-    setTimeLeft(null);
+    // Do NOT reset timeLeft here: the runtimeState effect above mirrors it
+    // from server state, and this effect runs after it in the same commit.
+    // Nulling it would erase the timeRemaining=0 of a no-limit question
+    // (which never ticks), hiding the host's Next/Finish button forever.
   }, [game?.currentQuestion, runtimeState.questionIndex]);
 
   // Play correct answer sound immediately when results are shown (only once per question)
@@ -269,6 +278,7 @@ export default function HostGame() {
 
   const questions = quiz.questions as Question[];
   const currentQuestion = questions[game.currentQuestion || 0];
+  const noLimit = currentQuestion?.timeLimit === 0;
   const players = runtimeState.players || (game.players as any[]) || [];
 
   // Countdown overlay component
@@ -504,8 +514,8 @@ export default function HostGame() {
 
   if (game.status === "active") {
     return (
-      <div className="h-screen overflow-hidden flex flex-col p-4" style={getBackgroundStyle(quiz?.background || 'classroom')}>
-        <div className="max-w-4xl mx-auto relative flex-1 flex flex-col min-h-0">
+      <div className="h-screen overflow-hidden flex flex-col p-3 sm:p-4 bg-slate-900">
+        <div className="max-w-4xl mx-auto relative flex-1 flex flex-col min-h-0 w-full">
           {/* Next Question Button - Top Right */}
           {(showResults || timeLeft === 0) && (
             <div className="absolute top-0 right-0 z-10">
@@ -523,88 +533,29 @@ export default function HostGame() {
             </div>
           )}
           
-          {/* Header */}
-          <div className="text-center mb-3 flex-shrink-0">
-            <Badge variant="secondary" className="mb-1 bg-[#019ebd] text-[#ffffff]">
-              Question {(game.currentQuestion || 0) + 1} of {questions.length}
-            </Badge>
-            
-            {timeLeft !== null && timeLeft > 0 && !showResults && (
-              <div 
-                className={`text-white w-12 h-12 rounded-full flex items-center justify-center font-bold text-xl mx-auto mb-1 hover:scale-110 transition-transform cursor-pointer ${
-                  timeLeft <= 10 ? 'pulse-ring' : ''
-                } ${
-                  timeLeft <= 3 ? 'bg-red-600 animate-ping shadow-lg shadow-red-500/50' : 
-                  timeLeft <= 5 ? 'bg-orange-500 animate-bounce' : 
-                  'abraj-red animate-pulse'
-                }`}
-                onClick={() => playCountdownSound(timeLeft)}
-              >
-                {timeLeft}
-              </div>
-            )}
-            
-            <p className="text-gray-600 text-xs">
-              {showResults ? "Results displayed!" : timeLeft === 0 ? "Time's up!" : "seconds left"}
-            </p>
-          </div>
-
-          {/* Question */}
-          <Card className="mb-3 glass card-3d-enhanced flex-shrink-0">
-            <CardContent className="p-2 sm:p-3 text-center">
-              <h2 className="font-bold text-sm sm:text-base md:text-lg text-gray-800 leading-snug">{currentQuestion?.question}</h2>
-            </CardContent>
-          </Card>
-
-          {/* Question image (if any) */}
-          {currentQuestion?.imageUrl && (
-            <div className="flex-shrink-0 flex justify-center mb-3">
-              <img src={currentQuestion.imageUrl} alt="Question" className="max-h-36 rounded-xl object-contain shadow-lg" />
+          {/* Shared question stage — identical component to preview + player */}
+          {currentQuestion && (
+            <div className="flex-1 min-h-0 mb-3">
+              <QuizQuestionRenderer
+                question={currentQuestion}
+                background={quiz?.background || "classroom"}
+                theme={theme}
+                questionNumber={(game.currentQuestion || 0) + 1}
+                totalQuestions={questions.length}
+                timeRemaining={!showResults && !noLimit ? timeLeft : null}
+                reveal={showResults}
+                correctAnswers={runtimeState.correctAnswers ?? (currentQuestion as any).correctAnswers ?? []}
+                distribution={
+                  showResults && (runtimeState.answerCounts || questionResults?.answerCounts)
+                    ? {
+                        counts: runtimeState.answerCounts ?? questionResults?.answerCounts ?? [],
+                        percentages: runtimeState.answerPercentages ?? questionResults?.answerPercentages ?? [],
+                      }
+                    : undefined
+                }
+              />
             </div>
           )}
-
-          {/* Answer Options — fixed-size grid (uniform boxes for 2-6 answers). */}
-          <div className="grid grid-cols-2 auto-rows-fr gap-2 mb-3 flex-1 min-h-0">
-            {currentQuestion?.answers.map((answer, index) => {
-              const style = answerStyle(index);
-              const SymbolIcon = style.icon;
-              const percentage = showResults ? (runtimeState.answerPercentages?.[index] ?? questionResults?.answerPercentages?.[index] ?? 0) : 0;
-              const count = showResults ? (runtimeState.answerCounts?.[index] ?? questionResults?.answerCounts?.[index] ?? 0) : 0;
-              // Reveal uses the runtime correct-set from the WS message (works for
-              // players too), falling back to the owner-visible quiz question.
-              const isCorrect = (runtimeState.correctAnswers ?? currentQuestion.correctAnswers ?? []).includes(index);
-
-              return (
-                <div
-                  key={index}
-                  className={`${style.bg} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced cursor-pointer relative overflow-hidden h-full min-h-[64px] flex ${
-                    showResults && isCorrect ? 'ring-4 ring-yellow-400 shadow-lg shadow-yellow-400/50' :
-                    showResults && !isCorrect ? 'opacity-75 ring-2 ring-gray-400' : ''
-                  }`}
-
-                >
-                  <div className="flex flex-col items-center justify-center w-full gap-1">
-                    <SymbolIcon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="white" strokeWidth={0} />
-                    <span className="text-center text-xs sm:text-sm md:text-base leading-tight line-clamp-2 px-1 font-semibold">{answer}</span>
-                  
-                    {showResults && questionResults && (
-                      <>
-                        <div className="mt-1 bg-white/20 rounded-full h-1 w-full">
-                          <div 
-                            className="bg-white rounded-full h-1 transition-all duration-1000"
-                            style={{ width: `${percentage}%` }}
-                          ></div>
-                        </div>
-                        <div className="text-[10px] sm:text-xs opacity-90 text-center">
-                          {percentage}% ({count})
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
 
           {/* Game Info & Leaderboard in Compact Row */}
           <div className="grid grid-cols-2 gap-2 flex-shrink-0">

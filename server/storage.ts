@@ -520,6 +520,7 @@ export class MemStorage implements IStorage {
         description: "Test your knowledge of countries, capitals, and landmarks around the globe.",
         createdBy: 1,
         background: "classroom",
+        theme: null,
         questions: [
           {
             question: "What is the capital of France?",
@@ -550,6 +551,7 @@ export class MemStorage implements IStorage {
         description: "Explore fascinating facts about biology, chemistry, and physics.",
         createdBy: 1,
         background: "classroom",
+        theme: null,
         questions: [
           {
             question: "What is the chemical symbol for gold?",
@@ -574,6 +576,7 @@ export class MemStorage implements IStorage {
         description: "Challenge yourself with algebra, geometry, and calculus problems.",
         createdBy: 1,
         background: "classroom",
+        theme: null,
         questions: [
           {
             question: "What is 15% of 200?",
@@ -647,6 +650,7 @@ export class MemStorage implements IStorage {
       description: quiz.description || null,
       questions: quiz.questions,
       background: quiz.background || "classroom",
+      theme: quiz.theme ?? null,
       isPublic: quiz.isPublic ?? true,
       createdBy: quiz.createdBy,
       createdAt: new Date()

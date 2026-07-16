@@ -11,25 +11,30 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye,
+  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye, Settings,
 } from "lucide-react";
 import { apiRequest, buildApiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Question } from "@shared/schema";
 import { answerStyle } from "@/lib/answer-style";
-import {
-  PRESET_THEMES, getThemeSwatchStyle, getBackgroundStyle,
-} from "@/utils/backgrounds";
+import { ANSWER_CARD_MIN_H } from "@/components/quiz/AnswerCard";
+import { getBackgroundStyle } from "@/utils/backgrounds";
+import { resolveQuizTheme, type QuizTheme } from "@shared/quiz-theme";
+import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
+import { QuizSettingsDialog } from "@/components/quiz/QuizSettingsDialog";
+import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 
 interface QuizForm {
   title: string;
   description: string;
   background: string;
+  isPublic: boolean;
+  theme: QuizTheme;
   questions: Question[];
 }
 
-const TIME_OPTIONS = [5, 10, 20, 30, 60, 90, 120];
+const TIME_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120];
 
 function blankQuestion(): Question {
   return {
@@ -39,6 +44,7 @@ function blankQuestion(): Question {
     answers: ["", "", "", ""],
     correctAnswers: [0],
     timeLimit: 20,
+    points: "standard",
   };
 }
 
@@ -51,6 +57,7 @@ function trueFalseQuestion(existing?: Partial<Question>): Question {
     answers: ["True", "False"],
     correctAnswers: [0],
     timeLimit: existing?.timeLimit ?? 20,
+    points: existing?.points ?? "standard",
   };
 }
 
@@ -63,6 +70,7 @@ function fromGenerated(q: any): Question {
     answers: Array.isArray(q.answers) && q.answers.length >= 2 ? q.answers : ["", "", "", ""],
     correctAnswers: [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
     timeLimit: q.timeLimit ?? 20,
+    points: q.points === "double" ? "double" : "standard",
   };
 }
 
@@ -78,10 +86,15 @@ export default function QuizEditor() {
     title: "",
     description: "",
     background: "aurora",
+    isPublic: true,
+    theme: resolveQuizTheme({ background: "aurora" }),
     questions: [blankQuestion()],
   });
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewIdx, setPreviewIdx] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
 
   // Redirect unauthenticated users.
@@ -116,12 +129,15 @@ export default function QuizEditor() {
               ? q.correctAnswers
               : [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
             timeLimit: q.timeLimit ?? 20,
+            points: q.points === "double" ? "double" : "standard",
           }))
         : [blankQuestion()];
       setQuiz({
         title: loaded.title ?? "",
         description: loaded.description ?? "",
         background: loaded.background || "aurora",
+        isPublic: loaded.isPublic ?? true,
+        theme: resolveQuizTheme(loaded),
         questions,
       });
       setCurrentIndex(0);
@@ -242,7 +258,7 @@ export default function QuizEditor() {
       const res = await fetch(buildApiUrl("/api/upload-image"), { method: "POST", body: form, credentials: "include" });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || "Upload failed");
       const { url } = await res.json();
-      setQuiz((prev) => ({ ...prev, background: url }));
+      setQuiz((prev) => ({ ...prev, background: url, theme: { ...prev.theme, background: url } }));
     } catch (e: any) {
       toast({ title: "Theme upload failed", description: e.message, variant: "destructive" });
     } finally {
@@ -270,9 +286,10 @@ export default function QuizEditor() {
       const payload: any = {
         title: quiz.title.trim(),
         description: quiz.description.trim(),
-        background: quiz.background,
+        background: quiz.theme.background,
+        theme: quiz.theme,
         questions: quiz.questions,
-        isPublic: true,
+        isPublic: quiz.isPublic,
         // insertQuizSchema requires createdBy for BOTH create and update. The
         // server ignores it on create (it stamps the authed user) and never
         // changes ownership on update; owner is enforced server-side.
@@ -374,6 +391,9 @@ export default function QuizEditor() {
           />
         </div>
         <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setSettingsOpen(true)}>
+            <Settings className="w-4 h-4 mr-1" /> Settings
+          </Button>
           <Dialog open={aiOpen} onOpenChange={setAiOpen}>
             <DialogTrigger asChild>
               <Button variant="outline"><Wand2 className="w-4 h-4 mr-1" /> Create with AI</Button>
@@ -415,17 +435,45 @@ export default function QuizEditor() {
               <p className="text-xs text-gray-400">Generated questions replace the current ones — review and edit before saving.</p>
             </DialogContent>
           </Dialog>
-          {isEditMode && (
-            <Button variant="outline" onClick={() => setLocation(`/preview/${quizId}`)}>
-              <Eye className="w-4 h-4 mr-1" /> Preview
-            </Button>
-          )}
+          <Button variant="outline" onClick={() => { setPreviewIdx(currentIndex); setPreviewOpen(true); }}>
+            <Eye className="w-4 h-4 mr-1" /> Preview
+          </Button>
           <Button className="abraj-primary text-white" onClick={handleSave} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
             {isEditMode ? "Save changes" : "Save"}
           </Button>
         </div>
       </header>
+
+      <QuizSettingsDialog
+        open={settingsOpen}
+        onOpenChange={setSettingsOpen}
+        title={quiz.title}
+        description={quiz.description}
+        isPublic={quiz.isPublic}
+        onChange={(patch) => setQuiz((p) => ({ ...p, ...patch }))}
+      />
+
+      <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader><DialogTitle>Preview</DialogTitle></DialogHeader>
+          <div className="h-[460px]">
+            <QuizQuestionRenderer
+              question={quiz.questions[Math.min(previewIdx, quiz.questions.length - 1)]}
+              theme={quiz.theme}
+              questionNumber={Math.min(previewIdx, quiz.questions.length - 1) + 1}
+              totalQuestions={quiz.questions.length}
+              reveal
+              correctAnswers={quiz.questions[Math.min(previewIdx, quiz.questions.length - 1)]?.correctAnswers}
+            />
+          </div>
+          <div className="flex items-center justify-center gap-4">
+            <Button variant="ghost" size="sm" disabled={previewIdx === 0} onClick={() => setPreviewIdx((i) => i - 1)}>Prev</Button>
+            <span className="text-sm text-gray-500">{Math.min(previewIdx, quiz.questions.length - 1) + 1} / {quiz.questions.length}</span>
+            <Button variant="ghost" size="sm" disabled={previewIdx >= quiz.questions.length - 1} onClick={() => setPreviewIdx((i) => i + 1)}>Next</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <div className="flex-1 flex min-h-0">
         {/* Left: question rail */}
@@ -446,6 +494,15 @@ export default function QuizEditor() {
                 </div>
               </div>
               <div className="line-clamp-2 font-medium text-gray-800">{q.question || "Untitled"}</div>
+              <div className="mt-1 flex items-center justify-between">
+                <div className="grid grid-cols-2 gap-0.5">
+                  {q.answers.slice(0, 6).map((_, ai) => {
+                    const Icon = answerStyle(ai).icon;
+                    return <span key={ai} className={`${answerStyle(ai).bg} w-3 h-3 rounded-sm flex items-center justify-center`}><Icon className="w-2 h-2" fill="white" strokeWidth={0} /></span>;
+                  })}
+                </div>
+                <span className="text-[10px] text-gray-400">{q.timeLimit === 0 ? "∞" : `${q.timeLimit}s`}</span>
+              </div>
             </div>
           ))}
           <Button variant="outline" className="w-full" size="sm" onClick={addQuestion}>
@@ -454,7 +511,7 @@ export default function QuizEditor() {
         </aside>
 
         {/* Center: question editor */}
-        <main className="flex-1 min-w-0 p-6 overflow-y-auto" style={getBackgroundStyle(quiz.background)}>
+        <main className="flex-1 min-w-0 p-6 overflow-y-auto" style={getBackgroundStyle(quiz.theme.background)}>
           <div className="max-w-3xl mx-auto space-y-4">
             <Input
               value={current.question}
@@ -495,30 +552,31 @@ export default function QuizEditor() {
             </div>
 
             {/* Answers */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 auto-rows-fr gap-2 sm:gap-3">
               {current.answers.map((answer, index) => {
                 const style = answerStyle(index);
                 const Icon = style.icon;
                 const isCorrect = current.correctAnswers.includes(index);
                 return (
-                  <div key={index} className={`${style.bg} rounded-xl p-3 flex items-center gap-2 text-white`}>
+                  <div key={index} className={`${style.bg} ${ANSWER_CARD_MIN_H} rounded-xl p-2 sm:p-3 flex items-center gap-2 text-white`}>
                     <Icon className="w-5 h-5 shrink-0" fill="white" strokeWidth={0} />
                     <Input
                       value={answer}
                       onChange={(e) => setAnswerText(index, e.target.value)}
                       placeholder={`Answer ${index + 1}`}
                       disabled={current.type === "true_false"}
-                      className="bg-white/90 text-gray-900 border-0"
+                      className="bg-white/90 text-gray-900 border-0 h-9"
                     />
                     <button
                       title={isCorrect ? "Correct" : "Mark correct"}
                       onClick={() => toggleCorrect(index)}
+                      aria-pressed={isCorrect}
                       className={`shrink-0 w-7 h-7 rounded-full border-2 border-white flex items-center justify-center ${isCorrect ? "bg-white" : "bg-transparent"}`}
                     >
                       {isCorrect && <Check className="w-4 h-4 text-green-600" />}
                     </button>
                     {current.type !== "true_false" && current.answers.length > 2 && (
-                      <button title="Remove answer" onClick={() => removeAnswer(index)}>
+                      <button title="Remove answer" aria-label={`Remove answer ${index + 1}`} onClick={() => removeAnswer(index)}>
                         <X className="w-4 h-4" />
                       </button>
                     )}
@@ -557,6 +615,7 @@ export default function QuizEditor() {
             <Select value={String(current.timeLimit)} onValueChange={(v) => patchQuestion(currentIndex, { timeLimit: parseInt(v, 10) })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
+                <SelectItem value="0">No limit</SelectItem>
                 {TIME_OPTIONS.map((t) => <SelectItem key={t} value={String(t)}>{t} seconds</SelectItem>)}
               </SelectContent>
             </Select>
@@ -586,48 +645,34 @@ export default function QuizEditor() {
             </p>
           </div>
 
+          <div>
+            <label className="text-xs text-gray-500">Points</label>
+            <Select value={current.points} onValueChange={(v) => patchQuestion(currentIndex, { points: v as Question["points"] })}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="standard">Standard</SelectItem>
+                <SelectItem value="double">Double points</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Theme picker */}
           <div>
             <label className="text-xs text-gray-500 flex items-center gap-1"><Palette className="w-3 h-3" /> Theme</label>
             <Dialog>
               <DialogTrigger asChild>
-                <button className="mt-1 w-full h-10 rounded-lg border" style={getBackgroundStyle(quiz.background)} title="Change theme" />
+                <button className="mt-1 w-full h-10 rounded-lg border" style={getBackgroundStyle(quiz.theme.background)} title="Change theme" />
               </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader><DialogTitle>Choose a theme</DialogTitle></DialogHeader>
-                <div className="grid grid-cols-3 gap-3">
-                  {PRESET_THEMES.map((t) => (
-                    <button
-                      key={t.id}
-                      onClick={() => setQuiz((p) => ({ ...p, background: t.id }))}
-                      className={`h-16 rounded-lg border-2 relative ${quiz.background === t.id ? "border-abraj-primary" : "border-transparent"}`}
-                      style={getThemeSwatchStyle(t)}
-                    >
-                      <span className="absolute bottom-1 left-1 text-[10px] text-white font-medium drop-shadow">{t.label}</span>
-                    </button>
-                  ))}
-                  <label className="h-16 rounded-lg border-2 border-dashed flex items-center justify-center cursor-pointer text-gray-500 hover:text-abraj-primary">
-                    <ImagePlus className="w-5 h-5" />
-                    <input
-                      type="file"
-                      accept="image/png,image/jpeg,image/gif,image/webp"
-                      className="hidden"
-                      onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadThemeImage(f); e.target.value = ""; }}
-                    />
-                  </label>
-                </div>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader><DialogTitle>Quiz theme</DialogTitle></DialogHeader>
+                <ThemeBuilder
+                  theme={quiz.theme}
+                  uploading={uploading}
+                  onChange={(theme) => setQuiz((p) => ({ ...p, theme, background: theme.background }))}
+                  onUploadBackground={uploadThemeImage}
+                />
               </DialogContent>
             </Dialog>
-          </div>
-
-          <div>
-            <label className="text-xs text-gray-500">Description</label>
-            <Textarea
-              value={quiz.description}
-              onChange={(e) => setQuiz((p) => ({ ...p, description: e.target.value }))}
-              placeholder="Optional description"
-              rows={3}
-            />
           </div>
         </aside>
       </div>

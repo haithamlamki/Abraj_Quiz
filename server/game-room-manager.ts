@@ -37,7 +37,7 @@ interface RuntimeRoom {
   hostSocket?: WebSocket;
   playerSockets: Map<string, WebSocket>;
   questionStartedAt?: number;
-  questionClosesAt?: number;
+  questionClosesAt?: number | null;
   questionOpen: boolean;
   closeTimer?: NodeJS.Timeout;
   tickTimer?: NodeJS.Timeout;
@@ -243,7 +243,10 @@ export class GameRoomManager {
       throw new RoomError("QUESTION_CLOSED", "Question is closed", 409);
     }
 
-    if (!room.questionStartedAt || !room.questionClosesAt || Date.now() >= room.questionClosesAt) {
+    // No-limit questions (questionClosesAt === null) have no auto-close deadline —
+    // only host-advance (closeQuestion("host")) closes them. Only auto-close a
+    // timed question whose deadline has passed.
+    if (!room.questionStartedAt || (room.questionClosesAt && Date.now() >= room.questionClosesAt)) {
       await this.closeQuestion(room, "timer");
       throw new RoomError("QUESTION_CLOSED", "Question is closed", 409);
     }
@@ -392,37 +395,41 @@ export class GameRoomManager {
     room.currentQuestion = questionIndex;
     room.questionOpen = true;
     room.acceptedAnswers.clear();
+
+    const noLimit = !question.timeLimit; // timeLimit === 0
     room.questionStartedAt = Date.now();
-    room.questionClosesAt = room.questionStartedAt + (question.timeLimit || 30) * 1000;
+    room.questionClosesAt = noLimit ? null : room.questionStartedAt + question.timeLimit * 1000;
     this.touch(room);
 
     this.broadcast(room, {
       type: "question_started",
       gamePin: room.gamePin,
       questionIndex,
-      durationSeconds: question.timeLimit || 30,
+      durationSeconds: noLimit ? 0 : question.timeLimit,
       startedAt: room.questionStartedAt,
-      closesAt: room.questionClosesAt,
+      closesAt: room.questionClosesAt ?? 0,
       timeRemaining: this.getTimeRemaining(room),
     });
     this.broadcast(room, { type: "game_updated", game });
 
-    room.tickTimer = setInterval(() => {
-      if (!room.questionOpen) return;
-      const timeRemaining = this.getTimeRemaining(room);
-      this.broadcast(room, {
-        type: "time_remaining",
-        gamePin: room.gamePin,
-        questionIndex: room.currentQuestion,
-        timeRemaining,
-      });
-    }, 1000);
-    room.tickTimer.unref();
+    if (!noLimit) {
+      room.tickTimer = setInterval(() => {
+        if (!room.questionOpen) return;
+        const timeRemaining = this.getTimeRemaining(room);
+        this.broadcast(room, {
+          type: "time_remaining",
+          gamePin: room.gamePin,
+          questionIndex: room.currentQuestion,
+          timeRemaining,
+        });
+      }, 1000);
+      room.tickTimer.unref();
 
-    room.closeTimer = setTimeout(() => {
-      void this.closeQuestion(room, "timer");
-    }, Math.max(0, room.questionClosesAt - Date.now()));
-    room.closeTimer.unref();
+      room.closeTimer = setTimeout(() => {
+        void this.closeQuestion(room, "timer");
+      }, Math.max(0, room.questionClosesAt! - Date.now()));
+      room.closeTimer.unref();
+    }
   }
 
   private async closeQuestion(room: RuntimeRoom, _reason: "timer" | "host"): Promise<QuestionCloseResult> {
@@ -545,14 +552,15 @@ export class GameRoomManager {
   private sendCurrentQuestionState(ws: WebSocket, room: RuntimeRoom) {
     if (room.status === "completed") return;
 
-    if (room.questionOpen && room.questionStartedAt && room.questionClosesAt) {
+    if (room.questionOpen && room.questionStartedAt) {
+      const q = room.questions[room.currentQuestion];
       this.send(ws, {
         type: "question_started",
         gamePin: room.gamePin,
         questionIndex: room.currentQuestion,
-        durationSeconds: room.questions[room.currentQuestion]?.timeLimit || 30,
+        durationSeconds: q?.timeLimit || 0,
         startedAt: room.questionStartedAt,
-        closesAt: room.questionClosesAt,
+        closesAt: room.questionClosesAt ?? 0,
         timeRemaining: this.getTimeRemaining(room),
       });
       return;
@@ -600,9 +608,14 @@ export class GameRoomManager {
 
   private calculatePoints(question: Question, responseTime: number): number {
     const maxPoints = 1000;
-    const timeLimit = question.timeLimit || 30;
+    const multiplier = question.points === "double" ? 2 : 1;
+    // No-limit questions (timeLimit === 0) have no time pressure → flat floor score.
+    if (!question.timeLimit) {
+      return Math.round(maxPoints * 0.5 * multiplier);
+    }
+    const timeLimit = question.timeLimit;
     const timeBonus = Math.max(0, (timeLimit - responseTime / 1000) / timeLimit);
-    return Math.round(maxPoints * (0.5 + 0.5 * timeBonus));
+    return Math.round(maxPoints * (0.5 + 0.5 * timeBonus) * multiplier);
   }
 
   private getTimeRemaining(room: RuntimeRoom): number {

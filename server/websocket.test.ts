@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
 
 const { isOriginAllowed } = await import("./websocket");
+const { wsServerMessageSchema } = await import("../shared/ws-protocol");
 
 test("isOriginAllowed: empty list in dev is permissive", () => {
   assert.equal(isOriginAllowed([], "https://anywhere.example.com", false), true);
@@ -39,4 +40,17 @@ test("isOriginAllowed: trailing-slash mismatch is rejected (current behavior, no
     isOriginAllowed(["https://app.example.com"], "https://app.example.com/", true),
     false,
   );
+});
+
+test("question_started accepts a no-limit (0-duration) message", () => {
+  const msg = {
+    type: "question_started",
+    gamePin: "123456",
+    questionIndex: 0,
+    durationSeconds: 0,
+    startedAt: 1,
+    closesAt: 0,
+    timeRemaining: 0,
+  };
+  assert.doesNotThrow(() => wsServerMessageSchema.parse(msg));
 });

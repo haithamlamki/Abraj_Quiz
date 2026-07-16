@@ -21,12 +21,11 @@ export const GRADIENT_THEMES: ThemeOption[] = [
   { id: "midnight", label: "Midnight", kind: "gradient", css: "linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#334155 100%)" },
 ];
 
+// Only "classroom" has shipped art; the other image themes (space/ocean/forest/city)
+// were removed because no assets exist for them anywhere in the repo — they would
+// have rendered as broken/dark tiles.
 export const IMAGE_THEMES: ThemeOption[] = [
   { id: "classroom", label: "Classroom", kind: "image", css: "/attached_assets/classroom-background.jpg" },
-  { id: "space",     label: "Space",     kind: "image", css: "/attached_assets/space-background.jpg" },
-  { id: "ocean",     label: "Ocean",     kind: "image", css: "/attached_assets/ocean-background.jpg" },
-  { id: "forest",    label: "Forest",    kind: "image", css: "/attached_assets/forest-background.jpg" },
-  { id: "city",      label: "City",      kind: "image", css: "/attached_assets/city-background.jpg" },
 ];
 
 export const PRESET_THEMES: ThemeOption[] = [...GRADIENT_THEMES, ...IMAGE_THEMES];
