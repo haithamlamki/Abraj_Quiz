@@ -389,9 +389,9 @@ export default function QuizEditor() {
     // Fill exactly the viewport below the sticky 68px nav (h-16 + border-b-4)
     // so the stage is height-constrained like the reference: spare space is
     // absorbed by the media region, never left below the answers.
-    <div className="h-[calc(100dvh-68px)] min-h-[560px] bg-slate-100 flex flex-col">
+    <div className="lg:h-[calc(100dvh-68px)] lg:min-h-[560px] bg-slate-100 flex flex-col">
       {/* Top bar */}
-      <header className="flex items-center justify-between gap-3 px-4 py-3 bg-white border-b">
+      <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-4 py-3 bg-white border-b">
         <div className="flex items-center gap-3 min-w-0">
           <Button variant="ghost" size="sm" onClick={() => setLocation("/my-quizzes")}>
             <ArrowLeft className="w-4 h-4 mr-1" /> Exit
@@ -403,7 +403,7 @@ export default function QuizEditor() {
             className="max-w-md font-semibold"
           />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" onClick={() => setSettingsOpen(true)}>
             <Settings className="w-4 h-4 mr-1" /> Settings
           </Button>
@@ -488,12 +488,12 @@ export default function QuizEditor() {
         </DialogContent>
       </Dialog>
 
-      <div className="flex-1 flex min-h-0">
+      <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Left: question rail — mini-stage thumbnails mirroring the question
             structure (question line, media placeholder, answer bars) */}
-        <aside className={`${EDITOR_LEFT_RAIL} shrink-0 bg-white border-r p-2 overflow-y-auto space-y-2`}>
+        <aside className={`${EDITOR_LEFT_RAIL} order-2 lg:order-1 shrink-0 bg-white border-t lg:border-t-0 lg:border-r p-2 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto`}>
           {quiz.questions.map((q, i) => (
-            <div key={i} onClick={() => setCurrentIndex(i)} className="cursor-pointer">
+            <div key={i} onClick={() => setCurrentIndex(i)} className="cursor-pointer shrink-0 w-40 lg:w-auto">
               <div className="flex items-center justify-between px-1 mb-0.5 text-[11px] text-gray-500">
                 <span>{i + 1} · {q.type === "true_false" ? "T/F" : "Quiz"}</span>
                 <div className="flex gap-1">
@@ -519,7 +519,7 @@ export default function QuizEditor() {
               </div>
             </div>
           ))}
-          <Button variant="outline" className="w-full" size="sm" onClick={addQuestion}>
+          <Button variant="outline" className="w-auto lg:w-full shrink-0 self-center lg:self-auto" size="sm" onClick={addQuestion}>
             <Plus className="w-4 h-4 mr-1" /> Add
           </Button>
         </aside>
@@ -529,7 +529,7 @@ export default function QuizEditor() {
             middle (absorbs spare height), fixed-height answer grid pinned at
             the bottom, "Add more answers" directly below it. Full canvas
             width — no narrow centered column. */}
-        <main className="flex-1 min-w-0 overflow-y-auto" style={getBackgroundStyle(quiz.theme.background)}>
+        <main className="order-1 lg:order-2 flex-1 min-w-0 overflow-y-auto" style={getBackgroundStyle(quiz.theme.background)}>
           <div className={`h-full min-h-[480px] flex flex-col ${QUIZ_STAGE_PAD} ${QUIZ_STAGE_GAP}`}>
             <Input
               value={current.question}
@@ -538,8 +538,10 @@ export default function QuizEditor() {
               className={`shrink-0 ${QUIZ_QUESTION_BAR} text-center text-lg sm:text-xl font-semibold bg-white`}
             />
 
-            {/* Media — flexible middle region at ~55% width, 3:2 (shared tokens) */}
-            <div className={QUIZ_MEDIA_WRAP}>
+            {/* Media — flexible middle region at ~55% width (shared tokens).
+                Stacked (mobile) layout is content-driven, so give the wrap a
+                floor height there; desktop keeps the pure flex fill. */}
+            <div className={`${QUIZ_MEDIA_WRAP} min-h-[200px] lg:min-h-0`}>
               <div className={`${QUIZ_MEDIA_BOX} bg-white/85 flex flex-col items-center justify-center relative`}>
                 {current.imageUrl ? (
                   <>
@@ -618,7 +620,7 @@ export default function QuizEditor() {
         </main>
 
         {/* Right: properties panel */}
-        <aside className={`${EDITOR_RIGHT_PANEL} shrink-0 bg-white border-l p-4 overflow-y-auto space-y-5 flex flex-col`}>
+        <aside className={`${EDITOR_RIGHT_PANEL} order-3 shrink-0 bg-white border-t lg:border-t-0 lg:border-l p-4 lg:overflow-y-auto space-y-5 flex flex-col`}>
           <div className="font-semibold text-gray-800">Question properties</div>
 
           <div>

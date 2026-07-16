@@ -32,6 +32,8 @@ export const QUIZ_MEDIA_BOX = "h-full w-[55%] rounded-xl overflow-hidden";
 /** Outer stage container used by host + player live pages (full canvas). */
 export const QUIZ_STAGE_CONTAINER = "w-full flex-1 flex flex-col min-h-0";
 
-/** Editor chrome: rail/panel proportions from the reference. */
-export const EDITOR_LEFT_RAIL = "w-[11%] min-w-[142px] max-w-[200px]";
-export const EDITOR_RIGHT_PANEL = "w-[17%] min-w-[224px] max-w-[300px]";
+/** Editor chrome: rail/panel proportions from the reference (desktop). Below
+ *  lg the editor stacks vertically (canvas → rail strip → panel), so the
+ *  rail/panel become full-width rows. */
+export const EDITOR_LEFT_RAIL = "w-full lg:w-[11%] lg:min-w-[142px] lg:max-w-[200px]";
+export const EDITOR_RIGHT_PANEL = "w-full lg:w-[17%] lg:min-w-[224px] lg:max-w-[300px]";
