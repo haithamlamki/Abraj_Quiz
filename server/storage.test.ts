@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
 
-const { MemStorage, SYSTEM_CTX, requireTenantId } = await import("./storage");
+const { MemStorage, SYSTEM_CTX, requireTenantId, isTransientDbError } = await import("./storage");
 
 const T1 = { tenantId: 1 } as const;
 const T2 = { tenantId: 2 } as const;
@@ -160,4 +160,21 @@ test("createUser defaults isSuperAdmin to false", async () => {
   const s = new MemStorage();
   const u = await s.createUser(T1, { username: "regular", password: "x" });
   assert.equal(u.isSuperAdmin, false);
+});
+
+test("isTransientDbError: Supavisor 'max clients reached' rejection maps to busy/503, not 500", () => {
+  // Exact shape observed in prod 2026-07-16: Supabase's pooler rejects clients
+  // beyond its pool_size with FATAL XX000 (152 joins surfaced as HTTP 500s).
+  const supavisorReject = Object.assign(
+    new Error("max clients reached in session mode - max clients are limited to pool_size: 15"),
+    { code: "XX000", severity: "FATAL" },
+  );
+  assert.equal(isTransientDbError(supavisorReject), true);
+});
+
+test("isTransientDbError: other XX000 internal errors are NOT transient", () => {
+  const internal = Object.assign(new Error("could not access status of transaction 12345"), {
+    code: "XX000",
+  });
+  assert.equal(isTransientDbError(internal), false);
 });

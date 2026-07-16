@@ -21,7 +21,9 @@ import { randomUUID } from "node:crypto";
 import pg from "pg";
 
 const BASE_URL = process.env.BASE_URL ?? "http://localhost:5000";
-const ORIGIN = BASE_URL;
+// Tenant resolution keys off the Origin hostname; when targeting the prod API
+// host directly, pass the tenant's client origin (e.g. https://www.abrajquiz.com).
+const ORIGIN = process.env.ORIGIN ?? BASE_URL;
 const N = Number(process.env.N ?? 400);
 const PREFIX = `it_load_${randomUUID().slice(0, 8)}`;
 
