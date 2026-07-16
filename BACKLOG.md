@@ -46,7 +46,7 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
 ## UX resilience
 
 - [ ] React error boundary at the root of `client/src/App.tsx`. Currently wraps lazy routes in `Suspense` only — a render-time exception in any page produces a blank screen, no toast, no fallback.
-- [ ] Client-side WebSocket reconnect for `play-game.tsx` and `host-game.tsx`. PRD §16 lists this as a known risk; today a dropped connection requires a page reload.
+- [x] Client-side WebSocket reconnect for `play-game.tsx` and `host-game.tsx` — full-jitter backoff, wake-up reconnect on visibility/online, status banner (`ws-reconnect.ts`, `use-game-websocket.ts`, `connection-banner.tsx`).
 
 ## Test coverage gaps
 
