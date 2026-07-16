@@ -609,7 +609,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (existingQuiz.createdBy !== userId) {
         return res.status(403).json({ message: "You can only delete your own quizzes" });
       }
-      await storage.deleteQuiz(tctx(req), quizId);
+      const archived = await storage.deleteQuiz(tctx(req), quizId);
+      if (!archived) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
       res.status(204).end();
     } catch (error) {
       captureError(error, { scope: "http.quiz-delete" });
@@ -632,6 +635,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(403).json({ message: "You can only restore your own quizzes" });
       }
       const restored = await storage.restoreQuiz(tctx(req), quizId);
+      if (!restored) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
       res.json(restored);
     } catch (error) {
       captureError(error, { scope: "http.quiz-restore" });
@@ -653,16 +659,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Quiz not found" });
       }
 
-      if (quiz.deletedAt) {
-        return res.status(400).json({ message: "This quiz has been deleted and cannot be hosted" });
-      }
-
       // A private quiz can only be hosted by its creator. Without this, a
       // non-owner could create a game from someone else's private quiz, host
       // it to completion, and read every question/answer via the results
       // endpoint — bypassing the private-quiz gate on GET /api/quizzes/:id.
+      // Return 404 (not 403) so the existence of a private quiz is not disclosed.
       if (!quiz.isPublic && quiz.createdBy !== (req as any).authUserId) {
         return res.status(404).json({ message: "Quiz not found" });
+      }
+
+      if (quiz.deletedAt) {
+        return res.status(400).json({ message: "This quiz has been deleted and cannot be hosted" });
       }
 
       // Generate unique game PIN
