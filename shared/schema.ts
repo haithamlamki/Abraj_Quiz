@@ -79,6 +79,10 @@ export const quizzes = pgTable("quizzes", {
   // preset (backward compatible). Validated by shared/quiz-theme.ts at read time.
   theme: jsonb("theme"),
   isPublic: boolean("is_public").default(true),
+  // Soft delete (archive). NULL = live. Archived quizzes are excluded from
+  // listings and cannot host NEW games, but stay resolvable by id so
+  // completed-game history, results, and PDFs keep working.
+  deletedAt: timestamp("deleted_at"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
