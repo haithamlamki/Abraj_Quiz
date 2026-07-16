@@ -1,12 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Link, useLocation } from "wouter";
 import { Clock, Users, Eye, Edit, Trash2, FileText } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import Navigation from "@/components/navigation";
 
 interface Quiz {
@@ -28,6 +40,8 @@ export default function QuizHistory() {
   const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [showArchived, setShowArchived] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -42,8 +56,31 @@ export default function QuizHistory() {
   }, [isAuthenticated, isLoading, setLocation, toast]);
 
   const { data: quizzes, isLoading: quizzesLoading } = useQuery<Quiz[]>({
-    queryKey: ["/api/my-quizzes"],
+    queryKey: showArchived ? ["/api/my-quizzes?archived=1"] : ["/api/my-quizzes"],
     enabled: isAuthenticated,
+  });
+
+  const invalidateBothLists = () => {
+    queryClient.invalidateQueries({ queryKey: ["/api/my-quizzes"] });
+    queryClient.invalidateQueries({ queryKey: ["/api/my-quizzes?archived=1"] });
+  };
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("DELETE", `/api/quizzes/${id}`),
+    onSuccess: () => {
+      invalidateBothLists();
+      toast({ title: "Quiz archived", description: "You can restore it from the Archived view." });
+    },
+    onError: () => toast({ title: "Failed to delete quiz", variant: "destructive" }),
+  });
+
+  const restoreMutation = useMutation({
+    mutationFn: (id: number) => apiRequest("POST", `/api/quizzes/${id}/restore`),
+    onSuccess: () => {
+      invalidateBothLists();
+      toast({ title: "Quiz restored" });
+    },
+    onError: () => toast({ title: "Failed to restore quiz", variant: "destructive" }),
   });
 
   if (isLoading || quizzesLoading) {
@@ -89,6 +126,16 @@ export default function QuizHistory() {
             <p className="text-xl text-gray-600">
               Manage all the quizzes you've created
             </p>
+            <div className="mt-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowArchived((v) => !v)}
+                data-testid="button-toggle-archived"
+              >
+                {showArchived ? "Back to My Quizzes" : "Archived"}
+              </Button>
+            </div>
           </div>
 
           {!quizzes || quizzes.length === 0 ? (
@@ -98,15 +145,23 @@ export default function QuizHistory() {
                   <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto flex items-center justify-center mb-4">
                     <Clock className="w-12 h-12 text-gray-400" />
                   </div>
-                  <h3 className="text-xl font-semibold gradient-text mb-2">No Quizzes Yet</h3>
-                  <p className="text-gray-600 mb-6">
-                    You haven't created any quizzes yet. Start building your first quiz to engage your audience!
-                  </p>
-                  <Link href="/create">
-                    <Button className="abraj-primary hover:abraj-secondary text-white font-medium btn-glow">
-                      Create Your First Quiz
-                    </Button>
-                  </Link>
+                  {showArchived ? (
+                    <>
+                      <h3 className="text-xl font-semibold gradient-text mb-2">No archived quizzes.</h3>
+                    </>
+                  ) : (
+                    <>
+                      <h3 className="text-xl font-semibold gradient-text mb-2">No Quizzes Yet</h3>
+                      <p className="text-gray-600 mb-6">
+                        You haven't created any quizzes yet. Start building your first quiz to engage your audience!
+                      </p>
+                      <Link href="/create">
+                        <Button className="abraj-primary hover:abraj-secondary text-white font-medium btn-glow">
+                          Create Your First Quiz
+                        </Button>
+                      </Link>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
@@ -144,23 +199,66 @@ export default function QuizHistory() {
                     </div>
                     
                     <div className="flex gap-2 flex-wrap">
-                      <Link href={`/edit-quiz/${quiz.id}`}>
-                        <Button variant="outline" size="sm" className="flex-1 min-w-[80px]">
-                          <Edit className="w-4 h-4 mr-1" />
-                          Edit
+                      {showArchived ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => restoreMutation.mutate(quiz.id)}
+                          data-testid={`button-restore-quiz-${quiz.id}`}
+                        >
+                          Restore
                         </Button>
-                      </Link>
-                      <Link href={`/quiz-pdf/${quiz.id}`}>
-                        <Button variant="outline" size="sm" className="flex-1 min-w-[80px] border-[#019ebd] text-[#019ebd] hover:bg-[#019ebd] hover:text-white">
-                          <FileText className="w-4 h-4 mr-1" />
-                          PDF
-                        </Button>
-                      </Link>
-                      <Link href={`/host-quiz/${quiz.id}`}>
-                        <Button size="sm" className="abraj-primary hover:abraj-secondary text-white flex-1 min-w-[80px] btn-glow">
-                          Host Game
-                        </Button>
-                      </Link>
+                      ) : (
+                        <>
+                          <Link href={`/edit-quiz/${quiz.id}`}>
+                            <Button variant="outline" size="sm" className="flex-1 min-w-[80px]">
+                              <Edit className="w-4 h-4 mr-1" />
+                              Edit
+                            </Button>
+                          </Link>
+                          <Link href={`/quiz-pdf/${quiz.id}`}>
+                            <Button variant="outline" size="sm" className="flex-1 min-w-[80px] border-[#019ebd] text-[#019ebd] hover:bg-[#019ebd] hover:text-white">
+                              <FileText className="w-4 h-4 mr-1" />
+                              PDF
+                            </Button>
+                          </Link>
+                          <Link href={`/host-quiz/${quiz.id}`}>
+                            <Button size="sm" className="abraj-primary hover:abraj-secondary text-white flex-1 min-w-[80px] btn-glow">
+                              Host Game
+                            </Button>
+                          </Link>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 border-red-300 hover:bg-red-50"
+                                data-testid={`button-delete-quiz-${quiz.id}`}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Delete this quiz?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  "{quiz.title}" will be archived: it disappears from your quizzes and can no longer be hosted.
+                                  Results of games already played are kept. You can restore it from the Archived view.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                  onClick={() => deleteMutation.mutate(quiz.id)}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  Delete
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
