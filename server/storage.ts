@@ -8,7 +8,7 @@ import {
   type Tenant, type InsertTenant
 } from "@shared/schema";
 import { db } from "./db";
-import { and, asc, desc, eq, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 
 // Safety cap on active participants per game. Configurable via env; the default
 // leaves headroom over the 400-player target. This is a bound, not an exact
@@ -88,10 +88,11 @@ export interface IStorage {
   getQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined>;
   getQuizzes(ctx: StorageCtx): Promise<Quiz[]>;
   getPublicQuizzes(ctx: StorageCtx): Promise<Quiz[]>;
-  getUserQuizzes(ctx: StorageCtx, userId: number): Promise<Quiz[]>;
+  getUserQuizzes(ctx: StorageCtx, userId: number, opts?: { archived?: boolean }): Promise<Quiz[]>;
   createQuiz(ctx: StorageCtx, quiz: InsertQuiz): Promise<Quiz>;
   updateQuiz(ctx: StorageCtx, id: number, quiz: Partial<InsertQuiz>): Promise<Quiz>;
-  deleteQuiz(ctx: StorageCtx, id: number): Promise<boolean>;
+  deleteQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined>;
+  restoreQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined>;
 
   // Games
   getGame(ctx: StorageCtx, id: number): Promise<Game | undefined>;
@@ -184,21 +185,26 @@ export class DatabaseStorage implements IStorage {
 
   async getQuizzes(ctx: StorageCtx): Promise<Quiz[]> {
     return withCtx(ctx, async (tx) => {
-      return tx.select().from(quizzes).where(tenantFilter(ctx, quizzes.tenantId));
+      return tx.select().from(quizzes)
+        .where(and(isNull(quizzes.deletedAt), tenantFilter(ctx, quizzes.tenantId)));
     });
   }
 
   async getPublicQuizzes(ctx: StorageCtx): Promise<Quiz[]> {
     return withCtx(ctx, async (tx) => {
       return tx.select().from(quizzes)
-        .where(and(eq(quizzes.isPublic, true), tenantFilter(ctx, quizzes.tenantId)));
+        .where(and(eq(quizzes.isPublic, true), isNull(quizzes.deletedAt), tenantFilter(ctx, quizzes.tenantId)));
     });
   }
 
-  async getUserQuizzes(ctx: StorageCtx, userId: number): Promise<Quiz[]> {
+  async getUserQuizzes(ctx: StorageCtx, userId: number, opts?: { archived?: boolean }): Promise<Quiz[]> {
     return withCtx(ctx, async (tx) => {
       return tx.select().from(quizzes)
-        .where(and(eq(quizzes.createdBy, userId), tenantFilter(ctx, quizzes.tenantId)));
+        .where(and(
+          eq(quizzes.createdBy, userId),
+          opts?.archived ? isNotNull(quizzes.deletedAt) : isNull(quizzes.deletedAt),
+          tenantFilter(ctx, quizzes.tenantId),
+        ));
     });
   }
 
@@ -219,11 +225,21 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async deleteQuiz(ctx: StorageCtx, id: number): Promise<boolean> {
+  async deleteQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined> {
     return withCtx(ctx, async (tx) => {
-      const result = await tx.delete(quizzes)
-        .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)));
-      return (result.rowCount || 0) > 0;
+      const [row] = await tx.update(quizzes).set({ deletedAt: sql`now()` })
+        .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)))
+        .returning();
+      return row;
+    });
+  }
+
+  async restoreQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [row] = await tx.update(quizzes).set({ deletedAt: null })
+        .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)))
+        .returning();
+      return row;
     });
   }
 
@@ -545,6 +561,7 @@ export class MemStorage implements IStorage {
           }
         ],
         isPublic: true,
+        deletedAt: null,
         createdAt: new Date()
       },
       {
@@ -570,6 +587,7 @@ export class MemStorage implements IStorage {
           }
         ],
         isPublic: true,
+        deletedAt: null,
         createdAt: new Date()
       },
       {
@@ -589,6 +607,7 @@ export class MemStorage implements IStorage {
           }
         ],
         isPublic: true,
+        deletedAt: null,
         createdAt: new Date()
       }
     ];
@@ -629,18 +648,21 @@ export class MemStorage implements IStorage {
   }
 
   async getQuizzes(ctx: StorageCtx): Promise<Quiz[]> {
-    return Array.from(this.quizzes.values()).filter((q) => this.inTenant(ctx, q));
+    return Array.from(this.quizzes.values()).filter((q) => !q.deletedAt && this.inTenant(ctx, q));
   }
 
   async getPublicQuizzes(ctx: StorageCtx): Promise<Quiz[]> {
     return Array.from(this.quizzes.values()).filter(
-      (quiz) => quiz.isPublic && this.inTenant(ctx, quiz),
+      (quiz) => quiz.isPublic && !quiz.deletedAt && this.inTenant(ctx, quiz),
     );
   }
 
-  async getUserQuizzes(ctx: StorageCtx, userId: number): Promise<Quiz[]> {
+  async getUserQuizzes(ctx: StorageCtx, userId: number, opts?: { archived?: boolean }): Promise<Quiz[]> {
     return Array.from(this.quizzes.values()).filter(
-      (quiz) => quiz.createdBy === userId && this.inTenant(ctx, quiz),
+      (quiz) =>
+        quiz.createdBy === userId &&
+        this.inTenant(ctx, quiz) &&
+        (opts?.archived ? !!quiz.deletedAt : !quiz.deletedAt),
     );
   }
 
@@ -656,6 +678,7 @@ export class MemStorage implements IStorage {
       theme: quiz.theme ?? null,
       isPublic: quiz.isPublic ?? true,
       createdBy: quiz.createdBy,
+      deletedAt: null,
       createdAt: new Date()
     };
     this.quizzes.set(id, newQuiz);
@@ -681,10 +704,20 @@ export class MemStorage implements IStorage {
     return updated;
   }
 
-  async deleteQuiz(ctx: StorageCtx, id: number): Promise<boolean> {
+  async deleteQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined> {
     const existing = this.quizzes.get(id);
-    if (!existing || !this.inTenant(ctx, existing)) return false;
-    return this.quizzes.delete(id);
+    if (!existing || !this.inTenant(ctx, existing)) return undefined;
+    const updated: Quiz = { ...existing, deletedAt: new Date() };
+    this.quizzes.set(id, updated);
+    return updated;
+  }
+
+  async restoreQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined> {
+    const existing = this.quizzes.get(id);
+    if (!existing || !this.inTenant(ctx, existing)) return undefined;
+    const updated: Quiz = { ...existing, deletedAt: null };
+    this.quizzes.set(id, updated);
+    return updated;
   }
 
   // Games

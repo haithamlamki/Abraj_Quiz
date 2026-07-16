@@ -332,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // and a private quiz can only be hosted by its owner, so restricting to
       // the creator does not break gameplay. Respond 404 (not 403) so the
       // existence of a private quiz at this id is not disclosed.
-      if (!quiz.isPublic && callerId !== quiz.createdBy) {
+      if ((!quiz.isPublic || quiz.deletedAt) && callerId !== quiz.createdBy) {
         return res.status(404).json({ message: "Quiz not found" });
       }
       res.json(sanitizeQuizForCaller(quiz, callerId));
@@ -344,7 +344,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/my-quizzes", requireAuth, async (req, res) => {
     try {
       const userId = (req as any).authUserId;
-      const quizzes = await storage.getUserQuizzes(tctx(req), userId);
+      const archived = req.query.archived === "1" || req.query.archived === "true";
+      const quizzes = await storage.getUserQuizzes(tctx(req), userId, { archived });
       res.json(quizzes);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch user quizzes" });
@@ -594,6 +595,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/quizzes/:id", requireAuth, async (req, res) => {
+    try {
+      const quizId = parseInt(req.params.id, 10);
+      if (!Number.isInteger(quizId) || quizId <= 0) {
+        return res.status(400).json({ message: "Invalid quiz id" });
+      }
+      const userId = (req as any).authUserId;
+      const existingQuiz = await storage.getQuiz(tctx(req), quizId);
+      if (!existingQuiz) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
+      if (existingQuiz.createdBy !== userId) {
+        return res.status(403).json({ message: "You can only delete your own quizzes" });
+      }
+      const archived = await storage.deleteQuiz(tctx(req), quizId);
+      if (!archived) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
+      res.status(204).end();
+    } catch (error) {
+      captureError(error, { scope: "http.quiz-delete" });
+      res.status(500).json({ message: "Failed to delete quiz" });
+    }
+  });
+
+  app.post("/api/quizzes/:id/restore", requireAuth, async (req, res) => {
+    try {
+      const quizId = parseInt(req.params.id, 10);
+      if (!Number.isInteger(quizId) || quizId <= 0) {
+        return res.status(400).json({ message: "Invalid quiz id" });
+      }
+      const userId = (req as any).authUserId;
+      const existingQuiz = await storage.getQuiz(tctx(req), quizId);
+      if (!existingQuiz) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
+      if (existingQuiz.createdBy !== userId) {
+        return res.status(403).json({ message: "You can only restore your own quizzes" });
+      }
+      const restored = await storage.restoreQuiz(tctx(req), quizId);
+      if (!restored) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
+      res.json(restored);
+    } catch (error) {
+      captureError(error, { scope: "http.quiz-restore" });
+      res.status(500).json({ message: "Failed to restore quiz" });
+    }
+  });
+
   // Game routes
   app.post("/api/games", requireAuth, async (req, res) => {
     try {
@@ -612,8 +663,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // non-owner could create a game from someone else's private quiz, host
       // it to completion, and read every question/answer via the results
       // endpoint — bypassing the private-quiz gate on GET /api/quizzes/:id.
+      // Return 404 (not 403) so the existence of a private quiz is not disclosed.
       if (!quiz.isPublic && quiz.createdBy !== (req as any).authUserId) {
         return res.status(404).json({ message: "Quiz not found" });
+      }
+
+      if (quiz.deletedAt) {
+        return res.status(400).json({ message: "This quiz has been deleted and cannot be hosted" });
       }
 
       // Generate unique game PIN

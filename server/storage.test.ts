@@ -178,3 +178,42 @@ test("isTransientDbError: other XX000 internal errors are NOT transient", () => 
   });
   assert.equal(isTransientDbError(internal), false);
 });
+
+test("deleteQuiz archives: hidden from listings, getQuiz still resolves, restore reverses", async () => {
+  const s = new MemStorage();
+  const q = await s.createQuiz(T1, {
+    title: "To archive", description: "", questions: [], background: "classroom",
+    isPublic: true, createdBy: 7,
+  });
+
+  const archived = await s.deleteQuiz(T1, q.id);
+  assert.ok(archived?.deletedAt instanceof Date);
+
+  // Hidden from every listing…
+  assert.ok(!(await s.getPublicQuizzes(T1)).some((x) => x.id === q.id));
+  assert.ok(!(await s.getQuizzes(T1)).some((x) => x.id === q.id));
+  assert.ok(!(await s.getUserQuizzes(T1, 7)).some((x) => x.id === q.id));
+  // …but still resolvable by id (completed-game results/PDF depend on this).
+  assert.equal((await s.getQuiz(T1, q.id))?.id, q.id);
+  // Archived listing shows it.
+  assert.ok((await s.getUserQuizzes(T1, 7, { archived: true })).some((x) => x.id === q.id));
+
+  const restored = await s.restoreQuiz(T1, q.id);
+  assert.equal(restored?.deletedAt, null);
+  assert.ok((await s.getUserQuizzes(T1, 7)).some((x) => x.id === q.id));
+  assert.ok(!(await s.getUserQuizzes(T1, 7, { archived: true })).some((x) => x.id === q.id));
+});
+
+test("deleteQuiz/restoreQuiz respect tenant scoping and unknown ids", async () => {
+  const s = new MemStorage();
+  const q = await s.createQuiz(T2, {
+    title: "Tenant2 quiz", description: "", questions: [], background: "classroom",
+    isPublic: true, createdBy: 1,
+  });
+  // Wrong tenant cannot archive it.
+  assert.equal(await s.deleteQuiz(T1, q.id), undefined);
+  assert.equal((await s.getQuiz(T2, q.id))?.deletedAt ?? null, null);
+  // Unknown id.
+  assert.equal(await s.deleteQuiz(T2, 999999), undefined);
+  assert.equal(await s.restoreQuiz(T2, 999999), undefined);
+});
