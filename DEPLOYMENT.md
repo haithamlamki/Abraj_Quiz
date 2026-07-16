@@ -49,9 +49,11 @@ Set these backend environment variables:
 ```bash
 DATABASE_URL=postgres://quiz_app.[PROJECT_REF]:[PASSWORD]@[REGION].pooler.supabase.com:5432/postgres
 DATABASE_SSL=true
-DATABASE_POOL_MAX=10
+DATABASE_POOL_MAX=25              # sized against Supabase max_connections (60 on the current compute): leave headroom for supabase internals + MCP/admin sessions
 DATABASE_IDLE_TIMEOUT_MS=30000
 DATABASE_CONNECTION_TIMEOUT_MS=10000
+DATABASE_STATEMENT_TIMEOUT_MS=30000   # kill pathological queries; must exceed worst-case legitimate join latency
+DATABASE_LOCK_TIMEOUT_MS=10000        # fail fast on lock waits instead of starving the pool
 DATABASE_APPLICATION_NAME=abraj-quiz-backend
 SESSION_SECRET=replace-with-a-long-random-secret
 OPENAI_API_KEY=sk-...
