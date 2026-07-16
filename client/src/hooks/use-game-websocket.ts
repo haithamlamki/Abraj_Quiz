@@ -81,7 +81,11 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
       const connectUrl = token
         ? `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`
         : wsUrl;
-      setConnectionStatus(reconnectAttemptsRef.current > 0 ? "reconnecting" : "connecting");
+      setConnectionStatus((prev) =>
+        prev === "reconnecting" || prev === "failed" || reconnectAttemptsRef.current > 0
+          ? "reconnecting"
+          : "connecting",
+      );
       const ws = new WebSocket(connectUrl);
       wsRef.current = ws;
 
@@ -186,6 +190,7 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
       };
 
       ws.onclose = (event) => {
+        if (wsRef.current !== ws) return;
         console.log("WebSocket disconnected from game:", gamePin, "code:", event.code);
         wsRef.current = null;
 
@@ -250,10 +255,12 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
     };
     document.addEventListener("visibilitychange", wakeUp);
     window.addEventListener("online", wakeUp);
+    window.addEventListener("pageshow", wakeUp);
 
     return () => {
       document.removeEventListener("visibilitychange", wakeUp);
       window.removeEventListener("online", wakeUp);
+      window.removeEventListener("pageshow", wakeUp);
       disconnect();
     };
   }, [connect, disconnect]);
