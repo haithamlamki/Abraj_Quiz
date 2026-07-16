@@ -1,4 +1,7 @@
 import "dotenv/config";
+// Sentry must initialize right after env vars load and before anything that
+// can throw during startup.
+import { Sentry } from "./instrument";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
@@ -131,6 +134,9 @@ async function assertAppRoleCannotBypassRls() {
   tenantCache.start();
 
   const server = await registerRoutes(app);
+
+  // Report API errors to Sentry before the JSON error response below runs.
+  Sentry.setupExpressErrorHandler(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;

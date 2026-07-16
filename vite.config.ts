@@ -2,6 +2,11 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
+
+// Source maps are only generated + uploaded when the CI/deploy environment
+// provides a Sentry auth token; maps never ship to the public bundle.
+const uploadSentrySourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN);
 
 export default defineConfig({
   plugins: [
@@ -13,6 +18,18 @@ export default defineConfig({
           await import("@replit/vite-plugin-cartographer").then((m) =>
             m.cartographer(),
           ),
+        ]
+      : []),
+    ...(uploadSentrySourceMaps
+      ? [
+          sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            sourcemaps: {
+              filesToDeleteAfterUpload: ["dist/public/**/*.map"],
+            },
+          }),
         ]
       : []),
   ],
@@ -27,6 +44,7 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    sourcemap: uploadSentrySourceMaps ? "hidden" : false,
   },
   server: {
     fs: {

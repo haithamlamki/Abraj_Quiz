@@ -4,6 +4,7 @@ import type { IncomingMessage } from "http";
 import { gameRoomManager } from "./game-room-manager";
 import { wsClientMessageSchema, type WsServerMessage } from "@shared/ws-protocol";
 import { verifyToken } from "./token";
+import { captureError } from "./instrument";
 
 interface GameClient {
   ws: WebSocket;
@@ -96,16 +97,28 @@ class GameWebSocketServer {
       const pending: RawData[] = [];
 
       const processMessage = async (message: RawData): Promise<void> => {
+        if (!this.checkRateLimit(ws)) {
+          this.safeSend(ws, { type: "error", code: "INVALID_PAYLOAD", message: "Too many WebSocket messages" });
+          ws.close(1008, "Rate limit exceeded");
+          return;
+        }
+
+        // Parse failures are client noise (malformed JSON, oversized frames) —
+        // reject without reporting. Only handler failures reach Sentry.
+        let data: unknown;
         try {
-          if (!this.checkRateLimit(ws)) {
-            this.safeSend(ws, { type: "error", code: "INVALID_PAYLOAD", message: "Too many WebSocket messages" });
-            ws.close(1008, "Rate limit exceeded");
-            return;
-          }
-          const data = this.parseMessage(message);
+          data = this.parseMessage(message);
+        } catch (error) {
+          console.error("WebSocket message error:", error);
+          this.safeSend(ws, { type: "error", code: "INVALID_PAYLOAD", message: "Invalid WebSocket message" });
+          return;
+        }
+
+        try {
           await this.handleMessage(ws, request, data);
         } catch (error) {
           console.error("WebSocket message error:", error);
+          captureError(error, { scope: "ws_message" });
           this.safeSend(ws, { type: "error", code: "INVALID_PAYLOAD", message: "Invalid WebSocket message" });
         }
       };
@@ -134,6 +147,7 @@ class GameWebSocketServer {
         })
         .catch((error) => {
           console.error("WebSocket session parse error:", error);
+          captureError(error, { scope: "ws_session_hydration" });
           hydrationFailed = true;
           pending.length = 0;
           this.safeSend(ws, {
@@ -175,6 +189,11 @@ class GameWebSocketServer {
         });
       } catch (error) {
         const httpError = gameRoomManager.toHttpError(error);
+        // RoomErrors (bad PIN, duplicate name, …) are expected client
+        // outcomes; only unexpected 5xx failures are worth reporting.
+        if (httpError.status >= 500) {
+          captureError(error, { scope: "ws_join", gamePin: message.gamePin });
+        }
         this.safeSend(ws, {
           type: "error",
           code: httpError.body.code || "INVALID_PAYLOAD",

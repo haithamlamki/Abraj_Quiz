@@ -60,6 +60,7 @@ OPENAI_API_KEY=sk-...
 CLIENT_ORIGIN=https://your-vercel-domain.vercel.app
 NODE_ENV=production
 PORT=5000
+SENTRY_DSN=https://...@....ingest.sentry.io/...   # optional — error tracking is a no-op without it
 ```
 
 Build and start:
@@ -104,6 +105,15 @@ Set these Vercel environment variables:
 ```bash
 VITE_API_BASE_URL=https://your-backend-domain.example.com
 VITE_WS_URL=wss://your-backend-domain.example.com/game-ws
+
+# Optional — Sentry error tracking. Client init is a no-op without the DSN.
+VITE_SENTRY_DSN=https://...@....ingest.sentry.io/...
+# Optional — readable stack traces. When SENTRY_AUTH_TOKEN is set, the build
+# generates hidden source maps, uploads them to Sentry, then deletes them so
+# they never ship publicly.
+SENTRY_ORG=your-org
+SENTRY_PROJECT=your-client-project
+SENTRY_AUTH_TOKEN=sntrys_...
 ```
 
 Vercel project settings:
