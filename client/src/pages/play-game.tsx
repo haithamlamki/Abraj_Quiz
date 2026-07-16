@@ -11,6 +11,7 @@ import type { Game, Quiz, Question } from "@shared/schema";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
 import { answerStyle } from "@/lib/answer-style";
+import { encodeSelection } from "@shared/quiz-scoring";
 
 export default function PlayGame() {
   const { pin } = useParams();
@@ -62,6 +63,7 @@ export default function PlayGame() {
   
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectedIndices, setSelectedIndices] = useState<number[]>([]); // multi-select
   const [hasAnswered, setHasAnswered] = useState(false);
   const [showResult, setShowResult] = useState(false);
   const [lastResult, setLastResult] = useState<{ isCorrect: boolean; pointsEarned: number } | null>(null);
@@ -134,18 +136,13 @@ export default function PlayGame() {
       setScoreAtQuestionStart(currentPlayer?.score || 0);
     }
 
-    if (
-      runtimeState.status === "closed" &&
-      hasAnswered &&
-      selectedAnswer !== null &&
-      typeof runtimeState.correctAnswer === "number"
-    ) {
+    if (runtimeState.status === "closed" && hasAnswered) {
       const players = runtimeState.players || (game?.players as any[]) || [];
       const currentPlayer = players.find((player) => player.name === playerName);
-      const isCorrect = selectedAnswer === runtimeState.correctAnswer;
-      const pointsEarned = isCorrect
-        ? Math.max(0, (currentPlayer?.score || 0) - scoreAtQuestionStart)
-        : 0;
+      // Correctness is derived from the authoritative score delta (works for
+      // single- AND multi-select: the server awards points only when correct).
+      const pointsEarned = Math.max(0, (currentPlayer?.score || 0) - scoreAtQuestionStart);
+      const isCorrect = pointsEarned > 0;
 
       setLastResult({ isCorrect, pointsEarned });
     }
@@ -193,6 +190,7 @@ export default function PlayGame() {
     setLastResult(null);
     setHasAnswered(false);
     setSelectedAnswer(null);
+    setSelectedIndices([]);
     setShowTimeUpEffect(false);
   }, [game?.currentQuestion, runtimeState.questionIndex]);
 
@@ -388,16 +386,27 @@ export default function PlayGame() {
 
   const handleAnswerSelect = (answerIndex: number) => {
     if (hasAnswered || timeLeft === 0 || runtimeState.status !== "open") return;
-    
     playClickSound();
-    
+
+    if (currentQuestion?.answerType === "multiple") {
+      // Multi-select: toggle, don't submit yet (confirm with the Submit button).
+      setSelectedIndices((prev) =>
+        prev.includes(answerIndex) ? prev.filter((i) => i !== answerIndex) : [...prev, answerIndex],
+      );
+      return;
+    }
+
+    // Single-select: submit immediately (selectedAnswer IS the index).
     setSelectedAnswer(answerIndex);
     setHasAnswered(true);
-    
-    submitAnswerMutation.mutate({
-      selectedAnswer: answerIndex,
-      responseTime: 0
-    });
+    submitAnswerMutation.mutate({ selectedAnswer: answerIndex, responseTime: 0 });
+  };
+
+  const handleSubmitMulti = () => {
+    if (hasAnswered || timeLeft === 0 || runtimeState.status !== "open" || selectedIndices.length === 0) return;
+    setHasAnswered(true);
+    // Encode the chosen options as a bitmask for the multi-select answer.
+    submitAnswerMutation.mutate({ selectedAnswer: encodeSelection("multiple", selectedIndices), responseTime: 0 });
   };
 
   if (isLoading) {
@@ -429,6 +438,7 @@ export default function PlayGame() {
   const questions = quiz.questions as Question[];
   const currentQuestionIndex = runtimeState.questionIndex ?? game.currentQuestion ?? 0;
   const currentQuestion = questions[currentQuestionIndex];
+  const isMulti = currentQuestion?.answerType === "multiple";
   const players = runtimeState.players || (game.players as any[]) || [];
   const currentPlayer = players.find(p => p.name === playerName);
   const currentRank = players
@@ -594,12 +604,24 @@ export default function PlayGame() {
           </CardContent>
         </Card>
 
-        {/* Answer Options - 2x2 Grid */}
-        <div className="grid grid-cols-2 gap-2 mb-3 flex-1 min-h-0">
+        {/* Question image (if any) */}
+        {currentQuestion?.imageUrl && (
+          <div className="flex-shrink-0 flex justify-center mb-3">
+            <img
+              src={currentQuestion.imageUrl}
+              alt="Question"
+              className="max-h-32 sm:max-h-40 rounded-xl object-contain shadow-lg"
+            />
+          </div>
+        )}
+
+        {/* Answer Options — fixed-size grid (boxes stay uniform regardless of
+            text length, Kahoot-style; auto-rows-fr keeps rows equal for 2-6). */}
+        <div className="grid grid-cols-2 auto-rows-fr gap-2 mb-3 flex-1 min-h-0">
           {currentQuestion?.answers.map((answer, index) => {
             const style = answerStyle(index);
             const SymbolIcon = style.icon;
-            const isSelected = selectedAnswer === index;
+            const isSelected = isMulti ? selectedIndices.includes(index) : selectedAnswer === index;
             const isDisabled = hasAnswered || timeLeft === 0 || runtimeState.status !== "open";
 
             return (
@@ -607,18 +629,31 @@ export default function PlayGame() {
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 disabled={isDisabled}
-                className={`${style.bg} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced h-full flex ${
-                  isSelected ? 'ring-4 ring-white animate-pulse' : ''
-                } ${isDisabled ? 'opacity-60' : ''}`}
+                className={`${style.bg} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced h-full min-h-[64px] flex overflow-hidden ${
+                  isSelected ? 'ring-4 ring-white' : ''
+                } ${isDisabled && !isSelected ? 'opacity-60' : ''}`}
               >
-                <div className="flex flex-col items-center justify-center w-full gap-1">
+                <div className="flex items-center justify-center w-full gap-2">
                   <SymbolIcon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="white" strokeWidth={0} />
-                  <span className="text-center text-xs sm:text-sm md:text-base leading-tight break-words overflow-wrap-anywhere hyphens-auto px-1 font-semibold">{answer}</span>
+                  <span className="text-center text-xs sm:text-sm md:text-base leading-tight line-clamp-3 px-1 font-semibold">{answer}</span>
                 </div>
               </Button>
             );
           })}
         </div>
+
+        {/* Multi-select confirm */}
+        {isMulti && !hasAnswered && runtimeState.status === "open" && (
+          <div className="flex-shrink-0 mb-3">
+            <Button
+              onClick={handleSubmitMulti}
+              disabled={selectedIndices.length === 0}
+              className="w-full abraj-primary text-white font-bold py-3 rounded-xl"
+            >
+              Submit {selectedIndices.length > 0 ? `(${selectedIndices.length} selected)` : ""}
+            </Button>
+          </div>
+        )}
 
         {/* Player Info */}
         <div className="flex-shrink-0">

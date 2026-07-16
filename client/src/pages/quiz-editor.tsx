@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2,
+  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye,
 } from "lucide-react";
 import { apiRequest, buildApiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -415,6 +415,11 @@ export default function QuizEditor() {
               <p className="text-xs text-gray-400">Generated questions replace the current ones — review and edit before saving.</p>
             </DialogContent>
           </Dialog>
+          {isEditMode && (
+            <Button variant="outline" onClick={() => setLocation(`/preview/${quizId}`)}>
+              <Eye className="w-4 h-4 mr-1" /> Preview
+            </Button>
+          )}
           <Button className="abraj-primary text-white" onClick={handleSave} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
             {isEditMode ? "Save changes" : "Save"}
