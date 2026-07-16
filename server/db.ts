@@ -23,6 +23,13 @@ export const pool = new pg.Pool({
   idleTimeoutMillis: parseInt(process.env.DATABASE_IDLE_TIMEOUT_MS || "30000", 10),
   connectionTimeoutMillis: parseInt(process.env.DATABASE_CONNECTION_TIMEOUT_MS || "10000", 10),
   application_name: process.env.DATABASE_APPLICATION_NAME || "abraj-quiz-backend",
+  // Guardrails for join-storm contention (scale-400 Fix #3): a stuck query or
+  // lock wait must fail fast and return its connection to the pool instead of
+  // starving it. Values sit well above worst-case legitimate latency measured
+  // from Render (~23ms DB RTT; contended joins complete in single-digit
+  // seconds), so they only fire on pathological queries.
+  statement_timeout: parseInt(process.env.DATABASE_STATEMENT_TIMEOUT_MS || "30000", 10),
+  lock_timeout: parseInt(process.env.DATABASE_LOCK_TIMEOUT_MS || "10000", 10),
 });
 
 export const db = drizzle({ client: pool, schema });
