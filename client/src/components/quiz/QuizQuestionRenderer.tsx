@@ -3,6 +3,13 @@ import { getBackgroundStyle } from "@/utils/backgrounds";
 import type { QuizTheme } from "@shared/quiz-theme";
 import { QuizThemeProvider } from "./QuizThemeProvider";
 import { AnswerGrid } from "./AnswerGrid";
+import {
+  QUIZ_MEDIA_BOX,
+  QUIZ_MEDIA_WRAP,
+  QUIZ_QUESTION_BAR,
+  QUIZ_STAGE_GAP,
+  QUIZ_STAGE_PAD,
+} from "./layout";
 import { Clock } from "lucide-react";
 
 export interface QuizQuestionRendererProps {
@@ -52,7 +59,7 @@ export function QuizQuestionRenderer({
   if (shapeOnly) {
     const shapeClass = `h-full rounded-2xl overflow-hidden p-3 flex ${className}`;
     const shapeInner = (
-      <AnswerGrid answers={question.answers} shapeOnly onSelect={onSelect} selectedIndices={selectedIndices} disabled={disabled} className="flex-1" />
+      <AnswerGrid answers={question.answers} shapeOnly fill onSelect={onSelect} selectedIndices={selectedIndices} disabled={disabled} className="flex-1" />
     );
     if (theme) {
       return <QuizThemeProvider theme={theme} className={shapeClass}>{shapeInner}</QuizThemeProvider>;
@@ -64,7 +71,7 @@ export function QuizQuestionRenderer({
     );
   }
 
-  const stageClass = `h-full w-full rounded-2xl overflow-hidden flex flex-col p-3 sm:p-5 gap-3 sm:gap-4 ${className}`;
+  const stageClass = `h-full w-full rounded-2xl overflow-hidden flex flex-col ${QUIZ_STAGE_PAD} ${QUIZ_STAGE_GAP} ${className}`;
   const stageInner = (
     <>
       {/* Progress + timer bar */}
@@ -86,29 +93,33 @@ export function QuizQuestionRenderer({
         </div>
       )}
 
-      {/* Question text — fixed, centered, never grows the answers */}
+      {/* Question text — fixed height bar near the top, never grows the answers */}
       <div
-        className="shrink-0 rounded-xl px-4 sm:px-6 py-3 sm:py-4 text-center shadow"
+        className={`shrink-0 ${QUIZ_QUESTION_BAR} rounded-xl px-4 sm:px-6 py-2 text-center shadow flex items-center justify-center`}
         style={{ backgroundColor: theme ? "var(--quiz-question-card)" : "#fff" }}
       >
         <h2
-          className="font-bold text-base sm:text-xl md:text-2xl leading-snug line-clamp-3"
+          className="font-bold text-base sm:text-xl md:text-2xl leading-snug line-clamp-2"
           style={{ color: theme ? "var(--quiz-question-text)" : "#1e293b" }}
         >
           {question.question || "Untitled question"}
         </h2>
       </div>
 
-      {/* Media — fixed aspect container so different image sizes don't shift layout */}
-      {question.imageUrl && (
-        <div className="shrink-0 flex justify-center">
-          <div className="w-full max-w-md aspect-[16/9] rounded-xl overflow-hidden bg-black/10 flex items-center justify-center">
+      {/* Media — the FLEXIBLE middle region (reference model): it absorbs the
+          spare vertical space at ~55% content width with a 3:2 ratio. Without
+          an image an empty spacer keeps the answers pinned to the bottom. */}
+      {question.imageUrl ? (
+        <div className={QUIZ_MEDIA_WRAP}>
+          <div className={`${QUIZ_MEDIA_BOX} bg-black/10 flex items-center justify-center`}>
             <img src={question.imageUrl} alt="Question" className="w-full h-full object-contain" />
           </div>
         </div>
+      ) : (
+        <div className="flex-1 min-h-0" />
       )}
 
-      {/* Answers — fixed-size grid fills the remaining space */}
+      {/* Answers — fixed-height cards pinned to the bottom of the stage */}
       <AnswerGrid
         answers={question.answers}
         selectedIndices={selectedIndices}
@@ -117,7 +128,7 @@ export function QuizQuestionRenderer({
         correctAnswers={correctAnswers}
         reveal={reveal}
         distribution={distribution}
-        className="flex-1 min-h-0"
+        className="shrink-0"
       />
     </>
   );

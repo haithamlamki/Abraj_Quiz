@@ -18,7 +18,17 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Question } from "@shared/schema";
 import { answerStyle } from "@/lib/answer-style";
-import { ANSWER_CARD_MIN_H } from "@/components/quiz/AnswerCard";
+import {
+  EDITOR_LEFT_RAIL,
+  EDITOR_RIGHT_PANEL,
+  QUIZ_CARD_H,
+  QUIZ_GRID_GAP,
+  QUIZ_MEDIA_BOX,
+  QUIZ_MEDIA_WRAP,
+  QUIZ_QUESTION_BAR,
+  QUIZ_STAGE_GAP,
+  QUIZ_STAGE_PAD,
+} from "@/components/quiz/layout";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { resolveQuizTheme, type QuizTheme } from "@shared/quiz-theme";
 import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
@@ -376,7 +386,10 @@ export default function QuizEditor() {
   if (isLoading || !isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
+    // Fill exactly the viewport below the sticky 68px nav (h-16 + border-b-4)
+    // so the stage is height-constrained like the reference: spare space is
+    // absorbed by the media region, never left below the answers.
+    <div className="h-[calc(100dvh-68px)] min-h-[560px] bg-slate-100 flex flex-col">
       {/* Top bar */}
       <header className="flex items-center justify-between gap-3 px-4 py-3 bg-white border-b">
         <div className="flex items-center gap-3 min-w-0">
@@ -476,15 +489,12 @@ export default function QuizEditor() {
       </Dialog>
 
       <div className="flex-1 flex min-h-0">
-        {/* Left: question rail */}
-        <aside className="w-40 shrink-0 bg-white border-r p-2 overflow-y-auto space-y-2">
+        {/* Left: question rail — mini-stage thumbnails mirroring the question
+            structure (question line, media placeholder, answer bars) */}
+        <aside className={`${EDITOR_LEFT_RAIL} shrink-0 bg-white border-r p-2 overflow-y-auto space-y-2`}>
           {quiz.questions.map((q, i) => (
-            <div
-              key={i}
-              onClick={() => setCurrentIndex(i)}
-              className={`rounded-lg border p-2 cursor-pointer text-xs ${i === currentIndex ? "border-abraj-primary ring-1 ring-abraj-primary bg-teal-50" : "hover:bg-gray-50"}`}
-            >
-              <div className="flex items-center justify-between mb-1 text-gray-500">
+            <div key={i} onClick={() => setCurrentIndex(i)} className="cursor-pointer">
+              <div className="flex items-center justify-between px-1 mb-0.5 text-[11px] text-gray-500">
                 <span>{i + 1} · {q.type === "true_false" ? "T/F" : "Quiz"}</span>
                 <div className="flex gap-1">
                   <button title="Duplicate" onClick={(e) => { e.stopPropagation(); duplicateQuestion(i); }}><Copy className="w-3 h-3" /></button>
@@ -493,15 +503,19 @@ export default function QuizEditor() {
                   )}
                 </div>
               </div>
-              <div className="line-clamp-2 font-medium text-gray-800">{q.question || "Untitled"}</div>
-              <div className="mt-1 flex items-center justify-between">
-                <div className="grid grid-cols-2 gap-0.5">
-                  {q.answers.slice(0, 6).map((_, ai) => {
-                    const Icon = answerStyle(ai).icon;
-                    return <span key={ai} className={`${answerStyle(ai).bg} w-3 h-3 rounded-sm flex items-center justify-center`}><Icon className="w-2 h-2" fill="white" strokeWidth={0} /></span>;
-                  })}
+              <div className={`rounded-lg border bg-white p-2 ${i === currentIndex ? "border-abraj-primary ring-2 ring-abraj-primary" : "hover:bg-gray-50"}`}>
+                <div className="text-[10px] font-medium text-gray-800 text-center line-clamp-1 mb-1">{q.question || "Untitled"}</div>
+                <div className="flex items-center gap-1 mb-1">
+                  <span className="text-[9px] text-gray-400 border rounded-full w-5 h-5 flex items-center justify-center shrink-0">{q.timeLimit === 0 ? "∞" : q.timeLimit}</span>
+                  <div className="flex-1 bg-gray-100 rounded h-7 flex items-center justify-center">
+                    <ImagePlus className="w-3.5 h-3.5 text-gray-300" />
+                  </div>
                 </div>
-                <span className="text-[10px] text-gray-400">{q.timeLimit === 0 ? "∞" : `${q.timeLimit}s`}</span>
+                <div className="grid grid-cols-2 gap-0.5">
+                  {q.answers.slice(0, 6).map((_, ai) => (
+                    <span key={ai} className={`${answerStyle(ai).bg} h-1.5 rounded-sm`} />
+                  ))}
+                </div>
               </div>
             </div>
           ))}
@@ -510,70 +524,78 @@ export default function QuizEditor() {
           </Button>
         </aside>
 
-        {/* Center: question editor */}
-        <main className="flex-1 min-w-0 p-6 overflow-y-auto" style={getBackgroundStyle(quiz.theme.background)}>
-          <div className="max-w-3xl mx-auto space-y-4">
+        {/* Center: question editor — the SAME stage geometry as the live
+            renderer: fixed question bar on top, flexible media region in the
+            middle (absorbs spare height), fixed-height answer grid pinned at
+            the bottom, "Add more answers" directly below it. Full canvas
+            width — no narrow centered column. */}
+        <main className="flex-1 min-w-0 overflow-y-auto" style={getBackgroundStyle(quiz.theme.background)}>
+          <div className={`h-full min-h-[480px] flex flex-col ${QUIZ_STAGE_PAD} ${QUIZ_STAGE_GAP}`}>
             <Input
               value={current.question}
               onChange={(e) => patchQuestion(currentIndex, { question: e.target.value })}
               placeholder="Start typing your question"
-              className="text-center text-lg font-semibold py-6 bg-white"
+              className={`shrink-0 ${QUIZ_QUESTION_BAR} text-center text-lg sm:text-xl font-semibold bg-white`}
             />
 
-            {/* Media */}
-            <div className="bg-white/90 rounded-xl p-4 flex flex-col items-center justify-center min-h-[160px]">
-              {current.imageUrl ? (
-                <div className="relative">
-                  <img src={current.imageUrl} alt="Question" className="max-h-52 rounded-lg object-contain" />
+            {/* Media — flexible middle region at ~55% width, 3:2 (shared tokens) */}
+            <div className={QUIZ_MEDIA_WRAP}>
+              <div className={`${QUIZ_MEDIA_BOX} bg-white/85 flex flex-col items-center justify-center relative`}>
+                {current.imageUrl ? (
+                  <>
+                    <img src={current.imageUrl} alt="Question" className="w-full h-full object-contain" />
+                    <button
+                      onClick={() => patchQuestion(currentIndex, { imageUrl: undefined })}
+                      className="absolute top-2 right-2 bg-white rounded-full shadow p-1"
+                      title="Remove image"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
                   <button
-                    onClick={() => patchQuestion(currentIndex, { imageUrl: undefined })}
-                    className="absolute -top-2 -right-2 bg-white rounded-full shadow p-1"
+                    onClick={() => imageInputRef.current?.click()}
+                    className="flex flex-col items-center gap-2 text-gray-500 hover:text-abraj-primary"
+                    disabled={uploading}
                   >
-                    <X className="w-4 h-4" />
+                    {uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <ImagePlus className="w-8 h-8" />}
+                    <span>{uploading ? "Uploading..." : "Find and insert media"}</span>
+                    <span className="text-xs text-gray-400"><span className="underline font-medium">Upload file</span> or drag here to upload</span>
                   </button>
-                </div>
-              ) : (
-                <button
-                  onClick={() => imageInputRef.current?.click()}
-                  className="flex flex-col items-center gap-2 text-gray-500 hover:text-abraj-primary"
-                  disabled={uploading}
-                >
-                  {uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <ImagePlus className="w-8 h-8" />}
-                  <span>{uploading ? "Uploading..." : "Find and insert media"}</span>
-                </button>
-              )}
-              <input
-                ref={imageInputRef}
-                type="file"
-                accept="image/png,image/jpeg,image/gif,image/webp"
-                className="hidden"
-                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ""; }}
-              />
+                )}
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/png,image/jpeg,image/gif,image/webp"
+                  className="hidden"
+                  onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ""; }}
+                />
+              </div>
             </div>
 
-            {/* Answers */}
-            <div className="grid grid-cols-2 auto-rows-fr gap-2 sm:gap-3">
+            {/* Answers — fixed-height tiles matching the shared AnswerCard */}
+            <div className={`shrink-0 grid grid-cols-2 ${QUIZ_GRID_GAP}`}>
               {current.answers.map((answer, index) => {
                 const style = answerStyle(index);
                 const Icon = style.icon;
                 const isCorrect = current.correctAnswers.includes(index);
                 return (
-                  <div key={index} className={`${style.bg} ${ANSWER_CARD_MIN_H} rounded-xl p-2 sm:p-3 flex items-center gap-2 text-white`}>
-                    <Icon className="w-5 h-5 shrink-0" fill="white" strokeWidth={0} />
+                  <div key={index} className={`${style.bg} ${QUIZ_CARD_H} rounded-xl px-3 sm:px-4 flex items-center gap-2 sm:gap-3 text-white`}>
+                    <Icon className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" fill="white" strokeWidth={0} />
                     <Input
                       value={answer}
                       onChange={(e) => setAnswerText(index, e.target.value)}
                       placeholder={`Answer ${index + 1}`}
                       disabled={current.type === "true_false"}
-                      className="bg-white/90 text-gray-900 border-0 h-9"
+                      className="bg-white/90 text-gray-900 border-0 h-10"
                     />
                     <button
                       title={isCorrect ? "Correct" : "Mark correct"}
                       onClick={() => toggleCorrect(index)}
                       aria-pressed={isCorrect}
-                      className={`shrink-0 w-7 h-7 rounded-full border-2 border-white flex items-center justify-center ${isCorrect ? "bg-white" : "bg-transparent"}`}
+                      className={`shrink-0 w-9 h-9 rounded-full border-2 border-white flex items-center justify-center ${isCorrect ? "bg-white" : "bg-transparent"}`}
                     >
-                      {isCorrect && <Check className="w-4 h-4 text-green-600" />}
+                      {isCorrect && <Check className="w-5 h-5 text-green-600" />}
                     </button>
                     {current.type !== "true_false" && current.answers.length > 2 && (
                       <button title="Remove answer" aria-label={`Remove answer ${index + 1}`} onClick={() => removeAnswer(index)}>
@@ -586,7 +608,7 @@ export default function QuizEditor() {
             </div>
 
             {current.type !== "true_false" && current.answers.length < 6 && (
-              <div className="text-center">
+              <div className="shrink-0 text-center">
                 <Button variant="secondary" size="sm" onClick={addAnswer}>
                   <Plus className="w-4 h-4 mr-1" /> Add more answers
                 </Button>
@@ -596,7 +618,7 @@ export default function QuizEditor() {
         </main>
 
         {/* Right: properties panel */}
-        <aside className="w-64 shrink-0 bg-white border-l p-4 overflow-y-auto space-y-5">
+        <aside className={`${EDITOR_RIGHT_PANEL} shrink-0 bg-white border-l p-4 overflow-y-auto space-y-5 flex flex-col`}>
           <div className="font-semibold text-gray-800">Question properties</div>
 
           <div>
@@ -673,6 +695,22 @@ export default function QuizEditor() {
                 />
               </DialogContent>
             </Dialog>
+          </div>
+
+          {/* Delete / Duplicate — bottom of the panel, as in the reference */}
+          <div className="mt-auto pt-4 border-t flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1"
+              disabled={quiz.questions.length <= 1}
+              onClick={() => removeQuestion(currentIndex)}
+            >
+              Delete
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => duplicateQuestion(currentIndex)}>
+              Duplicate
+            </Button>
           </div>
         </aside>
       </div>
