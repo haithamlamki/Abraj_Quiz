@@ -37,9 +37,12 @@ export function isTransientDbError(error: unknown): boolean {
   if (e?.code && TRANSIENT_DB_CODES.has(e.code)) return true;
   // node-postgres' Pool throws a plain Error (no .code) when connectionTimeout
   // is exceeded while every connection is checked out — the pool-exhaustion
-  // case we most need to map to GAME_BUSY.
+  // case we most need to map to GAME_BUSY. Supabase's pooler (Supavisor)
+  // rejects clients beyond its pool_size with FATAL XX000 "max clients
+  // reached" — XX000 is a generic internal error, so match the message, not
+  // the code.
   return typeof e?.message === "string" &&
-    /timeout exceeded when trying to connect|Connection terminated/i.test(e.message);
+    /timeout exceeded when trying to connect|Connection terminated|max clients reached/i.test(e.message);
 }
 
 // ── Tenant context ───────────────────────────────────────────────

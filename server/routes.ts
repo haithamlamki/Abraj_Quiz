@@ -18,6 +18,7 @@ import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
 import { getAllowedOrigins } from "./origins";
 import { registerAdminRoutes } from "./admin-routes";
 import { uploadQuizImage } from "./supabase-storage";
+import { captureError } from "./instrument";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -702,6 +703,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json({ success: true, game: updatedGame, playerCount: result.playerCount });
     } catch (error) {
+      // joinGame maps transient DB contention to GAME_BUSY before it gets
+      // here, so anything landing in this catch is unexpected — a silent 500
+      // hid 152 pooler rejections during the 2026-07-16 load test.
+      captureError(error, { scope: "http.join", gamePin: req.params.pin });
       res.status(500).json({ message: "Failed to join game" });
     }
   });
