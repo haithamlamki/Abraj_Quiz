@@ -1,9 +1,14 @@
 import { AnswerCard, type Reveal } from "./AnswerCard";
+import { QUIZ_GRID_GAP } from "./layout";
 
 export interface AnswerGridProps {
   answers: string[];
   /** Participant tiles: colored shapes only, no text. */
   shapeOnly?: boolean;
+  /** Fill mode: rows stretch to fill the container (participant shape grid).
+   *  Default (fixed) mode: every card is the shared fixed height, so the grid
+   *  sits as a compact block pinned to the bottom of the stage. */
+  fill?: boolean;
   selectedIndices?: number[];
   disabled?: boolean;
   onSelect?: (index: number) => void;
@@ -15,13 +20,14 @@ export interface AnswerGridProps {
   className?: string;
 }
 
-// Equal-sized fixed grid for 2–6 answers. Always 2 columns with auto-rows-fr so
-// every card is the SAME size regardless of text length or answer count
-// (2 → one wide row, 3–4 → 2×2, 5–6 → 2×3). This is the single grid used by the
-// preview, host, and player renderers.
+// Equal-sized grid for 2–6 answers. Always 2 columns so every card is the SAME
+// size regardless of text length or answer count (2 → one wide row, 3–4 → 2×2,
+// 5–6 → 2×3). This is the single grid used by the editor, preview, host, and
+// player — sizing comes from the shared layout tokens, never per-page CSS.
 export function AnswerGrid({
   answers,
   shapeOnly = false,
+  fill = false,
   selectedIndices = [],
   disabled = false,
   onSelect,
@@ -32,7 +38,7 @@ export function AnswerGrid({
 }: AnswerGridProps) {
   const correct = new Set(correctAnswers ?? []);
   return (
-    <div className={`grid grid-cols-2 auto-rows-fr gap-2 sm:gap-3 ${className}`}>
+    <div className={`grid grid-cols-2 ${fill ? "auto-rows-fr" : ""} ${QUIZ_GRID_GAP} ${className}`}>
       {answers.map((text, i) => {
         let rev: Reveal = "none";
         if (reveal) rev = correct.has(i) ? "correct" : "wrong";
@@ -46,6 +52,7 @@ export function AnswerGrid({
             index={i}
             text={text}
             shapeOnly={shapeOnly}
+            fill={fill}
             selected={selectedIndices.includes(i)}
             disabled={disabled}
             reveal={rev}

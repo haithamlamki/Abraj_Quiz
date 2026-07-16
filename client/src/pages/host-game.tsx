@@ -12,6 +12,7 @@ import type { Game, Quiz, Question } from "@shared/schema";
 import QRCode from "qrcode";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
+import { QUIZ_STAGE_CONTAINER } from "@/components/quiz/layout";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
 import { resolveQuizTheme } from "@shared/quiz-theme";
 
@@ -514,8 +515,8 @@ export default function HostGame() {
 
   if (game.status === "active") {
     return (
-      <div className="h-screen overflow-hidden flex flex-col p-3 sm:p-4 bg-slate-900">
-        <div className="max-w-4xl mx-auto relative flex-1 flex flex-col min-h-0 w-full">
+      <div className="h-[calc(100dvh-68px)] overflow-hidden flex flex-col p-3 sm:p-4 bg-slate-900">
+        <div className={`${QUIZ_STAGE_CONTAINER} relative`}>
           {/* Next Question Button - Top Right */}
           {(showResults || timeLeft === 0) && (
             <div className="absolute top-0 right-0 z-10">
