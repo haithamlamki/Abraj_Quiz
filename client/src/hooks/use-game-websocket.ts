@@ -17,6 +17,7 @@ export interface RuntimeQuestionState {
   questionIndex: number | null;
   timeRemaining: number | null;
   correctAnswer?: number;
+  correctAnswers?: number[];
   answerCounts?: number[];
   answerPercentages?: number[];
   totalResponses?: number;
@@ -140,6 +141,7 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
                 questionIndex: message.questionIndex,
                 timeRemaining: 0,
                 correctAnswer: message.correctAnswer,
+                correctAnswers: (message as any).correctAnswers ?? [message.correctAnswer],
                 answerCounts: message.distribution.answerCounts,
                 answerPercentages: message.distribution.answerPercentages,
                 totalResponses: message.distribution.totalResponses,

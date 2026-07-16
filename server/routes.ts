@@ -1,7 +1,8 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, SYSTEM_CTX, type StorageCtx } from "./storage";
-import { insertQuizSchema, insertGameSchema, quizQuestionsSchema, insertUserSchema } from "@shared/schema";
+import { insertQuizSchema, insertGameSchema, quizQuestionsSchema, questionSchema, insertUserSchema } from "@shared/schema";
+import { tallyDistribution } from "@shared/quiz-scoring";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import session from "express-session";
@@ -16,6 +17,7 @@ import { signToken, verifyToken } from "./token";
 import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
 import { getAllowedOrigins } from "./origins";
 import { registerAdminRoutes } from "./admin-routes";
+import { uploadQuizImage } from "./supabase-storage";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -31,6 +33,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cb(new Error('Only PDF files are allowed'));
       }
     }
+  });
+
+  // Separate uploader for question / theme images (goes to Supabase Storage).
+  const imageUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB, matches the bucket limit
+    fileFilter: (req, file, cb) => {
+      if (["image/png", "image/jpeg", "image/gif", "image/webp"].includes(file.mimetype)) {
+        cb(null, true);
+      } else {
+        cb(new Error("Only PNG, JPEG, GIF, or WEBP images are allowed"));
+      }
+    },
   });
 
   // Session configuration with PostgreSQL store
@@ -144,7 +159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const answerSubmissionSchema = z.object({
     playerName: playerNameSchema,
     questionIndex: z.number().int().min(0),
-    selectedAnswer: z.number().int().min(0).max(3),
+    // Single-select: a chosen index (0..5). Multi-select: a bitmask of chosen
+    // options (max 6 answers => max mask 2^6 - 1 = 63).
+    selectedAnswer: z.number().int().min(0).max(63),
     responseTime: z.number().int().min(0),
   });
 
@@ -275,7 +292,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (callerId === quiz.createdBy) return quiz;
     if (!Array.isArray(quiz.questions)) return quiz;
     const questions = (quiz.questions as Array<Record<string, unknown>>).map((q) => {
-      const { correctAnswer: _omit, ...rest } = q;
+      // Strip BOTH the legacy single-correct field and the new correct-set field
+      // so players can't read the answer key mid-game.
+      const { correctAnswer: _omit, correctAnswers: _omit2, ...rest } = q;
       return rest;
     });
     return { ...quiz, questions } as T;
@@ -484,6 +503,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Upload a question or theme image to Supabase Storage; returns { url }.
+  app.post("/api/upload-image", requireAuth, imageUpload.single("image"), async (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ message: "No image uploaded" });
+      }
+      const url = await uploadQuizImage(req.file.buffer, req.file.mimetype);
+      res.json({ url });
+    } catch (error: any) {
+      console.error("Image upload error:", error);
+      const configured = /not configured/i.test(error?.message || "");
+      res
+        .status(configured ? 503 : 500)
+        .json({ message: configured ? "Image upload is not configured on the server" : "Failed to upload image" });
+    }
+  });
+
   app.post("/api/quizzes", requireAuth, async (req, res) => {
     try {
       const validation = insertQuizSchema.safeParse(req.body);
@@ -500,7 +536,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const quiz = await storage.createQuiz(tctx(req), {
         title: validation.data.title,
         description: validation.data.description,
-        questions: validation.data.questions,
+        // Store the normalized (canonical) question shape.
+        questions: questionsValidation.data,
         background: validation.data.background || "classroom",
         isPublic: validation.data.isPublic,
         createdBy: (req as any).authUserId
@@ -543,7 +580,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedQuiz = await storage.updateQuiz(tctx(req), quizId, {
         title: validation.data.title,
         description: validation.data.description,
-        questions: validation.data.questions,
+        // Persist the NORMALIZED questions (canonical correctAnswers/type/answerType
+        // shape) so edited quizzes migrate off the legacy shape.
+        questions: questionsValidation.data,
+        background: validation.data.background,
         isPublic: validation.data.isPublic
       });
 
@@ -819,6 +859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const responses = await storage.getGameResponses(tctx(req), game.id);
       const questionResponses = responses.filter(r => r.questionIndex === questionIndex);
       const runtimeResults = gameRoomManager.getQuestionResults(pin, questionIndex);
+      const quiz = await storage.getQuiz(tctx(req), game.quizId);
 
       if (runtimeResults) {
         return res.json({
@@ -830,13 +871,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Calculate answer distribution
-      const answerCounts = [0, 0, 0, 0];
-      questionResponses.forEach(response => {
-        if (response.selectedAnswer >= 0 && response.selectedAnswer < 4) {
-          answerCounts[response.selectedAnswer]++;
-        }
-      });
+      // Calculate answer distribution, sized to the question's answer count
+      // (variable, 2-6). Normalize the stored question so legacy 4-answer rows
+      // and new multi-select rows both tally correctly.
+      const rawQuestion = Array.isArray(quiz?.questions)
+        ? (quiz!.questions as any[])[questionIndex]
+        : undefined;
+      const parsedQuestion = rawQuestion ? questionSchema.safeParse(rawQuestion) : undefined;
+      const question = parsedQuestion?.success ? parsedQuestion.data : undefined;
+      const answerCounts = question
+        ? tallyDistribution(question, questionResponses.map((r) => r.selectedAnswer))
+        : [0, 0, 0, 0];
 
       const totalResponses = questionResponses.length;
       const answerPercentages = answerCounts.map(count => 

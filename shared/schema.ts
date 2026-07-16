@@ -192,12 +192,70 @@ export const insertGameResponseSchema = createInsertSchema(gameResponses).pick({
 });
 
 // Question schema
-export const questionSchema = z.object({
-  question: z.string().min(1, "Question text is required"),
-  answers: z.array(z.string().min(1, "Answer text is required")).length(4, "Must have exactly 4 answers"),
-  correctAnswer: z.number().min(0).max(3, "Correct answer must be between 0-3"),
-  timeLimit: z.number().min(5).max(120).default(10),
-});
+export const questionTypeSchema = z.enum(["quiz", "true_false"]);
+export const answerModeSchema = z.enum(["single", "multiple"]);
+
+export const MAX_ANSWERS = 6;
+
+// Canonical (normalized) question shape. A question now supports:
+//  - an optional per-question image (Supabase Storage URL),
+//  - 2..6 answers (was exactly 4),
+//  - a question type (Quiz | True/False),
+//  - single- or multiple-correct answers (correctAnswers array; single-select
+//    stores a chosen index at play time, multi-select stores a bitmask).
+const questionObjectSchema = z
+  .object({
+    question: z.string().min(1, "Question text is required"),
+    imageUrl: z.string().url().optional(),
+    type: questionTypeSchema.default("quiz"),
+    answerType: answerModeSchema.default("single"),
+    answers: z
+      .array(z.string().min(1, "Answer text is required"))
+      .min(2, "Must have at least 2 answers")
+      .max(MAX_ANSWERS, `Must have at most ${MAX_ANSWERS} answers`),
+    correctAnswers: z
+      .array(z.number().int().min(0))
+      .min(1, "Mark at least one correct answer"),
+    timeLimit: z.number().min(5).max(120).default(20),
+  })
+  .superRefine((q, ctx) => {
+    const n = q.answers.length;
+    const unique = new Set(q.correctAnswers);
+    for (const idx of q.correctAnswers) {
+      if (idx >= n) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: `Correct answer index ${idx} is out of range`, path: ["correctAnswers"] });
+      }
+    }
+    if (unique.size !== q.correctAnswers.length) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Duplicate correct answers", path: ["correctAnswers"] });
+    }
+    if (q.answerType === "single" && q.correctAnswers.length !== 1) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Single-select questions must have exactly one correct answer", path: ["correctAnswers"] });
+    }
+    if (q.type === "true_false" && n !== 2) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "True/False questions must have exactly two answers", path: ["answers"] });
+    }
+  });
+
+// Normalize legacy questions ({ correctAnswer: n, 4 answers }) written before the
+// Kahoot revamp into the canonical shape, so existing quizzes keep working with
+// no data migration.
+export function normalizeLegacyQuestion(raw: unknown): unknown {
+  if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+    const q = raw as Record<string, unknown>;
+    if (q.correctAnswers === undefined && typeof q.correctAnswer === "number") {
+      return {
+        ...q,
+        correctAnswers: [q.correctAnswer],
+        type: q.type ?? "quiz",
+        answerType: q.answerType ?? "single",
+      };
+    }
+  }
+  return raw;
+}
+
+export const questionSchema = z.preprocess(normalizeLegacyQuestion, questionObjectSchema);
 
 export const quizQuestionsSchema = z.array(questionSchema);
 

@@ -4,12 +4,13 @@ import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Check, X, Trophy, Triangle, Diamond, Circle, Square } from "lucide-react";
+import { Clock, Check, X, Trophy } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
+import { answerStyle } from "@/lib/answer-style";
 
 export default function PlayGame() {
   const { pin } = useParams();
@@ -596,18 +597,17 @@ export default function PlayGame() {
         {/* Answer Options - 2x2 Grid */}
         <div className="grid grid-cols-2 gap-2 mb-3 flex-1 min-h-0">
           {currentQuestion?.answers.map((answer, index) => {
-            const colors = ['abraj-red', 'abraj-blue', 'abraj-green', 'abraj-yellow'];
-            const symbols = [Triangle, Diamond, Circle, Square];
-            const SymbolIcon = symbols[index];
+            const style = answerStyle(index);
+            const SymbolIcon = style.icon;
             const isSelected = selectedAnswer === index;
             const isDisabled = hasAnswered || timeLeft === 0 || runtimeState.status !== "open";
-            
+
             return (
               <Button
                 key={index}
                 onClick={() => handleAnswerSelect(index)}
                 disabled={isDisabled}
-                className={`${colors[index]} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced h-full flex ${
+                className={`${style.bg} text-white p-2 sm:p-3 rounded-xl font-bold card-3d-enhanced h-full flex ${
                   isSelected ? 'ring-4 ring-white animate-pulse' : ''
                 } ${isDisabled ? 'opacity-60' : ''}`}
               >
