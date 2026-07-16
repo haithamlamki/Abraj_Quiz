@@ -77,5 +77,5 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
 
 ## Known divergences from `tests/smoke/api-contract.md` (intentional, not bugs)
 
-- `DELETE /api/quizzes/:id` is not implemented. Editor can update but not delete a quiz. If/when added, mirror `PUT`'s ownership check.
+- ~~`DELETE /api/quizzes/:id` is not implemented.~~ Implemented as soft delete (archive) with restore — mirrors `PUT`'s ownership check; archived quizzes stay resolvable by id for game history (migration 0008).
 - `POST /api/games/:pin/answer` is intentionally public — players don't have user accounts; identity is `playerName` matching a runtime-room registration. There is no path that returns 401 from this endpoint.
