@@ -10,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
+import { ConnectionBanner } from "@/components/connection-banner";
 import { encodeSelection } from "@shared/quiz-scoring";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { QUIZ_STAGE_CONTAINER } from "@/components/quiz/layout";
@@ -75,7 +76,7 @@ export default function PlayGame() {
 
 
   // Use WebSocket for real-time updates
-  const { runtimeState } = useGameWebSocket({
+  const { runtimeState, connectionStatus } = useGameWebSocket({
     gamePin: pin || "",
     playerName,
     isHost: false,
@@ -472,6 +473,7 @@ export default function PlayGame() {
   if (game.status === "waiting") {
     return (
       <div className="min-h-screen flex items-center justify-center" style={getBackgroundStyle(quiz?.background || 'classroom')}>
+        <ConnectionBanner status={connectionStatus} />
         <Card className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm">
           <CardContent className="pt-6 text-center space-y-6">
             <div className="abraj-primary text-white w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl mx-auto">
@@ -513,6 +515,7 @@ export default function PlayGame() {
       <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${
         lastResult.isCorrect ? 'bg-green-500' : 'bg-red-500'
       } animate-in fade-in duration-300`}>
+        <ConnectionBanner status={connectionStatus} />
         {/* Large Icon */}
         <div className={`mb-8 animate-in zoom-in-50 duration-500 ${
           lastResult.isCorrect ? '' : 'animate-bounce'
@@ -574,6 +577,7 @@ export default function PlayGame() {
 
   return (
     <div className="h-[calc(100dvh-68px)] overflow-hidden flex flex-col p-3 sm:p-4 bg-slate-900">
+      <ConnectionBanner status={connectionStatus} />
       <TimeUpOverlay />
       <div className={QUIZ_STAGE_CONTAINER}>
         {/* Shared question stage — identical component to preview + host */}
