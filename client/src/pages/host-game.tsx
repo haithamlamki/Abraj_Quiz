@@ -144,7 +144,10 @@ export default function HostGame() {
       } else {
         queryClient.invalidateQueries({ queryKey: ["/api/games", pin] });
         setShowResults(false);
-        setTimeLeft(null);
+        // timeLeft is owned by the runtimeState effect below. Nulling it here
+        // races the question_started broadcast: for no-limit questions there
+        // are no time_remaining ticks to repopulate it, so the host's
+        // Next/Finish button (gated on timeLeft === 0) would never render.
       }
     },
     onError: (error: any) => {
@@ -207,7 +210,10 @@ export default function HostGame() {
     console.log('Question changed to', game?.currentQuestion, 'resetting state');
     setSoundPlayed(false);
     setShowResults(false);
-    setTimeLeft(null);
+    // Do NOT reset timeLeft here: the runtimeState effect above mirrors it
+    // from server state, and this effect runs after it in the same commit.
+    // Nulling it would erase the timeRemaining=0 of a no-limit question
+    // (which never ticks), hiding the host's Next/Finish button forever.
   }, [game?.currentQuestion, runtimeState.questionIndex]);
 
   // Play correct answer sound immediately when results are shown (only once per question)
