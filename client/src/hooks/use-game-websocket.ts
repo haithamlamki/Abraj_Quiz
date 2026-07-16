@@ -2,6 +2,7 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { WsServerMessage } from "@shared/ws-protocol";
 import { getAuthToken } from "@/lib/authToken";
+import { reconnectDelayMs, shouldReconnect } from "@/lib/ws-reconnect";
 
 let devFallbackLogged = false;
 
@@ -11,6 +12,8 @@ interface UseGameWebSocketOptions {
   isHost?: boolean;
   enabled?: boolean;
 }
+
+export type ConnectionStatus = "connecting" | "open" | "reconnecting" | "failed";
 
 export interface RuntimeQuestionState {
   status: "idle" | "open" | "closed" | "completed";
@@ -35,6 +38,7 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
     questionIndex: null,
     timeRemaining: null,
   });
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
 
   const connect = useCallback(() => {
     if (!enabled || !gamePin || !isActiveRef.current) return;
@@ -50,6 +54,7 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
         console.error(
           "VITE_WS_URL must be set in production builds. Static frontend cannot serve WebSocket connections; live updates are disabled.",
         );
+        setConnectionStatus("failed");
         return;
       }
       if (!rawWsUrl.startsWith("wss://")) {
@@ -76,11 +81,17 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
       const connectUrl = token
         ? `${wsUrl}${wsUrl.includes("?") ? "&" : "?"}token=${encodeURIComponent(token)}`
         : wsUrl;
+      setConnectionStatus((prev) =>
+        prev === "reconnecting" || prev === "failed" || reconnectAttemptsRef.current > 0
+          ? "reconnecting"
+          : "connecting",
+      );
       const ws = new WebSocket(connectUrl);
       wsRef.current = ws;
 
       ws.onopen = () => {
         reconnectAttemptsRef.current = 0;
+        setConnectionStatus("open");
         console.log("WebSocket connected to game:", gamePin);
         ws.send(JSON.stringify({
           type: "join",
@@ -179,21 +190,29 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
       };
 
       ws.onclose = (event) => {
-        console.log("WebSocket disconnected from game:", gamePin);
+        if (wsRef.current !== ws) return;
+        console.log("WebSocket disconnected from game:", gamePin, "code:", event.code);
         wsRef.current = null;
-        
-        // Policy violation usually means invalid room, invalid host session, or invalid player membership.
-        if (enabled && isActiveRef.current && event.code !== 1008) {
-          const attempt = reconnectAttemptsRef.current++;
-          const delay = Math.min(30000, 1000 * 2 ** attempt);
-          reconnectTimeoutRef.current = setTimeout(() => {
-            console.log("Attempting to reconnect WebSocket...");
-            connect();
-          }, delay);
+
+        if (!enabled || !isActiveRef.current) return;
+
+        // 1008 = invalid room / host session / player membership — retrying
+        // cannot succeed, so surface a terminal failure instead of looping.
+        if (!shouldReconnect(event.code)) {
+          setConnectionStatus("failed");
+          return;
         }
+
+        setConnectionStatus("reconnecting");
+        const attempt = reconnectAttemptsRef.current++;
+        reconnectTimeoutRef.current = setTimeout(() => {
+          console.log("Attempting to reconnect WebSocket...");
+          connect();
+        }, reconnectDelayMs(attempt));
       };
     } catch (error) {
       console.error("Error creating WebSocket:", error);
+      setConnectionStatus("failed");
     }
   }, [gamePin, playerName, isHost, enabled, queryClient]);
 
@@ -206,7 +225,9 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
     }
     
     if (wsRef.current) {
-      wsRef.current.send(JSON.stringify({ type: "leave" }));
+      if (wsRef.current.readyState === WebSocket.OPEN) {
+        wsRef.current.send(JSON.stringify({ type: "leave" }));
+      }
       wsRef.current.close();
       wsRef.current = null;
     }
@@ -215,11 +236,34 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
   useEffect(() => {
     isActiveRef.current = true;
     connect();
-    
+
+    // Phone unlock / tab refocus / network restored: if the socket is not
+    // OPEN, skip the pending backoff and reconnect NOW with fresh attempts.
+    const wakeUp = () => {
+      if (!isActiveRef.current) return;
+      if (document.visibilityState !== "visible") return;
+      if (wsRef.current?.readyState === WebSocket.OPEN) return;
+      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      // A half-open socket (no onclose yet) must be discarded before redialing.
+      if (wsRef.current) {
+        wsRef.current.onclose = null;
+        wsRef.current.close();
+        wsRef.current = null;
+      }
+      reconnectAttemptsRef.current = 0;
+      connect();
+    };
+    document.addEventListener("visibilitychange", wakeUp);
+    window.addEventListener("online", wakeUp);
+    window.addEventListener("pageshow", wakeUp);
+
     return () => {
+      document.removeEventListener("visibilitychange", wakeUp);
+      window.removeEventListener("online", wakeUp);
+      window.removeEventListener("pageshow", wakeUp);
       disconnect();
     };
   }, [connect, disconnect]);
 
-  return { disconnect, runtimeState };
+  return { disconnect, runtimeState, connectionStatus };
 }

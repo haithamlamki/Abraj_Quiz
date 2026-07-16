@@ -14,6 +14,7 @@ import { getBackgroundStyle } from "@/utils/backgrounds";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { QUIZ_STAGE_CONTAINER } from "@/components/quiz/layout";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
+import { ConnectionBanner } from "@/components/connection-banner";
 import { resolveQuizTheme } from "@shared/quiz-theme";
 
 export default function HostGame() {
@@ -86,7 +87,7 @@ export default function HostGame() {
   };
 
   // Use WebSocket for real-time updates
-  const { runtimeState } = useGameWebSocket({
+  const { runtimeState, connectionStatus } = useGameWebSocket({
     gamePin: pin || "",
     isHost: true,
     enabled: !!pin
@@ -305,6 +306,7 @@ export default function HostGame() {
   if (game.status === "waiting") {
     return (
       <div className="h-screen overflow-y-auto py-8 animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50" style={getBackgroundStyle(quiz?.background || 'classroom')}>
+        <ConnectionBanner status={connectionStatus} />
         <CountdownOverlay />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col">
           <div className="text-center mb-8">
@@ -516,6 +518,7 @@ export default function HostGame() {
   if (game.status === "active") {
     return (
       <div className="h-[calc(100dvh-68px)] overflow-hidden flex flex-col p-3 sm:p-4 bg-slate-900">
+        <ConnectionBanner status={connectionStatus} />
         <div className={`${QUIZ_STAGE_CONTAINER} relative`}>
           {/* Next Question Button - Top Right */}
           {(showResults || timeLeft === 0) && (
