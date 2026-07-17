@@ -20,6 +20,7 @@ const Signup = lazy(() => import("@/pages/signup"));
 const QuizHistory = lazy(() => import("@/pages/quiz-history"));
 const HostQuizSetup = lazy(() => import("./pages/host-quiz-setup"));
 const QuizPDF = lazy(() => import("@/pages/quiz-pdf"));
+const QuizInsights = lazy(() => import("@/pages/quiz-insights"));
 const AdminTenants = lazy(() => import("@/pages/admin-tenants"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
@@ -43,6 +44,7 @@ function Router() {
         <Route path="/signup" component={Signup} />
         <Route path="/create" component={QuizEditor} />
         <Route path="/my-quizzes" component={QuizHistory} />
+        <Route path="/quiz-insights/:id" component={QuizInsights} />
         <Route path="/host/:pin" component={HostGame} />
         <Route path="/host-quiz/:quizId" component={HostQuizSetup} />
         <Route path="/edit-quiz/:quizId" component={QuizEditor} />

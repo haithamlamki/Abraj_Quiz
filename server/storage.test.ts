@@ -217,3 +217,75 @@ test("deleteQuiz/restoreQuiz respect tenant scoping and unknown ids", async () =
   assert.equal(await s.deleteQuiz(T2, 999999), undefined);
   assert.equal(await s.restoreQuiz(T2, 999999), undefined);
 });
+
+test("getQuizInsights aggregates completed games only, per-question stats, recent games", async () => {
+  const s = new MemStorage();
+  const quiz = await s.createQuiz(T1, {
+    title: "Insights quiz", description: "", background: "classroom", isPublic: true, createdBy: 9,
+    questions: [
+      { question: "Q0?", answers: ["a", "b"], correctAnswer: 0, timeLimit: 10 },
+      { question: "Q1?", answers: ["a", "b"], correctAnswer: 1, timeLimit: 10 },
+    ],
+  });
+
+  // Completed game with 2 players and mixed answers.
+  const g1 = await s.createGame(T1, { quizId: quiz.id, gamePin: "101010", hostId: 9, status: "waiting" });
+  await s.joinGame(T1, "101010", "P1");
+  await s.joinGame(T1, "101010", "P2");
+  await s.setGamePlayerScores(SYSTEM_CTX, g1.id, [{ name: "P1", score: 800 }, { name: "P2", score: 400 }]);
+  await s.createGameResponse(SYSTEM_CTX, { tenantId: 1, gameId: g1.id, playerName: "P1", questionIndex: 0, selectedAnswer: 0, responseTime: 1000, isCorrect: true,  pointsEarned: 800 });
+  await s.createGameResponse(SYSTEM_CTX, { tenantId: 1, gameId: g1.id, playerName: "P2", questionIndex: 0, selectedAnswer: 1, responseTime: 3000, isCorrect: false, pointsEarned: 0 });
+  await s.createGameResponse(SYSTEM_CTX, { tenantId: 1, gameId: g1.id, playerName: "P1", questionIndex: 1, selectedAnswer: 1, responseTime: 2000, isCorrect: true,  pointsEarned: 0 });
+  await s.updateGame(T1, g1.id, { status: "completed" });
+
+  // A waiting (NOT completed) game with a player — must be excluded everywhere.
+  const g2 = await s.createGame(T1, { quizId: quiz.id, gamePin: "202020", hostId: 9, status: "waiting" });
+  await s.joinGame(T1, "202020", "Ghost");
+
+  const ins = await s.getQuizInsights(T1, quiz.id);
+  assert.ok(ins);
+  assert.equal(ins!.gamesPlayed, 1);
+  assert.equal(ins!.totalPlayers, 2);
+  assert.equal(ins!.avgScore, 600);
+  assert.ok(ins!.lastPlayedAt instanceof Date);
+
+  assert.equal(ins!.questions.length, 2);
+  const q0 = ins!.questions.find((q) => q.questionIndex === 0)!;
+  assert.equal(q0.question, "Q0?");
+  assert.equal(q0.totalResponses, 2);
+  assert.equal(q0.correctRate, 0.5);
+  assert.equal(q0.avgResponseMs, 2000);
+  const q1 = ins!.questions.find((q) => q.questionIndex === 1)!;
+  assert.equal(q1.totalResponses, 1);
+  assert.equal(q1.correctRate, 1);
+  // Answer keys never leak into insights.
+  assert.ok(!JSON.stringify(ins).includes("correctAnswer"));
+
+  assert.equal(ins!.recentGames.length, 1);
+  assert.equal(ins!.recentGames[0].playerCount, 2);
+  assert.equal(ins!.recentGames[0].avgScore, 600);
+
+  // Tenant scoping + unknown id.
+  assert.equal(await s.getQuizInsights(T2, quiz.id), undefined);
+  assert.equal(await s.getQuizInsights(T1, 999999), undefined);
+});
+
+test("getQuizInsights: quiz with zero completed games returns zeroed shape with question rows", async () => {
+  const s = new MemStorage();
+  const quiz = await s.createQuiz(T1, {
+    title: "Unplayed", description: "", background: "classroom", isPublic: true, createdBy: 9,
+    questions: [{ question: "Only Q?", answers: ["a", "b"], correctAnswer: 0, timeLimit: 10 }],
+  });
+  const ins = await s.getQuizInsights(T1, quiz.id);
+  assert.ok(ins);
+  assert.equal(ins!.gamesPlayed, 0);
+  assert.equal(ins!.totalPlayers, 0);
+  assert.equal(ins!.avgScore, 0);
+  assert.equal(ins!.lastPlayedAt, null);
+  assert.equal(ins!.questions.length, 1);
+  assert.deepEqual(
+    ins!.questions[0],
+    { questionIndex: 0, question: "Only Q?", totalResponses: 0, correctRate: 0, avgResponseMs: 0 },
+  );
+  assert.deepEqual(ins!.recentGames, []);
+});

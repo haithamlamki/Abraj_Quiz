@@ -649,6 +649,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/quizzes/:id/insights", requireAuth, async (req, res) => {
+    try {
+      const quizId = parseInt(req.params.id, 10);
+      if (!Number.isInteger(quizId) || quizId <= 0) {
+        return res.status(400).json({ message: "Invalid quiz id" });
+      }
+      const userId = (req as any).authUserId;
+      const existingQuiz = await storage.getQuiz(tctx(req), quizId);
+      if (!existingQuiz) {
+        return res.status(404).json({ message: "Quiz not found" });
+      }
+      // Owner-only — includes archived quizzes: history is the point of archive.
+      if (existingQuiz.createdBy !== userId) {
+        return res.status(403).json({ message: "You can only view insights for your own quizzes" });
+      }
+      const insights = await storage.getQuizInsights(tctx(req), quizId);
+      res.json(insights);
+    } catch (error) {
+      captureError(error, { scope: "http.quiz-insights" });
+      res.status(500).json({ message: "Failed to load quiz insights" });
+    }
+  });
+
   // Game routes
   app.post("/api/games", requireAuth, async (req, res) => {
     try {
