@@ -213,7 +213,8 @@ export default function QuizEditor() {
       .map((ci) => (ci > answerIndex ? ci - 1 : ci));
     patchQuestion(currentIndex, {
       answers,
-      correctAnswers: correctAnswers.length ? correctAnswers : [0],
+      // Polls must never have correct answers; never backfill [0] for them.
+      correctAnswers: current.type === "poll" ? [] : correctAnswers.length ? correctAnswers : [0],
     });
   };
 
@@ -247,7 +248,10 @@ export default function QuizEditor() {
   };
 
   const setAnswerMode = (answerType: Question["answerType"]) => {
-    if (answerType === "single") {
+    if (current.type === "poll") {
+      // Polls must never have correct answers, regardless of answer mode.
+      patchQuestion(currentIndex, { answerType, correctAnswers: [] });
+    } else if (answerType === "single") {
       patchQuestion(currentIndex, { answerType, correctAnswers: [current.correctAnswers[0] ?? 0] });
     } else {
       patchQuestion(currentIndex, { answerType });
@@ -686,9 +690,11 @@ export default function QuizEditor() {
                 <SelectItem value="multiple">{t("editor.question.answerModeMultiple")}</SelectItem>
               </SelectContent>
             </Select>
-            <p className="text-[11px] text-gray-400 mt-1">
-              {current.answerType === "multiple" ? t("editor.question.answerModeMultipleHint") : t("editor.question.answerModeSingleHint")}
-            </p>
+            {current.type !== "poll" && (
+              <p className="text-[11px] text-gray-400 mt-1">
+                {current.answerType === "multiple" ? t("editor.question.answerModeMultipleHint") : t("editor.question.answerModeSingleHint")}
+              </p>
+            )}
           </div>
 
           {current.type === "poll" ? (
