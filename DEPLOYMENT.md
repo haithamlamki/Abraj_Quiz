@@ -61,6 +61,13 @@ CLIENT_ORIGIN=https://your-vercel-domain.vercel.app
 NODE_ENV=production
 PORT=5000
 SENTRY_DSN=https://...@....ingest.sentry.io/...   # optional — error tracking is a no-op without it
+
+# Rate limits (all optional; the defaults below apply when unset; 0 disables a limiter)
+RATE_LIMIT_AUTH_MAX=30     # failed register/login attempts per IP per 15 min (successes don't count)
+RATE_LIMIT_AI_MAX=20       # OpenAI-backed generations per user per hour (direct spend exposure)
+RATE_LIMIT_UPLOAD_MAX=60   # image uploads per user per hour
+RATE_LIMIT_JOIN_MAX=600    # game joins per IP per minute — keep >= 600: a live venue puts
+                           # hundreds of players behind ONE NAT IP joining within seconds
 ```
 
 Build and start:
