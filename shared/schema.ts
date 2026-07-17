@@ -203,7 +203,7 @@ export const insertGameResponseSchema = createInsertSchema(gameResponses).pick({
 });
 
 // Question schema
-export const questionTypeSchema = z.enum(["quiz", "true_false"]);
+export const questionTypeSchema = z.enum(["quiz", "true_false", "poll"]);
 export const answerModeSchema = z.enum(["single", "multiple"]);
 export const questionPointsSchema = z.enum(["standard", "double"]);
 
@@ -225,9 +225,9 @@ const questionObjectSchema = z
       .array(z.string().min(1, "Answer text is required"))
       .min(2, "Must have at least 2 answers")
       .max(MAX_ANSWERS, `Must have at most ${MAX_ANSWERS} answers`),
-    correctAnswers: z
-      .array(z.number().int().min(0))
-      .min(1, "Mark at least one correct answer"),
+    // Scored types (quiz/true_false) require >=1 correct answer; polls have
+    // none (enforced below in superRefine, keyed off `type`).
+    correctAnswers: z.array(z.number().int().min(0)),
     // 0 = no limit (host advances manually); otherwise 5..120 seconds.
     timeLimit: z
       .number()
@@ -252,8 +252,18 @@ const questionObjectSchema = z
     if (unique.size !== q.correctAnswers.length) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Duplicate correct answers", path: ["correctAnswers"] });
     }
-    if (q.answerType === "single" && q.correctAnswers.length !== 1) {
-      ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Single-select questions must have exactly one correct answer", path: ["correctAnswers"] });
+    if (q.type === "poll") {
+      // Polls are a tally, not a scored question: no correct answer to mark.
+      if (q.correctAnswers.length !== 0) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Poll questions cannot have correct answers", path: ["correctAnswers"] });
+      }
+    } else {
+      if (q.correctAnswers.length < 1) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Mark at least one correct answer", path: ["correctAnswers"] });
+      }
+      if (q.answerType === "single" && q.correctAnswers.length !== 1) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Single-select questions must have exactly one correct answer", path: ["correctAnswers"] });
+      }
     }
     if (q.type === "true_false" && n !== 2) {
       ctx.addIssue({ code: z.ZodIssueCode.custom, message: "True/False questions must have exactly two answers", path: ["answers"] });
