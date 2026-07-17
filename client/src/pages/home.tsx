@@ -226,10 +226,10 @@ export default function Home() {
                                 className="hidden"
                               />
                               <div className="absolute inset-0 border-2 border-white/50 m-8 pointer-events-none">
-                                <div className="absolute top-0 start-0 w-8 h-8 border-l-4 border-t-4 border-abraj-primary"></div>
-                                <div className="absolute top-0 end-0 w-8 h-8 border-r-4 border-t-4 border-abraj-primary"></div>
-                                <div className="absolute bottom-0 start-0 w-8 h-8 border-l-4 border-b-4 border-abraj-primary"></div>
-                                <div className="absolute bottom-0 end-0 w-8 h-8 border-r-4 border-b-4 border-abraj-primary"></div>
+                                <div className="absolute top-0 start-0 w-8 h-8 border-s-4 border-t-4 border-abraj-primary"></div>
+                                <div className="absolute top-0 end-0 w-8 h-8 border-e-4 border-t-4 border-abraj-primary"></div>
+                                <div className="absolute bottom-0 start-0 w-8 h-8 border-s-4 border-b-4 border-abraj-primary"></div>
+                                <div className="absolute bottom-0 end-0 w-8 h-8 border-e-4 border-b-4 border-abraj-primary"></div>
                               </div>
                               <div className="absolute bottom-2 start-2 end-2 bg-black/70 text-white text-xs px-2 py-1 rounded pointer-events-none">
                                 {t("home.tapToScanDemo")}

@@ -95,7 +95,9 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     root.style.setProperty("--abraj-primary", tenant.branding.colors.primary);
     root.style.setProperty("--abraj-secondary", tenant.branding.colors.secondary);
     document.title = tenant.branding.appName;
-    applyLanguage(resolveLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY), tenant.branding.defaultLanguage));
+    applyLanguage(resolveLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY), tenant.branding.defaultLanguage), {
+      persist: false,
+    });
     if (tenant.branding.faviconUrl) {
       let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
       if (!link) {

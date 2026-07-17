@@ -26,11 +26,61 @@ function flatKeys(obj: Record<string, unknown>, prefix = ""): string[] {
   );
 }
 
-test("locale files have identical key sets (en ↔ ar parity)", () => {
-  const enKeys = flatKeys(en).sort();
-  const arKeys = flatKeys(ar).sort();
-  assert.deepEqual(arKeys, enKeys);
-  assert.ok(enKeys.length > 0, "locales must not be empty");
+// i18next v4 JSON pluralization suffixes (CLDR plural categories). A key like
+// "playersCount_few" belongs to the plural family whose base is "playersCount".
+const PLURAL_SUFFIX = /_(zero|one|two|few|many|other)$/;
+
+function baseKey(key: string): string {
+  return key.replace(PLURAL_SUFFIX, "");
+}
+
+test("locale files have identical base key sets (en ↔ ar parity, plural-suffix aware)", () => {
+  const enKeys = flatKeys(en);
+  const arKeys = flatKeys(ar);
+  const enBaseKeys = new Set(enKeys.map(baseKey));
+  const arBaseKeys = new Set(arKeys.map(baseKey));
+  assert.deepEqual([...arBaseKeys].sort(), [...enBaseKeys].sort());
+  assert.ok(enBaseKeys.size > 0, "locales must not be empty");
+});
+
+test("Arabic supplies full CLDR plural categories for every pluralized key; English has one/other", () => {
+  // i18next v4 JSON does NOT fall back to `_other` within a language, so Arabic
+  // (which has 6 CLDR plural categories) must define all of them explicitly.
+  const enPluralFamilies = new Map<string, Set<string>>();
+  for (const key of flatKeys(en)) {
+    const m = key.match(PLURAL_SUFFIX);
+    if (!m) continue;
+    const base = baseKey(key);
+    if (!enPluralFamilies.has(base)) enPluralFamilies.set(base, new Set());
+    enPluralFamilies.get(base)!.add(m[1]);
+  }
+
+  const arPluralFamilies = new Map<string, Set<string>>();
+  for (const key of flatKeys(ar)) {
+    const m = key.match(PLURAL_SUFFIX);
+    if (!m) continue;
+    const base = baseKey(key);
+    if (!arPluralFamilies.has(base)) arPluralFamilies.set(base, new Set());
+    arPluralFamilies.get(base)!.add(m[1]);
+  }
+
+  assert.ok(enPluralFamilies.size > 0, "expected at least one pluralized key to check");
+  assert.deepEqual([...enPluralFamilies.keys()].sort(), [...arPluralFamilies.keys()].sort());
+
+  // en only needs the categories Intl.PluralRules("en") actually produces.
+  const enExpectedCategories = new Set(new Intl.PluralRules("en").resolvedOptions().pluralCategories);
+  const arExpectedCategories = new Set(["zero", "one", "two", "few", "many", "other"]);
+
+  for (const [base, categories] of enPluralFamilies) {
+    for (const expected of enExpectedCategories) {
+      assert.ok(categories.has(expected), `en.${base} is missing plural category "${expected}"`);
+    }
+  }
+  for (const [base, categories] of arPluralFamilies) {
+    for (const expected of arExpectedCategories) {
+      assert.ok(categories.has(expected), `ar.${base} is missing plural category "${expected}"`);
+    }
+  }
 });
 
 test("no Arabic value is left identical to its English source (untranslated placeholder guard)", () => {

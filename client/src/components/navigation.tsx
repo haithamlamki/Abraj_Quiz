@@ -19,9 +19,9 @@ export default function Navigation() {
     <nav className="bg-white shadow-lg border-b-4 border-abraj-primary sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-4 rtl:space-x-reverse">
             <Link href="/">
-              <div className="flex items-center space-x-3 cursor-pointer">
+              <div className="flex items-center space-x-3 rtl:space-x-reverse cursor-pointer">
                 {(() => {
                   // Use the tenant's own logo; fall back to the bundled Abraj
                   // logo only for the Abraj tenant (its logoUrl is intentionally
@@ -45,7 +45,7 @@ export default function Navigation() {
           </div>
           
           <div className="hidden md:block">
-            <div className="ms-10 flex items-center space-x-6">
+            <div className="ms-10 flex items-center space-x-6 rtl:space-x-reverse">
               <Link href="/create">
                 <span className={`px-4 py-3 rounded-md text-lg font-medium transition-colors cursor-pointer flex items-center space-x-2 ${
                   location === '/create'

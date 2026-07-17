@@ -1,4 +1,5 @@
 import { Trophy, Medal, Award } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 interface Player {
   name: string;
@@ -11,7 +12,9 @@ interface LeaderboardProps {
   title?: string;
 }
 
-export default function Leaderboard({ players, showPodium = false, title = "Leaderboard" }: LeaderboardProps) {
+export default function Leaderboard({ players, showPodium = false, title }: LeaderboardProps) {
+  const { t } = useTranslation();
+  const resolvedTitle = title ?? t("results.leaderboard");
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
 
   if (showPodium && sortedPlayers.length >= 3) {
@@ -19,10 +22,10 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
 
     return (
       <div className="space-y-6">
-        <h3 className="font-bold text-2xl text-gray-800 text-center">{title}</h3>
-        
+        <h3 className="font-bold text-2xl text-gray-800 text-center">{resolvedTitle}</h3>
+
         {/* Podium Winners */}
-        <div className="flex justify-center items-end space-x-4 mb-8">
+        <div className="flex justify-center items-end space-x-4 rtl:space-x-reverse mb-8">
           {/* 2nd Place */}
           {second && (
             <div className="text-center">
@@ -32,7 +35,7 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
               <div className="bg-gray-300 h-20 w-20 rounded-t-lg flex items-center justify-center px-2">
                 <span className="font-bold text-gray-700 text-sm truncate">{second.name}</span>
               </div>
-              <p className="text-sm text-gray-600 mt-2">{second.score.toLocaleString()} pts</p>
+              <p className="text-sm text-gray-600 mt-2">{second.score.toLocaleString()} {t("common.pts")}</p>
             </div>
           )}
           
@@ -45,7 +48,7 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
               <div className="bg-yellow-400 h-32 w-24 rounded-t-lg flex items-center justify-center px-2">
                 <span className="font-bold text-yellow-900 text-sm truncate">{first.name}</span>
               </div>
-              <p className="text-sm text-gray-600 mt-2">{first.score.toLocaleString()} pts</p>
+              <p className="text-sm text-gray-600 mt-2">{first.score.toLocaleString()} {t("common.pts")}</p>
             </div>
           )}
           
@@ -58,7 +61,7 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
               <div className="bg-orange-400 h-16 w-20 rounded-t-lg flex items-center justify-center px-2">
                 <span className="font-bold text-orange-900 text-sm truncate">{third.name}</span>
               </div>
-              <p className="text-sm text-gray-600 mt-2">{third.score.toLocaleString()} pts</p>
+              <p className="text-sm text-gray-600 mt-2">{third.score.toLocaleString()} {t("common.pts")}</p>
             </div>
           )}
         </div>
@@ -68,7 +71,7 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
           <div className="space-y-2">
             {rest.map((player, index) => (
               <div key={player.name} className="flex items-center justify-between bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-3 rtl:space-x-reverse">
                   <span className="w-8 h-8 abraj-primary text-white rounded-full flex items-center justify-center font-bold text-sm">
                     {index + 4}
                   </span>
@@ -86,11 +89,11 @@ export default function Leaderboard({ players, showPodium = false, title = "Lead
   // Regular leaderboard
   return (
     <>
-      <h4 className="font-bold text-xl mb-4">{title}</h4>
+      <h4 className="font-bold text-xl mb-4">{resolvedTitle}</h4>
       <div className="space-y-3">
         {sortedPlayers.map((player, index) => (
           <div key={player.name} className="flex items-center justify-between bg-white/10 rounded-lg p-3">
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                 index === 0 ? 'abraj-green text-white' :
                 index === 1 ? 'bg-gray-400 text-white' :

@@ -533,7 +533,7 @@ export default function HostGame() {
                 disabled={nextQuestionMutation.isPending}
                 className="abraj-primary hover:abraj-secondary text-white px-6 py-2 font-bold btn-glow shimmer shadow-lg"
               >
-                <SkipForward className="w-4 h-4 me-2" />
+                <SkipForward className="w-4 h-4 me-2 rtl:rotate-180" />
                 {(game.currentQuestion || 0) + 1 >= questions.length ? t("host.finishGame") : t("host.nextQuestion")}
               </Button>
             </div>

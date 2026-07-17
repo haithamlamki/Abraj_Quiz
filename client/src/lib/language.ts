@@ -11,10 +11,12 @@ export function resolveLanguage(stored: string | null, tenantDefault: string | u
   return "en";
 }
 
-export function applyLanguage(lang: AppLanguage): void {
+export function applyLanguage(lang: AppLanguage, opts: { persist?: boolean } = {}): void {
+  const { persist = true } = opts;
   void i18n.changeLanguage(lang);
   document.documentElement.lang = lang;
   document.documentElement.dir = lang === "ar" ? "rtl" : "ltr";
+  if (!persist) return;
   try {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
   } catch {

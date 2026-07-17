@@ -5,7 +5,8 @@
     "back": "Back",
     "seconds": "seconds",
     "reconnecting": "Connection lost — reconnecting…",
-    "connectionLost": "Can't reach the game server. Check your internet connection, then reload the page."
+    "connectionLost": "Can't reach the game server. Check your internet connection, then reload the page.",
+    "pts": "pts"
   },
   "nav": {
     "create": "Create",
