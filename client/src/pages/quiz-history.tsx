@@ -15,7 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Link, useLocation } from "wouter";
-import { Clock, Users, Eye, Edit, Trash2, FileText } from "lucide-react";
+import { Clock, Users, Eye, Edit, Trash2, FileText, BarChart3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -220,6 +220,12 @@ export default function QuizHistory() {
                             <Button variant="outline" size="sm" className="flex-1 min-w-[80px] border-[#019ebd] text-[#019ebd] hover:bg-[#019ebd] hover:text-white">
                               <FileText className="w-4 h-4 mr-1" />
                               PDF
+                            </Button>
+                          </Link>
+                          <Link href={`/quiz-insights/${quiz.id}`}>
+                            <Button variant="outline" size="sm" data-testid={`button-insights-quiz-${quiz.id}`}>
+                              <BarChart3 className="w-4 h-4 mr-1" />
+                              Insights
                             </Button>
                           </Link>
                           <Link href={`/host-quiz/${quiz.id}`}>
