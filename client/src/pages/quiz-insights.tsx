@@ -3,7 +3,6 @@ import { useRoute, Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
-import Navigation from "@/components/navigation";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, ResponsiveContainer,
 } from "recharts";
@@ -39,7 +38,6 @@ export default function QuizInsightsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
         <div className="flex items-center justify-center py-24 text-gray-500">Loading insights…</div>
       </div>
     );
@@ -47,7 +45,6 @@ export default function QuizInsightsPage() {
   if (isError || !data) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <Navigation />
         <div className="flex flex-col items-center justify-center py-24 gap-4">
           <p className="text-gray-600">Couldn't load insights for this quiz.</p>
           <Link href="/my-quizzes"><Button variant="outline"><ArrowLeft className="w-4 h-4 mr-1" />Back to My Quizzes</Button></Link>
@@ -66,7 +63,6 @@ export default function QuizInsightsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navigation />
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <div className="flex items-center gap-3">
           <Link href="/my-quizzes"><Button variant="ghost" size="sm" data-testid="button-back-insights"><ArrowLeft className="w-4 h-4 mr-1" />My Quizzes</Button></Link>
