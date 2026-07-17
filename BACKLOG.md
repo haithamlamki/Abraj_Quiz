@@ -59,6 +59,10 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
 - [ ] Whitelist Vercel preview deployments in `CLIENT_ORIGIN` (currently only production URLs).
 - [ ] Add length limits on quiz `title` / `description` / `answers` at the API boundary — DB columns are unbounded `TEXT`, no Zod `.max()` clamp today. A pathological payload could blow up later renders.
 
+## Dependency security (surfaced by Wave 0 final review, 2026-07-18)
+
+- [ ] **Production-dependency advisories**: `npm audit --omit=dev` reports 10 vulnerabilities (1 critical, 5 high) in the production tree, including `ws` (GHSA-96hv-2xvq-fx4p). These pre-date Wave 0 (which added only devDependencies and bumped no prod dep). Triage + upgrade the affected prod deps in a dedicated security PR (fits Wave 9 / security pass). Until then, do NOT describe `npm audit --omit=dev` as "clean" in any PR.
+
 ## UX resilience
 
 - [ ] React error boundary at the root of `client/src/App.tsx`. Currently wraps lazy routes in `Suspense` only — a render-time exception in any page produces a blank screen, no toast, no fallback.
