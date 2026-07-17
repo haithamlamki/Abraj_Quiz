@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -39,6 +40,7 @@ interface Game {
 }
 
 export default function HostQuizSetup() {
+  const { t } = useTranslation();
   const { quizId } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -51,13 +53,13 @@ export default function HostQuizSetup() {
     try {
       await navigator.clipboard.writeText(text);
       toast({
-        title: "Copied!",
-        description: `${label} copied to clipboard.`,
+        title: t("host.copiedTitle"),
+        description: t("host.copiedDescription", { label }),
       });
     } catch (error) {
       toast({
-        title: "Copy Failed",
-        description: "Please copy the link manually.",
+        title: t("host.copyFailedTitle"),
+        description: t("host.copyFailedDescription"),
         variant: "destructive",
       });
     }
@@ -67,13 +69,13 @@ export default function HostQuizSetup() {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
-        title: "Authentication Required",
-        description: "Please login to host quizzes.",
+        title: t("host.authRequiredTitle"),
+        description: t("host.authRequiredDescription"),
         variant: "destructive",
       });
       setLocation("/login");
     }
-  }, [isAuthenticated, isLoading, setLocation, toast]);
+  }, [isAuthenticated, isLoading, setLocation, toast, t]);
 
   const { data: quiz, isLoading: quizLoading } = useQuery<Quiz>({
     queryKey: ["/api/quizzes", quizId],
@@ -106,15 +108,15 @@ export default function HostQuizSetup() {
       
       setCreatedGame(game);
       toast({
-        title: "Game Created!",
-        description: `Game PIN: ${game.gamePin}. Players can now join!`,
+        title: t("host.gameCreatedTitle"),
+        description: t("host.gameCreatedDescription", { pin: game.gamePin }),
       });
       queryClient.invalidateQueries({ queryKey: ["/api/games"] });
     },
     onError: () => {
       toast({
-        title: "Error",
-        description: "Failed to create game. Please try again.",
+        title: t("host.errorTitle"),
+        description: t("host.createGameFailed"),
         variant: "destructive",
       });
     }
@@ -128,7 +130,7 @@ export default function HostQuizSetup() {
             <div className="text-center">
               <div className="animate-pulse card-3d-enhanced glass p-8 rounded-2xl">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading quiz...</p>
+                <p className="text-gray-600">{t("host.loadingQuiz")}</p>
               </div>
             </div>
           </div>
@@ -147,10 +149,10 @@ export default function HostQuizSetup() {
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12 animate-scale-in">
             <div className="card-3d-enhanced glass p-8 max-w-md mx-auto">
-              <h1 className="text-2xl font-bold gradient-text mb-4">Quiz Not Found</h1>
-              <p className="text-gray-600 mb-6">The quiz you're looking for doesn't exist.</p>
+              <h1 className="text-2xl font-bold gradient-text mb-4">{t("host.quizNotFoundTitle")}</h1>
+              <p className="text-gray-600 mb-6">{t("host.quizNotFoundDescription")}</p>
               <Button onClick={() => setLocation("/")} className="abraj-primary hover:abraj-secondary text-white btn-glow">
-                Go Home
+                {t("host.goHome")}
               </Button>
             </div>
           </div>
@@ -169,10 +171,10 @@ export default function HostQuizSetup() {
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8 animate-scale-in">
             <h1 className="text-4xl font-bold gradient-text mb-4">
-              Ready to Host Your Quiz?
+              {t("host.setupTitle")}
             </h1>
             <p className="text-xl text-gray-600">
-              Set up your quiz game and get players to join
+              {t("host.setupSubtitle")}
             </p>
           </div>
 
@@ -182,37 +184,37 @@ export default function HostQuizSetup() {
               <CardHeader>
                 <CardTitle className="text-2xl font-bold gradient-text flex items-center gap-2">
                   <Settings className="w-6 h-6 text-abraj-primary" />
-                  Quiz Details
+                  {t("host.quizDetailsTitle")}
                 </CardTitle>
                 <CardDescription>
-                  Review your quiz before starting the game
+                  {t("host.quizDetailsSubtitle")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
                   <h3 className="font-semibold text-lg text-gray-800 mb-2">{quiz.title}</h3>
-                  <p className="text-gray-600">{quiz.description || "No description provided"}</p>
+                  <p className="text-gray-600">{quiz.description || t("host.noDescriptionProvided")}</p>
                 </div>
-                
+
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
-                    <span>{totalQuestions} questions</span>
+                    <span>{t("host.questionsCount", { count: totalQuestions })}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    <span>~{estimatedTime} min</span>
+                    <span>{t("host.estimatedMinutes", { count: estimatedTime })}</span>
                   </div>
                 </div>
 
                 <div className="pt-4">
                   <Badge variant={quiz.isPublic ? "default" : "secondary"}>
-                    {quiz.isPublic ? "Public Quiz" : "Private Quiz"}
+                    {quiz.isPublic ? t("host.publicQuiz") : t("host.privateQuiz")}
                   </Badge>
                 </div>
 
                 <div className="pt-4 border-t">
-                  <h4 className="font-medium text-gray-800 mb-2">Questions Preview:</h4>
+                  <h4 className="font-medium text-gray-800 mb-2">{t("host.questionsPreview")}</h4>
                   <div className="space-y-2 max-h-32 overflow-y-auto">
                     {quiz.questions.slice(0, 3).map((question, index) => (
                       <div key={index} className="text-sm text-gray-600 p-2 bg-gray-50 rounded">
@@ -221,7 +223,7 @@ export default function HostQuizSetup() {
                     ))}
                     {quiz.questions.length > 3 && (
                       <div className="text-sm text-gray-500 text-center">
-                        ... and {quiz.questions.length - 3} more questions
+                        {t("host.moreQuestions", { count: quiz.questions.length - 3 })}
                       </div>
                     )}
                   </div>
@@ -234,16 +236,16 @@ export default function HostQuizSetup() {
               <CardHeader>
                 <CardTitle className="text-2xl font-bold gradient-text flex items-center gap-2">
                   <Play className="w-6 h-6 text-abraj-primary" />
-                  Start Game
+                  {t("host.startGameTitle")}
                 </CardTitle>
                 <CardDescription>
-                  Create a game session for your quiz
+                  {t("host.startGameSubtitle")}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 {!createdGame ? (
                   <div className="text-center space-y-4">
-                    
+
 
                     <Button
                       onClick={() => createGameMutation.mutate()}
@@ -253,13 +255,13 @@ export default function HostQuizSetup() {
                     >
                       {createGameMutation.isPending ? (
                         <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                          Creating Game...
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white me-2"></div>
+                          {t("host.creatingGame")}
                         </>
                       ) : (
                         <>
-                          <Play className="w-5 h-5 mr-2" />
-                          Create Game & Get PIN
+                          <Play className="w-5 h-5 me-2" />
+                          {t("host.createGameAndGetPin")}
                         </>
                       )}
                     </Button>
@@ -268,11 +270,11 @@ export default function HostQuizSetup() {
                   <div className="text-center space-y-6">
                     {/* Game PIN Display */}
                     <div className="bg-abraj-primary/10 rounded-lg p-6">
-                      <h3 className="font-semibold text-lg text-gray-800 mb-2">Game PIN</h3>
+                      <h3 className="font-semibold text-lg text-gray-800 mb-2">{t("host.gamePinLabel")}</h3>
                       <div className="text-4xl font-bold text-abraj-primary mb-2">
                         {createdGame.gamePin}
                       </div>
-                      <p className="text-sm text-gray-600">Players can join using this PIN</p>
+                      <p className="text-sm text-gray-600">{t("host.playersCanJoinWithPin")}</p>
                     </div>
 
                     {/* QR Code */}
@@ -280,44 +282,44 @@ export default function HostQuizSetup() {
                       <div className="bg-white p-4 rounded-lg border-2 border-gray-200">
                         <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2 justify-center">
                           <QrCode className="w-4 h-4" />
-                          QR Code
+                          {t("host.qrCode")}
                         </h4>
                         <div className="flex justify-center mb-3">
                           <Dialog>
                             <DialogTrigger asChild>
                               <button className="hover:scale-105 transition-transform cursor-pointer">
-                                <img src={qrCodeUrl} alt="QR Code to join game" className="w-32 h-32 rounded border hover:border-abraj-primary" />
+                                <img src={qrCodeUrl} alt={t("host.qrCodeAlt")} className="w-32 h-32 rounded border hover:border-abraj-primary" />
                               </button>
                             </DialogTrigger>
                             <DialogContent className="max-w-md">
                               <DialogHeader>
                                 <DialogTitle className="text-center flex items-center gap-2 justify-center">
                                   <QrCode className="w-5 h-5" />
-                                  Game QR Code
+                                  {t("host.gameQrCode")}
                                 </DialogTitle>
                               </DialogHeader>
                               <div className="flex flex-col items-center space-y-4 p-4">
                                 <div className="bg-white p-6 rounded-lg border">
-                                  <img src={qrCodeUrl} alt="QR Code to join game" className="w-64 h-64" />
+                                  <img src={qrCodeUrl} alt={t("host.qrCodeAlt")} className="w-64 h-64" />
                                 </div>
                                 <div className="text-center">
                                   <p className="font-bold text-2xl text-abraj-primary mb-2">{createdGame.gamePin}</p>
-                                  <p className="text-sm text-gray-600">Scan to join the game</p>
-                                  <p className="text-xs text-gray-500 mt-2">Or visit: {window.location.origin}/join/{createdGame.gamePin}</p>
+                                  <p className="text-sm text-gray-600">{t("host.scanToJoin")}</p>
+                                  <p className="text-xs text-gray-500 mt-2">{t("host.orVisit", { url: `${window.location.origin}/join/${createdGame.gamePin}` })}</p>
                                 </div>
                                 <Button
                                   variant="outline"
-                                  onClick={() => copyToClipboard(`${window.location.origin}/join/${createdGame.gamePin}`, "Join link")}
+                                  onClick={() => copyToClipboard(`${window.location.origin}/join/${createdGame.gamePin}`, t("host.joinLinkLabel"))}
                                   className="w-full"
                                 >
-                                  <Copy className="w-4 h-4 mr-2" />
-                                  Copy Join Link
+                                  <Copy className="w-4 h-4 me-2" />
+                                  {t("host.copyJoinLink")}
                                 </Button>
                               </div>
                             </DialogContent>
                           </Dialog>
                         </div>
-                        <p className="text-xs text-gray-500">Click to view larger • Players can scan this QR code to join</p>
+                        <p className="text-xs text-gray-500">{t("host.clickToViewLarger")}</p>
                       </div>
                     )}
 
@@ -325,26 +327,26 @@ export default function HostQuizSetup() {
                     <div className="space-y-3">
                       <h4 className="font-semibold text-gray-800 flex items-center gap-2 justify-center">
                         <Share2 className="w-4 h-4" />
-                        Share with Players
+                        {t("host.shareWithPlayers")}
                       </h4>
-                      
+
                       <div className="space-y-2">
                         <Button
                           variant="outline"
-                          onClick={() => copyToClipboard(createdGame.gamePin, "Game PIN")}
+                          onClick={() => copyToClipboard(createdGame.gamePin, t("host.gamePinLabel"))}
                           className="w-full"
                         >
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy PIN
+                          <Copy className="w-4 h-4 me-2" />
+                          {t("host.copyPin")}
                         </Button>
-                        
+
                         <Button
                           variant="outline"
-                          onClick={() => copyToClipboard(`${window.location.origin}/join/${createdGame.gamePin}`, "Join link")}
+                          onClick={() => copyToClipboard(`${window.location.origin}/join/${createdGame.gamePin}`, t("host.joinLinkLabel"))}
                           className="w-full"
                         >
-                          <Copy className="w-4 h-4 mr-2" />
-                          Copy Join Link
+                          <Copy className="w-4 h-4 me-2" />
+                          {t("host.copyJoinLink")}
                         </Button>
                       </div>
                     </div>
@@ -355,15 +357,15 @@ export default function HostQuizSetup() {
                       className="w-full abraj-green hover:bg-green-600 text-white font-medium py-3 text-lg btn-glow"
                       data-testid="button-start-hosting"
                     >
-                      <Play className="w-5 h-5 mr-2" />
-                      Start Hosting
+                      <Play className="w-5 h-5 me-2" />
+                      {t("host.startHosting")}
                     </Button>
                   </div>
                 )}
 
                 <div className="pt-4 border-t text-center">
                   <p className="text-sm text-gray-500 mb-3">
-                    Not ready to host yet?
+                    {t("host.notReadyToHost")}
                   </p>
                   <div className="space-y-2">
                     <Button
@@ -371,7 +373,7 @@ export default function HostQuizSetup() {
                       onClick={() => setLocation("/my-quizzes")}
                       className="w-full"
                     >
-                      Back to My Quizzes
+                      {t("host.backToMyQuizzes")}
                     </Button>
                     <Button
                       variant="ghost"
@@ -379,7 +381,7 @@ export default function HostQuizSetup() {
                       className="w-full"
                       data-testid="button-edit-quiz"
                     >
-                      Edit Quiz
+                      {t("host.editQuiz")}
                     </Button>
                   </div>
                 </div>
