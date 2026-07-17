@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import type { Question } from "@shared/schema";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import type { QuizTheme } from "@shared/quiz-theme";
@@ -55,6 +56,7 @@ export function QuizQuestionRenderer({
   distribution,
   className = "",
 }: QuizQuestionRendererProps) {
+  const { t } = useTranslation();
   // Participant view: just the colored shape grid, filling the container.
   if (shapeOnly) {
     const shapeClass = `h-full rounded-2xl overflow-hidden p-3 flex ${className}`;
@@ -82,7 +84,9 @@ export function QuizQuestionRenderer({
               className="text-white text-xs sm:text-sm font-semibold rounded-full px-3 py-1"
               style={{ backgroundColor: theme ? "var(--quiz-accent)" : "rgba(255,255,255,0.9)", color: theme ? "#fff" : "#1e293b" }}
             >
-              Question {questionNumber}{totalQuestions ? ` of ${totalQuestions}` : ""}
+              {totalQuestions
+                ? t("renderer.questionOfTotal", { current: questionNumber, total: totalQuestions })
+                : t("renderer.questionNumber", { current: questionNumber })}
             </span>
           ) : <span />}
           {timeRemaining != null && (
@@ -102,7 +106,7 @@ export function QuizQuestionRenderer({
           className="font-bold text-base sm:text-xl md:text-2xl leading-snug line-clamp-2"
           style={{ color: theme ? "var(--quiz-question-text)" : "#1e293b" }}
         >
-          {question.question || "Untitled question"}
+          {question.question || t("renderer.untitledQuestion")}
         </h2>
       </div>
 

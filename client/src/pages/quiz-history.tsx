@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -37,6 +38,7 @@ interface Quiz {
 }
 
 export default function QuizHistory() {
+  const { t } = useTranslation();
   const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -47,13 +49,13 @@ export default function QuizHistory() {
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
       toast({
-        title: "Authentication Required",
-        description: "Please login to view your quiz history.",
+        title: t("history.authRequiredTitle"),
+        description: t("history.authRequiredDescription"),
         variant: "destructive",
       });
       setLocation("/login");
     }
-  }, [isAuthenticated, isLoading, setLocation, toast]);
+  }, [isAuthenticated, isLoading, setLocation, toast, t]);
 
   const { data: quizzes, isLoading: quizzesLoading } = useQuery<Quiz[]>({
     queryKey: showArchived ? ["/api/my-quizzes?archived=1"] : ["/api/my-quizzes"],
@@ -69,18 +71,18 @@ export default function QuizHistory() {
     mutationFn: (id: number) => apiRequest("DELETE", `/api/quizzes/${id}`),
     onSuccess: () => {
       invalidateBothLists();
-      toast({ title: "Quiz archived", description: "You can restore it from the Archived view." });
+      toast({ title: t("history.archivedToastTitle"), description: t("history.archivedToastDescription") });
     },
-    onError: () => toast({ title: "Failed to delete quiz", variant: "destructive" }),
+    onError: () => toast({ title: t("history.deleteFailedTitle"), variant: "destructive" }),
   });
 
   const restoreMutation = useMutation({
     mutationFn: (id: number) => apiRequest("POST", `/api/quizzes/${id}/restore`),
     onSuccess: () => {
       invalidateBothLists();
-      toast({ title: "Quiz restored" });
+      toast({ title: t("history.restoredToastTitle") });
     },
-    onError: () => toast({ title: "Failed to restore quiz", variant: "destructive" }),
+    onError: () => toast({ title: t("history.restoreFailedTitle"), variant: "destructive" }),
   });
 
   if (isLoading || quizzesLoading) {
@@ -91,7 +93,7 @@ export default function QuizHistory() {
             <div className="text-center">
               <div className="animate-pulse card-3d-enhanced glass p-8 rounded-2xl">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-                <p className="text-gray-600">Loading your quizzes...</p>
+                <p className="text-gray-600">{t("history.loadingQuizzes")}</p>
               </div>
             </div>
           </div>
@@ -121,10 +123,10 @@ export default function QuizHistory() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 animate-scale-in">
             <h1 className="text-4xl font-bold gradient-text mb-4">
-              My Quiz History
+              {t("history.title")}
             </h1>
             <p className="text-xl text-gray-600">
-              Manage all the quizzes you've created
+              {t("history.subtitle")}
             </p>
             <div className="mt-4">
               <Button
@@ -133,7 +135,7 @@ export default function QuizHistory() {
                 onClick={() => setShowArchived((v) => !v)}
                 data-testid="button-toggle-archived"
               >
-                {showArchived ? "Back to My Quizzes" : "Archived"}
+                {showArchived ? t("history.backToMyQuizzes") : t("history.archived")}
               </Button>
             </div>
           </div>
@@ -147,17 +149,17 @@ export default function QuizHistory() {
                   </div>
                   {showArchived ? (
                     <>
-                      <h3 className="text-xl font-semibold gradient-text mb-2">No archived quizzes.</h3>
+                      <h3 className="text-xl font-semibold gradient-text mb-2">{t("history.noArchivedQuizzes")}</h3>
                     </>
                   ) : (
                     <>
-                      <h3 className="text-xl font-semibold gradient-text mb-2">No Quizzes Yet</h3>
+                      <h3 className="text-xl font-semibold gradient-text mb-2">{t("history.noQuizzesYetTitle")}</h3>
                       <p className="text-gray-600 mb-6">
-                        You haven't created any quizzes yet. Start building your first quiz to engage your audience!
+                        {t("history.noQuizzesYetDescription")}
                       </p>
                       <Link href="/create">
                         <Button className="abraj-primary hover:abraj-secondary text-white font-medium btn-glow">
-                          Create Your First Quiz
+                          {t("history.createFirstQuiz")}
                         </Button>
                       </Link>
                     </>
@@ -172,7 +174,7 @@ export default function QuizHistory() {
                   <CardHeader>
                     <div className="flex justify-between items-start mb-2">
                       <Badge variant={quiz.isPublic ? "default" : "secondary"} className="mb-2">
-                        {quiz.isPublic ? "Public" : "Private"}
+                        {quiz.isPublic ? t("history.public") : t("history.private")}
                       </Badge>
                       <div className="text-sm text-gray-500">
                         {formatDate(quiz.createdAt)}
@@ -182,22 +184,22 @@ export default function QuizHistory() {
                       {quiz.title}
                     </CardTitle>
                     <CardDescription className="text-gray-600 line-clamp-3">
-                      {quiz.description || "No description provided"}
+                      {quiz.description || t("history.noDescriptionProvided")}
                     </CardDescription>
                   </CardHeader>
-                  
+
                   <CardContent>
                     <div className="flex items-center gap-4 text-sm text-gray-600 mb-4">
                       <div className="flex items-center gap-1">
                         <Users className="w-4 h-4" />
-                        <span>{quiz.questions.length} questions</span>
+                        <span>{t("history.questionsCount", { count: quiz.questions.length })}</span>
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="w-4 h-4" />
-                        <span>~{Math.ceil(quiz.questions.reduce((acc, q) => acc + q.timeLimit, 0) / 60)} min</span>
+                        <span>{t("history.estimatedMinutes", { count: Math.ceil(quiz.questions.reduce((acc, q) => acc + q.timeLimit, 0) / 60) })}</span>
                       </div>
                     </div>
-                    
+
                     <div className="flex gap-2 flex-wrap">
                       {showArchived ? (
                         <Button
@@ -206,31 +208,31 @@ export default function QuizHistory() {
                           onClick={() => restoreMutation.mutate(quiz.id)}
                           data-testid={`button-restore-quiz-${quiz.id}`}
                         >
-                          Restore
+                          {t("history.restore")}
                         </Button>
                       ) : (
                         <>
                           <Link href={`/edit-quiz/${quiz.id}`}>
                             <Button variant="outline" size="sm" className="flex-1 min-w-[80px]">
-                              <Edit className="w-4 h-4 mr-1" />
-                              Edit
+                              <Edit className="w-4 h-4 me-1" />
+                              {t("history.edit")}
                             </Button>
                           </Link>
                           <Link href={`/quiz-pdf/${quiz.id}`}>
                             <Button variant="outline" size="sm" className="flex-1 min-w-[80px] border-[#019ebd] text-[#019ebd] hover:bg-[#019ebd] hover:text-white">
-                              <FileText className="w-4 h-4 mr-1" />
-                              PDF
+                              <FileText className="w-4 h-4 me-1" />
+                              {t("history.pdf")}
                             </Button>
                           </Link>
                           <Link href={`/quiz-insights/${quiz.id}`}>
                             <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" data-testid={`button-insights-quiz-${quiz.id}`}>
-                              <BarChart3 className="w-4 h-4 mr-1" />
-                              Insights
+                              <BarChart3 className="w-4 h-4 me-1" />
+                              {t("history.insights")}
                             </Button>
                           </Link>
                           <Link href={`/host-quiz/${quiz.id}`}>
                             <Button size="sm" className="abraj-primary hover:abraj-secondary text-white flex-1 min-w-[80px] btn-glow">
-                              Host Game
+                              {t("history.hostGame")}
                             </Button>
                           </Link>
                           <AlertDialog>
@@ -246,19 +248,18 @@ export default function QuizHistory() {
                             </AlertDialogTrigger>
                             <AlertDialogContent>
                               <AlertDialogHeader>
-                                <AlertDialogTitle>Delete this quiz?</AlertDialogTitle>
+                                <AlertDialogTitle>{t("history.deleteDialogTitle")}</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  "{quiz.title}" will be archived: it disappears from your quizzes and can no longer be hosted.
-                                  Results of games already played are kept. You can restore it from the Archived view.
+                                  {t("history.deleteDialogDescription", { title: quiz.title })}
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogCancel>{t("history.cancel")}</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => deleteMutation.mutate(quiz.id)}
                                   className="bg-red-600 hover:bg-red-700"
                                 >
-                                  Delete
+                                  {t("history.delete")}
                                 </AlertDialogAction>
                               </AlertDialogFooter>
                             </AlertDialogContent>
@@ -271,11 +272,11 @@ export default function QuizHistory() {
               ))}
             </div>
           )}
-          
+
           <div className="text-center mt-12">
             <Link href="/create">
               <Button className="abraj-primary hover:abraj-secondary text-white font-medium px-8 py-3 btn-glow">
-                Create New Quiz
+                {t("history.createNewQuiz")}
               </Button>
             </Link>
           </div>

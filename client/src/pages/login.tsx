@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { useTenant } from "@/lib/tenant";
 
 export default function Login() {
+  const { t } = useTranslation();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -31,15 +33,15 @@ export default function Login() {
       // before loading this user's views.
       queryClient.clear();
       toast({
-        title: "Welcome back!",
-        description: "You have successfully logged in.",
+        title: t("auth.loginSuccessTitle"),
+        description: t("auth.loginSuccessDescription"),
       });
       setLocation("/");
     },
     onError: (error: any) => {
       toast({
-        title: "Login Failed",
-        description: error.message || "Please check your username and password.",
+        title: t("auth.loginFailedTitle"),
+        description: error.message || t("auth.loginFailedDefault"),
         variant: "destructive",
       });
     }
@@ -49,8 +51,8 @@ export default function Login() {
     e.preventDefault();
     if (!formData.username || !formData.password) {
       toast({
-        title: "Missing Information",
-        description: "Please enter both username and password.",
+        title: t("auth.missingInfoTitle"),
+        description: t("auth.missingCredentials"),
         variant: "destructive",
       });
       return;
@@ -70,59 +72,59 @@ export default function Login() {
       <Card className="w-full max-w-md card-3d-enhanced glass animate-scale-in">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold gradient-text">
-            Welcome Back
+            {t("auth.loginTitle")}
           </CardTitle>
-          <p className="text-gray-600">Sign in to your {tenant.branding.appName} account</p>
+          <p className="text-gray-600">{t("auth.loginSubtitle", { appName: tenant.branding.appName })}</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
+              <Label htmlFor="username">{t("auth.usernameLabel")}</Label>
               <Input
                 id="username"
                 name="username"
                 type="text"
                 value={formData.username}
                 onChange={handleInputChange}
-                placeholder="Enter your username"
+                placeholder={t("auth.usernamePlaceholder")}
                 disabled={loginMutation.isPending}
                 className="shimmer"
                 data-testid="input-username"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <Label htmlFor="password">{t("auth.passwordLabel")}</Label>
               <Input
                 id="password"
                 name="password"
                 type="password"
                 value={formData.password}
                 onChange={handleInputChange}
-                placeholder="Enter your password"
+                placeholder={t("auth.passwordPlaceholder")}
                 disabled={loginMutation.isPending}
                 className="shimmer"
                 data-testid="input-password"
               />
             </div>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full abraj-primary hover:abraj-secondary btn-glow"
               disabled={loginMutation.isPending}
               data-testid="button-signin"
             >
-              {loginMutation.isPending ? "Signing in..." : "Sign In"}
+              {loginMutation.isPending ? t("auth.signingIn") : t("auth.signIn")}
             </Button>
           </form>
           <div className="mt-4 text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{" "}
+              {t("auth.noAccount")}{" "}
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setLocation("/signup")}
                 className="text-abraj-primary hover:underline p-0 h-auto font-normal"
               >
-                Sign up here
+                {t("auth.signUpHere")}
               </Button>
             </p>
           </div>
