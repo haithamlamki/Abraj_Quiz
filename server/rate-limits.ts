@@ -46,7 +46,8 @@ function toLimiter(setting: LimiterSetting, message: string): RequestHandler {
   if (setting.max === 0) return passThrough;
   return rateLimit({
     windowMs: setting.windowMs,
-    max: setting.max,
+    // v8 name; `max` still works but is deprecated.
+    limit: setting.max,
     skipSuccessfulRequests: setting.skipSuccessfulRequests,
     standardHeaders: true,
     legacyHeaders: false,

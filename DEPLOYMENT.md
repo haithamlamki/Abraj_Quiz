@@ -67,7 +67,9 @@ RATE_LIMIT_AUTH_MAX=30     # failed register/login attempts per IP per 15 min (s
 RATE_LIMIT_AI_MAX=20       # OpenAI-backed generations per user per hour (direct spend exposure)
 RATE_LIMIT_UPLOAD_MAX=60   # image uploads per user per hour
 RATE_LIMIT_JOIN_MAX=600    # game joins per IP per minute — keep >= 600: a live venue puts
-                           # hundreds of players behind ONE NAT IP joining within seconds
+                           # hundreds of players behind ONE NAT IP joining within seconds.
+                           # IPv6 clients are bucketed per /56 subnet, so an IPv6 venue
+                           # behaves like a single NAT IP and needs the same headroom.
 ```
 
 Build and start:
