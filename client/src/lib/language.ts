@@ -11,6 +11,20 @@ export function resolveLanguage(stored: string | null, tenantDefault: string | u
   return "en";
 }
 
+export function formatQuizDate(dateStr: string, lang: string): string {
+  // "ar-u-nu-latn-ca-gregory" pins Western (Latin) numerals + the Gregorian
+  // calendar for Arabic, matching what hosts read aloud elsewhere in the app
+  // (scores/PINs/timers) — plain "ar" would default to Arabic-Indic digits.
+  const locale = lang === "ar" ? "ar-u-nu-latn-ca-gregory" : "en-US";
+  return new Date(dateStr).toLocaleDateString(locale, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function applyLanguage(lang: AppLanguage, opts: { persist?: boolean } = {}): void {
   const { persist = true } = opts;
   void i18n.changeLanguage(lang);

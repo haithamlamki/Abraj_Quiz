@@ -108,6 +108,10 @@ export default function QuizEditor() {
   const [uploading, setUploading] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  // Guards the hydration effect below against react-i18next handing out a new
+  // `t` identity on every language change — without this, toggling language
+  // mid-edit re-runs hydration and silently discards unsaved edits.
+  const hydratedQuizRef = useRef<unknown>(null);
 
   // Redirect unauthenticated users.
   useEffect(() => {
@@ -124,6 +128,8 @@ export default function QuizEditor() {
   });
   useEffect(() => {
     if (loaded && isEditMode) {
+      if (hydratedQuizRef.current === loaded) return;
+      hydratedQuizRef.current = loaded;
       if (user && loaded.createdBy !== user.id) {
         toast({ title: t("editor.toasts.accessDeniedTitle"), description: t("editor.toasts.accessDeniedDescription"), variant: "destructive" });
         setLocation("/my-quizzes");

@@ -20,6 +20,7 @@ import { Clock, Users, Eye, Edit, Trash2, FileText, BarChart3 } from "lucide-rea
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { formatQuizDate } from "@/lib/language";
 import Navigation from "@/components/navigation";
 
 interface Quiz {
@@ -106,19 +107,7 @@ export default function QuizHistory() {
     return null;
   }
 
-  const formatDate = (dateString: string) => {
-    // "ar-u-nu-latn-ca-gregory" pins Western (Latin) numerals + the Gregorian
-    // calendar for Arabic, matching what hosts read aloud elsewhere in the app
-    // (scores/PINs/timers) — plain "ar" would default to Arabic-Indic digits.
-    const locale = i18n.language === "ar" ? "ar-u-nu-latn-ca-gregory" : "en-US";
-    return new Date(dateString).toLocaleDateString(locale, {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  const formatDate = (dateString: string) => formatQuizDate(dateString, i18n.language);
 
   return (
     <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">

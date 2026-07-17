@@ -45,7 +45,7 @@ export function ThemeBuilder({ theme, onChange, onUploadBackground, uploading }:
                   onClick={() => onChange(p.theme)}
                   className={`h-12 rounded-lg border-2 relative ${theme.background === p.theme.background ? "border-abraj-primary" : "border-transparent"}`}
                   style={swatch ? getThemeSwatchStyle(swatch) : { background: p.theme.accent }}
-                  title={p.label}
+                  title={t(`editor.theme.presets.${p.id}`, { defaultValue: p.label })}
                 />
               );
             })}

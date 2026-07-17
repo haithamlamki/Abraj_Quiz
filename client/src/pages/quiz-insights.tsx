@@ -7,6 +7,7 @@ import { ArrowLeft } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, ResponsiveContainer,
 } from "recharts";
+import { formatQuizDate } from "@/lib/language";
 
 interface QuizInsights {
   gamesPlayed: number;
@@ -29,7 +30,7 @@ function StatTile({ testId, label, value }: { testId: string; label: string; val
 }
 
 export default function QuizInsightsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [, params] = useRoute("/quiz-insights/:id");
   const quizId = params?.id;
   const { data, isLoading, isError } = useQuery<QuizInsights>({
@@ -56,7 +57,7 @@ export default function QuizInsightsPage() {
   }
 
   const chartData = data.questions.map((q) => ({
-    name: `Q${q.questionIndex + 1}. ${q.question.length > 28 ? q.question.slice(0, 28) + "…" : q.question}`,
+    name: `${t("insights.questionAxisPrefix", { n: q.questionIndex + 1 })} ${q.question.length > 28 ? q.question.slice(0, 28) + "…" : q.question}`,
     fullQuestion: q.question,
     pct: Math.round(q.correctRate * 100),
     responses: q.totalResponses,
@@ -123,7 +124,7 @@ export default function QuizInsightsPage() {
                   {data.recentGames.map((g) => (
                     <tr key={g.id} className="border-b last:border-0">
                       <td className="py-2 pe-4 font-mono">{g.gamePin}</td>
-                      <td className="py-2 pe-4">{g.createdAt ? new Date(g.createdAt).toLocaleString() : "—"}</td>
+                      <td className="py-2 pe-4">{g.createdAt ? formatQuizDate(g.createdAt, i18n.language) : "—"}</td>
                       <td className="py-2 pe-4">{g.playerCount}</td>
                       <td className="py-2">{Math.round(g.avgScore)}</td>
                     </tr>
