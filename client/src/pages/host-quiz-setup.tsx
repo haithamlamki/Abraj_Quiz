@@ -152,7 +152,7 @@ export default function HostQuizSetup() {
               <h1 className="text-2xl font-bold gradient-text mb-4">{t("host.quizNotFoundTitle")}</h1>
               <p className="text-gray-600 mb-6">{t("host.quizNotFoundDescription")}</p>
               <Button onClick={() => setLocation("/")} className="abraj-primary hover:abraj-secondary text-white btn-glow">
-                {t("host.goHome")}
+                {t("play.goHome")}
               </Button>
             </div>
           </div>
@@ -199,7 +199,7 @@ export default function HostQuizSetup() {
                 <div className="flex items-center gap-4 text-sm text-gray-600">
                   <div className="flex items-center gap-1">
                     <Users className="w-4 h-4" />
-                    <span>{t("host.questionsCount", { count: totalQuestions })}</span>
+                    <span>{t("play.questionsCount", { count: totalQuestions })}</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-4 h-4" />

@@ -259,7 +259,7 @@ export default function HostGame() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">{t("host.loadingGame")}</p>
+          <p className="text-lg text-gray-600">{t("play.loadingGame")}</p>
         </div>
       </div>
     );
@@ -270,9 +270,9 @@ export default function HostGame() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
-            <p className="text-lg text-gray-600 mb-4">{t("host.gameNotFound")}</p>
+            <p className="text-lg text-gray-600 mb-4">{t("play.gameNotFound")}</p>
             <Button onClick={() => setLocation("/")} className="abraj-primary">
-              {t("host.goHome")}
+              {t("play.goHome")}
             </Button>
           </CardContent>
         </Card>
