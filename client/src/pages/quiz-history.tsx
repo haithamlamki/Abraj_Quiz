@@ -223,7 +223,7 @@ export default function QuizHistory() {
                             </Button>
                           </Link>
                           <Link href={`/quiz-insights/${quiz.id}`}>
-                            <Button variant="outline" size="sm" data-testid={`button-insights-quiz-${quiz.id}`}>
+                            <Button variant="outline" size="sm" className="flex-1 min-w-[80px]" data-testid={`button-insights-quiz-${quiz.id}`}>
                               <BarChart3 className="w-4 h-4 mr-1" />
                               Insights
                             </Button>

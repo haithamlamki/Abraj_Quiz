@@ -28,6 +28,10 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
   - `/api/healthz` (DB-free liveness) + `/api/readyz` (DB-ping readiness with 2s timeout) (`7396147`)
   - GitHub Actions CI: typecheck + unit + integration + build, on push/PR to main, with concurrency cancel + npm cache (`8429820` → green by `c7cdb35`)
 
+## Insights follow-up
+
+- [ ] **Question-identity in insights**: `game_responses` are keyed by `questionIndex` only, so editing a quiz (removing/reordering questions) makes historical per-question stats attach to the wrong question text, and out-of-range indexes drop silently. Real fix needs per-game question snapshots (migration). Flagged by the feat/quiz-insights final review.
+
 ## Code consolidation
 
 - [ ] Consolidate origin parsing util — currently duplicated at `server/index.ts:11-18` and `server/routes.ts:34-52`. Both fail-closed correctly; this is cleanup, not a bug.

@@ -78,7 +78,7 @@ export default function QuizInsightsPage() {
         <Card>
           <CardHeader><CardTitle>Correct answers by question</CardTitle></CardHeader>
           <CardContent>
-            {data.gamesPlayed === 0 ? (
+            {data.gamesPlayed === 0 || chartData.length === 0 ? (
               <p className="text-gray-500 py-8 text-center">No completed games yet — host this quiz to start collecting insights.</p>
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(160, chartData.length * 44)}>
