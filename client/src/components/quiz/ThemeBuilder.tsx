@@ -38,7 +38,7 @@ export function ThemeBuilder({ theme, onChange, onUploadBackground, uploading }:
           <div className="text-xs font-semibold text-gray-500 mb-1">{t("editor.theme.presetThemesLabel")}</div>
           <div className="grid grid-cols-4 gap-2">
             {PRESET_QUIZ_THEMES.map((p) => {
-              const swatch = PRESET_THEMES.find((t) => t.id === p.theme.background);
+              const swatch = PRESET_THEMES.find((preset) => preset.id === p.theme.background);
               return (
                 <button
                   key={p.id}

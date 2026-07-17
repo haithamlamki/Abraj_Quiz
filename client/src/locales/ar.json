@@ -413,7 +413,12 @@
     "timing": {
       "label": "الوقت المحدد",
       "noLimit": "بلا حد",
-      "secondsOption": "{{count}} ثانية",
+      "secondsOption_zero": "لا ثوانٍ",
+      "secondsOption_one": "ثانية واحدة",
+      "secondsOption_two": "ثانيتان",
+      "secondsOption_few": "{{count}} ثوانٍ",
+      "secondsOption_many": "{{count}} ثانيةً",
+      "secondsOption_other": "{{count}} ثانية",
       "applyToAll": "تطبيق على جميع الأسئلة"
     },
     "theme": {
@@ -480,7 +485,12 @@
       "almostThereTitle": "أوشكت على الانتهاء",
       "generatorNoQuestions": "لم يُرجع المولّد أي أسئلة.",
       "quizGeneratedTitle": "تم توليد الاختبار",
-      "quizGeneratedDescription": "تمت إضافة {{count}} أسئلة — راجعها قبل الحفظ.",
+      "quizGeneratedDescription_zero": "لم تتم إضافة أي أسئلة — راجعها قبل الحفظ.",
+      "quizGeneratedDescription_one": "أُضيف سؤال واحد — راجعه قبل الحفظ.",
+      "quizGeneratedDescription_two": "أُضيف سؤالان — راجعهما قبل الحفظ.",
+      "quizGeneratedDescription_few": "أُضيفت {{count}} أسئلة — راجعها قبل الحفظ.",
+      "quizGeneratedDescription_many": "أُضيف {{count}} سؤالًا — راجعها قبل الحفظ.",
+      "quizGeneratedDescription_other": "أُضيف {{count}} سؤال — راجعها قبل الحفظ.",
       "choosePdfFirst": "اختر ملف PDF أولاً.",
       "pdfGenerationFailedDefault": "فشل توليد الأسئلة من PDF",
       "generationFailedTitle": "فشل التوليد",

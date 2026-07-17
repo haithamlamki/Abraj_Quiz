@@ -381,7 +381,8 @@
     "timing": {
       "label": "Time limit",
       "noLimit": "No limit",
-      "secondsOption": "{{count}} seconds",
+      "secondsOption_one": "{{count}} second",
+      "secondsOption_other": "{{count}} seconds",
       "applyToAll": "Apply to all questions"
     },
     "theme": {
@@ -448,7 +449,8 @@
       "almostThereTitle": "Almost there",
       "generatorNoQuestions": "The generator returned no questions.",
       "quizGeneratedTitle": "Quiz generated",
-      "quizGeneratedDescription": "Added {{count}} questions — review before saving.",
+      "quizGeneratedDescription_one": "Added {{count}} question — review before saving.",
+      "quizGeneratedDescription_other": "Added {{count}} questions — review before saving.",
       "choosePdfFirst": "Choose a PDF file first.",
       "pdfGenerationFailedDefault": "PDF generation failed",
       "generationFailedTitle": "Generation failed",
