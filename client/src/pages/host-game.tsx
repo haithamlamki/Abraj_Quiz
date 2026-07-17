@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import { ConnectionBanner } from "@/components/connection-banner";
 import { resolveQuizTheme } from "@shared/quiz-theme";
 
 export default function HostGame() {
+  const { t } = useTranslation();
   const { pin } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -74,13 +76,13 @@ export default function HostGame() {
     try {
       await navigator.clipboard.writeText(text);
       toast({
-        title: "Copied!",
-        description: `${label} copied to clipboard.`,
+        title: t("host.copiedTitle"),
+        description: t("host.copiedDescription", { label }),
       });
     } catch (error) {
       toast({
-        title: "Copy Failed",
-        description: "Please copy the link manually.",
+        title: t("host.copyFailedTitle"),
+        description: t("host.copyFailedDescription"),
         variant: "destructive",
       });
     }
@@ -119,8 +121,8 @@ export default function HostGame() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/games", pin] });
       toast({
-        title: "Game Started!",
-        description: "Players can now answer questions.",
+        title: t("host.gameStartedTitle"),
+        description: t("host.gameStartedDescription"),
       });
     },
     onError: (error: any) => {
@@ -128,8 +130,8 @@ export default function HostGame() {
       setIsStartingGame(false);
       setGameStartCountdown(null);
       toast({
-        title: "Couldn't start the game",
-        description: error?.message || "Please try again.",
+        title: t("host.startGameFailedTitle"),
+        description: error?.message || t("host.pleaseTryAgain"),
         variant: "destructive",
       });
     }
@@ -154,8 +156,8 @@ export default function HostGame() {
     },
     onError: (error: any) => {
       toast({
-        title: "Couldn't advance the game",
-        description: error?.message || "Please try again.",
+        title: t("host.advanceGameFailedTitle"),
+        description: error?.message || t("host.pleaseTryAgain"),
         variant: "destructive",
       });
     }
@@ -257,7 +259,7 @@ export default function HostGame() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading game...</p>
+          <p className="text-lg text-gray-600">{t("play.loadingGame")}</p>
         </div>
       </div>
     );
@@ -268,9 +270,9 @@ export default function HostGame() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
-            <p className="text-lg text-gray-600 mb-4">Game not found</p>
+            <p className="text-lg text-gray-600 mb-4">{t("play.gameNotFound")}</p>
             <Button onClick={() => setLocation("/")} className="abraj-primary">
-              Go Home
+              {t("play.goHome")}
             </Button>
           </CardContent>
         </Card>
@@ -297,7 +299,7 @@ export default function HostGame() {
           } text-white shadow-2xl`}>
             {gameStartCountdown}
           </div>
-          <h2 className="text-white text-2xl font-bold">Game Starting...</h2>
+          <h2 className="text-white text-2xl font-bold">{t("host.gameStarting")}</h2>
         </div>
       </div>
     );
@@ -310,10 +312,10 @@ export default function HostGame() {
         <CountdownOverlay />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col">
           <div className="text-center mb-8">
-            <h1 className="font-bold text-4xl mb-4 gradient-text">Game Lobby</h1>
+            <h1 className="font-bold text-4xl mb-4 gradient-text">{t("host.gameLobby")}</h1>
             <div className="flex justify-center items-center space-x-4 mb-6">
               <Badge variant="secondary" className="inline-flex items-center rounded-full border font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 text-lg px-4 py-2 bg-[#019ebd] text-[#ffffff] pulse-ring">
-                PIN: {game.gamePin}
+                {t("host.pinBadge", { pin: game.gamePin })}
               </Badge>
               <Badge className="text-lg px-4 py-2 bg-[#019ebd] text-[#ffffff]">
                 {quiz.title}
@@ -326,13 +328,13 @@ export default function HostGame() {
               <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center space-x-2">
                   <Users className="w-5 h-5" />
-                  <span>Players ({players.length})</span>
+                  <span>{t("host.playersHeading", { count: players.length })}</span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="flex-1 overflow-y-auto">
                 {players.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">
-                    Waiting for players to join...
+                    {t("host.waitingForPlayers")}
                   </p>
                 ) : (
                   <div className="grid grid-cols-2 gap-2">
@@ -348,33 +350,33 @@ export default function HostGame() {
 
             <Card className="card-3d-enhanced glass flex flex-col">
               <CardHeader className="flex-shrink-0">
-                <CardTitle>Share Game</CardTitle>
+                <CardTitle>{t("host.shareGame")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 flex-shrink-0">
                 {qrCodeUrl && (
                   <div className="text-center space-y-1">
-                    <img src={qrCodeUrl} alt="QR Code to join game" className="w-24 h-24 mx-auto" />
-                    <p className="text-xs text-gray-500">Scan to join</p>
+                    <img src={qrCodeUrl} alt={t("host.qrCodeAlt")} className="w-24 h-24 mx-auto" />
+                    <p className="text-xs text-gray-500">{t("host.scanToJoinShort")}</p>
                   </div>
                 )}
-                
+
                 <div className="space-y-2">
                   <Button
                     variant="outline"
-                    onClick={() => copyToClipboard(game.gamePin, "Game PIN")}
+                    onClick={() => copyToClipboard(game.gamePin, t("host.gamePinLabel"))}
                     className="w-full btn-glow py-2"
                   >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy PIN ({game.gamePin})
+                    <Copy className="w-4 h-4 me-2" />
+                    {t("host.copyPinWithValue", { pin: game.gamePin })}
                   </Button>
-                  
+
                   <Button
                     variant="outline"
-                    onClick={() => copyToClipboard(`${window.location.origin}/join/${game.gamePin}`, "Join link")}
+                    onClick={() => copyToClipboard(`${window.location.origin}/join/${game.gamePin}`, t("host.joinLinkLabel"))}
                     className="w-full btn-glow py-2"
                   >
-                    <Share2 className="w-4 h-4 mr-2" />
-                    Copy Join Link
+                    <Share2 className="w-4 h-4 me-2" />
+                    {t("host.copyJoinLink")}
                   </Button>
                 </div>
 
@@ -382,10 +384,10 @@ export default function HostGame() {
                   <div className="text-center space-y-1 mb-3">
                     <h3 className="font-bold text-base">{quiz.title}</h3>
                     <p className="text-xs text-gray-500">
-                      {questions.length} questions • Multiple Choice
+                      {t("host.questionsMultipleChoice", { count: questions.length })}
                     </p>
                   </div>
-                  
+
                   <Button
                     onClick={() => {
                       if (players.length === 0) return;
@@ -395,8 +397,8 @@ export default function HostGame() {
                     disabled={players.length === 0 || startGameMutation.isPending || isStartingGame}
                     className="w-full abraj-green hover:bg-green-600 text-white font-bold text-base py-2 btn-glow shimmer"
                   >
-                    <Play className="w-4 h-4 mr-2" />
-                    {isStartingGame ? `Starting in ${gameStartCountdown}...` : 'Start Game'}
+                    <Play className="w-4 h-4 me-2" />
+                    {isStartingGame ? t("host.startingInCountdown", { count: gameStartCountdown }) : t("host.startGame")}
                   </Button>
                 </div>
               </CardContent>
@@ -520,9 +522,9 @@ export default function HostGame() {
       <div className="h-[calc(100dvh-68px)] overflow-hidden flex flex-col p-3 sm:p-4 bg-slate-900">
         <ConnectionBanner status={connectionStatus} />
         <div className={`${QUIZ_STAGE_CONTAINER} relative`}>
-          {/* Next Question Button - Top Right */}
+          {/* Next Question Button - Top End */}
           {(showResults || timeLeft === 0) && (
-            <div className="absolute top-0 right-0 z-10">
+            <div className="absolute top-0 end-0 z-10">
               <Button
                 onClick={() => {
                   nextQuestionMutation.mutate();
@@ -531,8 +533,8 @@ export default function HostGame() {
                 disabled={nextQuestionMutation.isPending}
                 className="abraj-primary hover:abraj-secondary text-white px-6 py-2 font-bold btn-glow shimmer shadow-lg"
               >
-                <SkipForward className="w-4 h-4 mr-2" />
-                {(game.currentQuestion || 0) + 1 >= questions.length ? "Finish Game" : "Next Question"}
+                <SkipForward className="w-4 h-4 me-2 rtl:rotate-180" />
+                {(game.currentQuestion || 0) + 1 >= questions.length ? t("host.finishGame") : t("host.nextQuestion")}
               </Button>
             </div>
           )}
@@ -565,26 +567,26 @@ export default function HostGame() {
           <div className="grid grid-cols-2 gap-2 flex-shrink-0">
             <div className="glass card-3d-enhanced rounded-lg p-2">
               <div className="flex justify-between items-center text-xs mb-1">
-                <span className="text-gray-600">PIN:</span>
+                <span className="text-gray-600">{t("host.pinLabel")}</span>
                 <span className="font-bold text-[#019ebd]">{game.gamePin}</span>
               </div>
               <div className="flex justify-between items-center text-xs mb-1">
-                <span className="text-gray-600">Players:</span>
+                <span className="text-gray-600">{t("host.playersLabel")}</span>
                 <span className="font-bold">{players.length}</span>
               </div>
               <div className="flex justify-between items-center text-xs">
-                <span className="text-gray-600">Progress:</span>
+                <span className="text-gray-600">{t("host.progressLabel")}</span>
                 <span className="font-bold">{(game.currentQuestion || 0) + 1}/{questions.length}</span>
               </div>
             </div>
 
             <div className="glass card-3d-enhanced rounded-lg p-2">
-              <div className="text-center text-xs font-bold mb-1">Top 3</div>
+              <div className="text-center text-xs font-bold mb-1">{t("host.topThree")}</div>
               <div className="space-y-1">
                 {players.slice(0, 3).map((player, idx) => (
                   <div key={idx} className="flex justify-between items-center text-[10px]">
                     <span className="truncate">{player.name}</span>
-                    <span className="font-bold ml-1">{player.score || 0}</span>
+                    <span className="font-bold ms-1">{player.score || 0}</span>
                   </div>
                 ))}
               </div>

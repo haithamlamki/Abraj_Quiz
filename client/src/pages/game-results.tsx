@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,7 @@ import { getBackgroundStyle } from "@/utils/backgrounds";
 import { useTenant, tenantPdfBranding } from "@/lib/tenant";
 
 export default function GameResults() {
+  const { t } = useTranslation();
   const { pin } = useParams();
   const [, setLocation] = useLocation();
   const [showCelebration, setShowCelebration] = useState(false);
@@ -116,7 +118,7 @@ export default function GameResults() {
         <div className="text-center">
           <div className="animate-pulse card-3d-enhanced glass p-8 rounded-2xl">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-            <p className="text-lg text-gray-600">Loading results...</p>
+            <p className="text-lg text-gray-600">{t("results.loadingResults")}</p>
           </div>
         </div>
       </div>
@@ -128,9 +130,9 @@ export default function GameResults() {
       <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
         <Card className="w-full max-w-md mx-4 card-3d-enhanced glass">
           <CardContent className="pt-6 text-center">
-            <p className="text-lg text-gray-600 mb-4">Results not found</p>
+            <p className="text-lg text-gray-600 mb-4">{t("results.resultsNotFound")}</p>
             <Button onClick={() => setLocation("/")} className="abraj-primary btn-glow">
-              Go Home
+              {t("results.goHome")}
             </Button>
           </CardContent>
         </Card>
@@ -171,30 +173,30 @@ export default function GameResults() {
               </div>
               
               <h1 className="text-4xl font-bold gradient-text mb-2">
-                {playerRank === 1 ? "🎉 Champion!" : 
-                 playerRank === 2 ? "🥈 Runner-up!" :
-                 playerRank === 3 ? "🥉 Third Place!" :
-                 "Great Job!"}
+                {playerRank === 1 ? t("results.champion") :
+                 playerRank === 2 ? t("results.runnerUp") :
+                 playerRank === 3 ? t("results.thirdPlace") :
+                 t("results.greatJob")}
               </h1>
-              
+
               <div className="space-y-4">
                 <div>
-                  <p className="text-lg text-gray-600">Your Rank</p>
+                  <p className="text-lg text-gray-600">{t("results.yourRank")}</p>
                   <p className="text-3xl font-bold text-abraj-primary">#{playerRank}</p>
                 </div>
-                
+
                 <div>
-                  <p className="text-lg text-gray-600">Your Score</p>
+                  <p className="text-lg text-gray-600">{t("results.yourScore")}</p>
                   <p className="text-3xl font-bold text-abraj-primary">{(playerData?.score || 0).toLocaleString()}</p>
                 </div>
-                
+
                 <div className="grid grid-cols-2 gap-4 text-center">
                   <div>
-                    <p className="text-sm text-gray-600">Total Players</p>
+                    <p className="text-sm text-gray-600">{t("results.totalPlayers")}</p>
                     <p className="text-xl font-bold">{players.length}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Questions</p>
+                    <p className="text-sm text-gray-600">{t("results.questionsLabel")}</p>
                     <p className="text-xl font-bold">{totalQuestions}</p>
                   </div>
                 </div>
@@ -206,7 +208,7 @@ export default function GameResults() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2 gradient-text">
                 <Trophy className="h-5 w-5 pulse-ring" />
-                Leaderboard
+                {t("results.leaderboard")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -216,16 +218,16 @@ export default function GameResults() {
 
           <div className="flex flex-col sm:flex-row gap-4 mt-8">
             <Button onClick={() => setLocation("/")} className="flex-1">
-              <Home className="mr-2 h-4 w-4" />
-              Home
+              <Home className="me-2 h-4 w-4" />
+              {t("results.home")}
             </Button>
-            <Button 
+            <Button
               onClick={() => setLocation(`/join/${pin}`)}
-              variant="outline" 
+              variant="outline"
               className="flex-1"
             >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Play Again
+              <RotateCcw className="me-2 h-4 w-4" />
+              {t("results.playAgain")}
             </Button>
           </div>
         </div>
@@ -241,45 +243,45 @@ export default function GameResults() {
         <div className="text-center mb-6 animate-scale-in">
           <div className="card-3d-enhanced glass p-6">
             <Trophy className="h-12 w-12 text-yellow-500 mx-auto mb-3 animate-bounce pulse-ring" />
-            <h1 className="text-3xl font-bold gradient-text mb-1">Quiz Complete!</h1>
-            <p className="text-lg text-gray-600 mb-4">{game.quiz?.title || 'Untitled Quiz'}</p>
-            
+            <h1 className="text-3xl font-bold gradient-text mb-1">{t("results.quizComplete")}</h1>
+            <p className="text-lg text-gray-600 mb-4">{game.quiz?.title || t("results.untitledQuiz")}</p>
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
               <div className="text-center">
                 <div className="text-xl font-bold text-abraj-primary">{players.length}</div>
-                <div className="text-xs text-gray-600">Players</div>
+                <div className="text-xs text-gray-600">{t("results.playersLabel")}</div>
               </div>
               <div className="text-center">
                 <div className="text-xl font-bold text-abraj-primary">{totalQuestions}</div>
-                <div className="text-xs text-gray-600">Questions</div>
+                <div className="text-xs text-gray-600">{t("results.questionsLabel")}</div>
               </div>
               <div className="text-center">
                 <div className="text-xl font-bold text-abraj-primary">{accuracy}%</div>
-                <div className="text-xs text-gray-600">Accuracy</div>
+                <div className="text-xs text-gray-600">{t("results.accuracyLabel")}</div>
               </div>
               <div className="text-center">
                 <div className="text-xl font-bold text-abraj-primary">{averageScore.toLocaleString()}</div>
-                <div className="text-xs text-gray-600">Avg Score</div>
+                <div className="text-xs text-gray-600">{t("results.avgScoreLabel")}</div>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <Button onClick={downloadPDF} className="abraj-primary btn-glow py-2">
-                <Download className="mr-2 h-4 w-4" />
-                Download PDF Report
+                <Download className="me-2 h-4 w-4" />
+                {t("results.downloadPdfReport")}
               </Button>
               <Button onClick={() => setLocation("/create")} variant="outline" className="py-2">
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Create New Quiz
+                <PlusCircle className="me-2 h-4 w-4" />
+                {t("results.createNewQuiz")}
               </Button>
-              <Button 
-                onClick={() => setLocation(`/host-quiz/${game.quizId}`)} 
+              <Button
+                onClick={() => setLocation(`/host-quiz/${game.quizId}`)}
                 variant="outline"
                 data-testid="button-host-again"
                 className="py-2"
               >
-                <RotateCcw className="mr-2 h-4 w-4" />
-                Host Again
+                <RotateCcw className="me-2 h-4 w-4" />
+                {t("results.hostAgain")}
               </Button>
             </div>
           </div>
@@ -292,7 +294,7 @@ export default function GameResults() {
               <CardHeader>
                 <CardTitle className="text-center flex items-center justify-center gap-2 gradient-text">
                   <Crown className="h-6 w-6 text-yellow-500 pulse-ring" />
-                  Winner's Podium
+                  {t("results.winnersPodium")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -347,7 +349,7 @@ export default function GameResults() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2 gradient-text">
               <Trophy className="h-5 w-5 pulse-ring" />
-              Final Leaderboard
+              {t("results.finalLeaderboard")}
             </CardTitle>
           </CardHeader>
           <CardContent>

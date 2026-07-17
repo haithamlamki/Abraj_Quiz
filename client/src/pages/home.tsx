@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,6 +42,7 @@ interface LatestResultsData {
 }
 
 export default function Home() {
+  const { t } = useTranslation();
   const [gamePin, setGamePin] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [showScanner, setShowScanner] = useState(false);
@@ -82,8 +84,8 @@ export default function Home() {
       }
     } catch (error) {
       toast({
-        title: "Camera Access Failed",
-        description: "Please allow camera access to scan QR codes.",
+        title: t("home.cameraAccessFailedTitle"),
+        description: t("home.cameraAccessFailedDesc"),
         variant: "destructive",
       });
     }
@@ -119,15 +121,15 @@ export default function Home() {
   const handleVideoClick = () => {
     // Simulate QR code detection when user taps the video area
     const currentUrl = window.location.origin;
-    const gamePin = prompt("For demo: Enter the game PIN from the QR code you're scanning:");
-    
+    const gamePin = prompt(t("home.qrDemoPrompt"));
+
     if (gamePin && gamePin.trim()) {
       setGamePin(gamePin.trim());
       setShowScanner(false);
       stopCamera();
       toast({
-        title: "QR Code Scanned!",
-        description: `Game PIN ${gamePin.trim()} has been entered.`,
+        title: t("home.qrScannedTitle"),
+        description: t("home.qrScannedDescription", { pin: gamePin.trim() }),
       });
     }
   };
@@ -175,18 +177,18 @@ export default function Home() {
             
             {/* Main Content */}
             <div className="animate-scale-in">
-              <h1 className="font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl gradient-text">Powered by Our Dedicated Team</h1>
-              <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px]">{tenant.name}'s innovative team works tirelessly to create engaging educational experiences for learners worldwide.</p>
-              
+              <h1 className="font-bold text-3xl sm:text-4xl md:text-5xl lg:text-6xl gradient-text">{t("home.heroTitle")}</h1>
+              <p className="mt-6 text-gray-600 max-w-2xl mx-auto text-[13px]">{t("home.heroSubtitle", { tenantName: tenant.name })}</p>
+
               {/* Game PIN Entry */}
               <Card className="mt-8 card-3d-enhanced glass max-w-lg mx-auto">
                 <CardContent className="p-8">
-                  <h3 className="font-bold text-2xl text-gray-800 mb-4">Join a game</h3>
+                  <h3 className="font-bold text-2xl text-gray-800 mb-4">{t("home.joinGameTitle")}</h3>
                   <div className="space-y-4">
                     <div className="flex flex-col sm:flex-row gap-3">
                       <Input
                         type="text"
-                        placeholder="Game PIN"
+                        placeholder={t("home.gamePinPlaceholder")}
                         value={gamePin}
                         onChange={(e) => setGamePin(e.target.value)}
                         className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d shimmer"
@@ -198,7 +200,7 @@ export default function Home() {
                             variant="outline"
                             onClick={handleScanClick}
                             className="px-4 py-3 rounded-xl text-lg font-medium"
-                            title="Scan QR Code"
+                            title={t("home.scanQrCode")}
                           >
                             <QrCode className="w-6 h-6" />
                           </Button>
@@ -207,7 +209,7 @@ export default function Home() {
                           <DialogHeader>
                             <DialogTitle className="text-center flex items-center gap-2 justify-center">
                               <QrCode className="w-5 h-5" />
-                              Scan QR Code
+                              {t("home.scanQrCode")}
                             </DialogTitle>
                           </DialogHeader>
                           <div className="flex flex-col items-center space-y-4 p-4">
@@ -224,26 +226,26 @@ export default function Home() {
                                 className="hidden"
                               />
                               <div className="absolute inset-0 border-2 border-white/50 m-8 pointer-events-none">
-                                <div className="absolute top-0 left-0 w-8 h-8 border-l-4 border-t-4 border-abraj-primary"></div>
-                                <div className="absolute top-0 right-0 w-8 h-8 border-r-4 border-t-4 border-abraj-primary"></div>
-                                <div className="absolute bottom-0 left-0 w-8 h-8 border-l-4 border-b-4 border-abraj-primary"></div>
-                                <div className="absolute bottom-0 right-0 w-8 h-8 border-r-4 border-b-4 border-abraj-primary"></div>
+                                <div className="absolute top-0 start-0 w-8 h-8 border-s-4 border-t-4 border-abraj-primary"></div>
+                                <div className="absolute top-0 end-0 w-8 h-8 border-e-4 border-t-4 border-abraj-primary"></div>
+                                <div className="absolute bottom-0 start-0 w-8 h-8 border-s-4 border-b-4 border-abraj-primary"></div>
+                                <div className="absolute bottom-0 end-0 w-8 h-8 border-e-4 border-b-4 border-abraj-primary"></div>
                               </div>
-                              <div className="absolute bottom-2 left-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded pointer-events-none">
-                                Tap to scan QR code (Demo)
+                              <div className="absolute bottom-2 start-2 end-2 bg-black/70 text-white text-xs px-2 py-1 rounded pointer-events-none">
+                                {t("home.tapToScanDemo")}
                               </div>
                             </div>
                             <div className="text-center">
-                              <p className="text-sm text-gray-600 mb-2">Point your camera at a QR code and tap to scan</p>
-                              <p className="text-xs text-gray-500">The game PIN will be automatically entered</p>
+                              <p className="text-sm text-gray-600 mb-2">{t("home.scanHintPoint")}</p>
+                              <p className="text-xs text-gray-500">{t("home.scanHintAuto")}</p>
                             </div>
                             <Button
                               variant="outline"
                               onClick={handleCloseScanner}
                               className="w-full"
                             >
-                              <X className="w-4 h-4 mr-2" />
-                              Cancel
+                              <X className="w-4 h-4 me-2" />
+                              {t("home.cancel")}
                             </Button>
                           </div>
                         </DialogContent>
@@ -252,29 +254,29 @@ export default function Home() {
                     <div className="flex flex-col sm:flex-row gap-3">
                       <Input
                         type="text"
-                        placeholder={isAuthenticated && user ? user.username : "Player name"}
+                        placeholder={isAuthenticated && user ? user.username : t("home.playerNamePlaceholder")}
                         value={playerName}
                         onChange={(e) => setPlayerName(e.target.value)}
                         className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d shimmer"
                         maxLength={20}
                         onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                       />
-                      <Button 
+                      <Button
                         onClick={handleJoinGame}
                         className="abraj-primary hover:abraj-secondary text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg btn-glow"
                       >
-                        Join Game
+                        {t("home.joinGame")}
                       </Button>
                     </div>
                     {isAuthenticated && user && (
                       <p className="text-xs text-abraj-primary text-center">
-                        Your name is auto-filled from your account
+                        {t("home.autoFilledFromAccount")}
                       </p>
                     )}
                     {!isAuthenticated && (
                       <p className="text-xs text-gray-500 text-center">
-                        <Link href="/login" className="text-abraj-primary hover:underline">Login</Link>
-                        {" "}to auto-fill your name
+                        <Link href="/login" className="text-abraj-primary hover:underline">{t("home.login")}</Link>
+                        {" "}{t("home.autoFillHint")}
                       </p>
                     )}
                   </div>
@@ -292,8 +294,8 @@ export default function Home() {
         <section className="py-8 bg-[#ffffff00]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-8">
-              <h2 className="font-bold text-4xl text-gray-800 mb-4">🏆 Latest Quiz Champions</h2>
-              <p className="text-xl text-gray-600">Top 3 players from the most recent game</p>
+              <h2 className="font-bold text-4xl text-gray-800 mb-4">{t("home.championsTitle")}</h2>
+              <p className="text-xl text-gray-600">{t("home.championsSubtitle")}</p>
             </div>
             
             <Card className="max-w-4xl mx-auto card-3d-enhanced">
@@ -303,9 +305,9 @@ export default function Home() {
                   {latestResults.game?.quizTitle}
                 </CardTitle>
                 <p className="text-gray-600">
-                  Game PIN: <span className="font-mono font-bold text-abraj-primary">{latestResults.game?.gamePin}</span>
+                  {t("home.gamePinLabel")} <span className="font-mono font-bold text-abraj-primary">{latestResults.game?.gamePin}</span>
                   <span className="mx-2">•</span>
-                  {latestResults.game?.totalQuestions} Questions
+                  {t("home.questionsCount", { count: latestResults.game?.totalQuestions ?? 0 })}
                 </p>
               </CardHeader>
               <CardContent>
@@ -328,7 +330,7 @@ export default function Home() {
                         <div className={`text-2xl font-bold ${iconColor}`}>
                           {player.score.toLocaleString()}
                         </div>
-                        <div className="text-sm text-gray-500">points</div>
+                        <div className="text-sm text-gray-500">{t("home.pointsLabel")}</div>
                       </div>
                     );
                   })}
@@ -343,8 +345,8 @@ export default function Home() {
       <section className="py-8 bg-[#ffffff00]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="font-bold text-4xl text-gray-800 mb-4">Get Started</h2>
-            <p className="text-xl text-gray-600">Create your quiz in minutes with our intuitive editor</p>
+            <h2 className="font-bold text-4xl text-gray-800 mb-4">{t("home.getStartedTitle")}</h2>
+            <p className="text-xl text-gray-600">{t("home.getStartedSubtitle")}</p>
           </div>
           
           <div className="max-w-5xl mx-auto">
@@ -354,10 +356,10 @@ export default function Home() {
                 <div className="text-center pt-[-7px] pb-[-7px] mt-[15px] mb-[15px]">
                   <Link href="/create">
                     <Button className="abraj-primary hover:abraj-secondary text-white font-medium mb-4">
-                      Create New Quiz
+                      {t("home.createNewQuiz")}
                     </Button>
                   </Link>
-                  <h3 className="font-bold text-2xl text-gray-800 mb-4">Your Recent Quizes</h3>
+                  <h3 className="font-bold text-2xl text-gray-800 mb-4">{t("home.recentQuizzesTitle")}</h3>
                 </div>
                 
                 <div className="flex flex-wrap justify-center gap-4">
@@ -375,18 +377,18 @@ export default function Home() {
                         <div className="flex items-center justify-between text-sm text-gray-500 mb-3">
                           <span className="flex items-center gap-1">
                             <BookOpen className="w-4 h-4" />
-                            {quiz.questions.length} questions
+                            {t("home.questionCount", { count: quiz.questions.length })}
                           </span>
                           <span className={`px-2 py-1 rounded-full text-xs ${
                             quiz.isPublic ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                           }`}>
-                            {quiz.isPublic ? 'Public' : 'Private'}
+                            {quiz.isPublic ? t("home.visibilityPublic") : t("home.visibilityPrivate")}
                           </span>
                         </div>
                         <Link href={`/host-quiz/${quiz.id}`}>
                           <Button className="w-full abraj-primary hover:abraj-secondary text-white font-medium">
-                            <Play className="w-4 h-4 mr-2" />
-                            Host Quiz
+                            <Play className="w-4 h-4 me-2" />
+                            {t("home.hostQuiz")}
                           </Button>
                         </Link>
                       </CardContent>
@@ -398,15 +400,15 @@ export default function Home() {
               <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-2xl p-8 card-3d max-w-md mx-auto mb-12">
                 <div className="bg-white rounded-xl p-6 card-3d">
                   <div className="flex items-center justify-between mb-6">
-                    <h3 className="font-bold text-xl text-gray-800">Create New Quiz</h3>
+                    <h3 className="font-bold text-xl text-gray-800">{t("home.createNewQuiz")}</h3>
                     <div className="abraj-blue text-white px-3 py-1 rounded-full text-sm font-medium bg-[#0baab5]">
-                      Quick Start
+                      {t("home.quickStart")}
                     </div>
                   </div>
-                  
+
                   <div className="space-y-4">
-                    <Input placeholder="Quiz Title" className="w-full input-3d" />
-                    <Input placeholder="Description" className="w-full input-3d" />
+                    <Input placeholder={t("home.quizTitlePlaceholder")} className="w-full input-3d" />
+                    <Input placeholder={t("home.descriptionPlaceholder")} className="w-full input-3d" />
                     
                     <div className="grid grid-cols-2 gap-3">
                       <div className="abraj-red text-white p-4 rounded-lg text-center font-bold">
@@ -424,8 +426,8 @@ export default function Home() {
                     </div>
                     
                     <Link href="/create">
-                      <Button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary hover:bg-primary/90 h-10 px-4 py-2 w-full abraj-primary hover:abraj-secondary text-white font-bold pt-[2px] pb-[2px] pl-[13px] pr-[13px] mt-[14px] mb-[14px]">
-                        Start Creating
+                      <Button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary hover:bg-primary/90 h-10 px-4 py-2 w-full abraj-primary hover:abraj-secondary text-white font-bold pt-[2px] pb-[2px] ps-[13px] pe-[13px] mt-[14px] mb-[14px]">
+                        {t("home.startCreating")}
                       </Button>
                     </Link>
                   </div>
@@ -438,26 +440,26 @@ export default function Home() {
               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.1s' }}>
                   <Clock className="w-8 h-8 mb-2 mx-auto" />
-                  <h4 className="font-bold">Time Limits</h4>
-                  <p className="text-sm opacity-90">Set custom timers</p>
+                  <h4 className="font-bold">{t("home.featureTimeLimitsTitle")}</h4>
+                  <p className="text-sm opacity-90">{t("home.featureTimeLimitsDesc")}</p>
                 </div>
-                
+
                 <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.2s' }}>
                   <Image className="w-8 h-8 mb-2 mx-auto" />
-                  <h4 className="font-bold">Rich Media</h4>
-                  <p className="text-sm opacity-90">Add images & videos</p>
+                  <h4 className="font-bold">{t("home.featureRichMediaTitle")}</h4>
+                  <p className="text-sm opacity-90">{t("home.featureRichMediaDesc")}</p>
                 </div>
-                
+
                 <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.3s' }}>
                   <Users className="w-8 h-8 mb-2 mx-auto" />
-                  <h4 className="font-bold">Team Mode</h4>
-                  <p className="text-sm opacity-90">Collaborative play</p>
+                  <h4 className="font-bold">{t("home.featureTeamModeTitle")}</h4>
+                  <p className="text-sm opacity-90">{t("home.featureTeamModeDesc")}</p>
                 </div>
-                
+
                 <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.4s' }}>
                   <BarChart className="w-8 h-8 mb-2 mx-auto" />
-                  <h4 className="font-bold">Analytics</h4>
-                  <p className="text-sm opacity-90">Track performance</p>
+                  <h4 className="font-bold">{t("home.featureAnalyticsTitle")}</h4>
+                  <p className="text-sm opacity-90">{t("home.featureAnalyticsDesc")}</p>
                 </div>
               </div>
             </div>
@@ -468,7 +470,7 @@ export default function Home() {
       <footer className="py-4 bg-[#11182700] text-[#0f0000]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center text-sm text-gray-400">
-            <p>© {new Date().getFullYear()} {tenant.branding.appName}. All rights reserved.</p>
+            <p>© {new Date().getFullYear()} {tenant.branding.appName}. {t("home.allRightsReserved")}</p>
           </div>
         </div>
       </footer>

@@ -8,6 +8,9 @@ export const brandingSchema = z.object({
   appName: z.string().default("Abraj Quiz"),
   logoUrl: z.string().default(""),      // URL or data: URL; empty = bundled default logo
   faviconUrl: z.string().default(""),
+  // UI chrome language default for this tenant; users can override via the
+  // nav toggle (persisted per device). Quiz content is not translated.
+  defaultLanguage: z.enum(["en", "ar"]).default("en"),
   colors: z
     .object({
       primary: z.string().default("hsl(184, 100%, 47%)"),
