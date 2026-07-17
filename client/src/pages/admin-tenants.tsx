@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { PageLoader } from "@/components/page-loader";
 
 interface AdminTenant {
   id: number;
@@ -183,7 +184,7 @@ export default function AdminTenants() {
     onError: (err: Error) => toast({ title: "Update failed", description: err.message, variant: "destructive" }),
   });
 
-  if (isLoading) return <div className="p-8">Loading…</div>;
+  if (isLoading) return <PageLoader />;
   if (error) {
     return (
       <div className="p-8 text-red-600">

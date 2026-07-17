@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TenantProvider } from "@/lib/tenant";
 import Navigation from "@/components/navigation";
+import { PageLoader } from "@/components/page-loader";
 import classroomBg from "@assets/classroom-background.jpg";
 
 const Home = lazy(() => import("@/pages/home"));
@@ -25,20 +26,9 @@ const QuizInsights = lazy(() => import("@/pages/quiz-insights"));
 const AdminTenants = lazy(() => import("@/pages/admin-tenants"));
 const NotFound = lazy(() => import("@/pages/not-found"));
 
-function LoadingFallback() {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-        <p className="text-lg text-gray-600">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
 function Router() {
   return (
-    <Suspense fallback={<LoadingFallback />}>
+    <Suspense fallback={<PageLoader />}>
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/login" component={Login} />
@@ -91,7 +81,7 @@ function App() {
                     <p className="text-lg text-gray-700">Something went wrong.</p>
                     <button
                       onClick={() => window.location.reload()}
-                      className="px-4 py-2 rounded bg-[#019ebd] text-white font-medium"
+                      className="px-4 py-2 rounded bg-primary text-primary-foreground font-medium"
                       data-testid="button-error-reload"
                     >
                       Reload

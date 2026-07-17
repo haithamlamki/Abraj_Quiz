@@ -11,6 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 import type { Quiz } from "@shared/schema";
 import { generateQuizPDF } from "@/utils/quiz-pdf-generator";
 import { useTenant, tenantPdfBranding } from "@/lib/tenant";
+import { PageLoader } from "@/components/page-loader";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function QuizPDF() {
   const { id } = useParams();
@@ -67,14 +69,7 @@ export default function QuizPDF() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading quiz...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader label="Loading quiz..." />;
   }
 
   if (!quiz) {
@@ -270,7 +265,7 @@ export default function QuizPDF() {
               >
                 {isGenerating ? (
                   <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    <Spinner size="sm" className="text-current border-b-transparent" />
                     Generating PDF...
                   </div>
                 ) : (

@@ -11,6 +11,8 @@ import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import QRCode from "qrcode";
+import { PageLoader } from "@/components/page-loader";
+import { Spinner } from "@/components/ui/spinner";
 
 interface Quiz {
   id: number;
@@ -122,20 +124,7 @@ export default function HostQuizSetup() {
   });
 
   if (isLoading || quizLoading) {
-    return (
-      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center">
-              <div className="animate-pulse card-3d-enhanced glass p-8 rounded-2xl">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-                <p className="text-gray-600">{t("host.loadingQuiz")}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoader label={t("host.loadingQuiz")} />;
   }
 
   if (!isAuthenticated) {
@@ -254,7 +243,7 @@ export default function HostQuizSetup() {
                     >
                       {createGameMutation.isPending ? (
                         <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white me-2"></div>
+                          <Spinner size="sm" className="text-current border-b-transparent me-2" />
                           {t("host.creatingGame")}
                         </>
                       ) : (
