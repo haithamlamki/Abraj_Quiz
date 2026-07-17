@@ -39,3 +39,10 @@ test("insertQuizSchema tolerates a missing theme", () => {
   const parsed = insertQuizSchema.parse({ title: "T", questions: [], createdBy: 1 });
   assert.equal(parsed.theme, undefined);
 });
+
+test("questionSchema: poll type requires empty correctAnswers; quiz still requires one", () => {
+  const base = { question: "Fav color?", answers: ["Red", "Blue"], timeLimit: 20 };
+  assert.ok(questionSchema.safeParse({ ...base, type: "poll", answerType: "single", correctAnswers: [] }).success);
+  assert.ok(!questionSchema.safeParse({ ...base, type: "poll", answerType: "single", correctAnswers: [0] }).success);
+  assert.ok(!questionSchema.safeParse({ ...base, type: "quiz", answerType: "single", correctAnswers: [] }).success);
+});

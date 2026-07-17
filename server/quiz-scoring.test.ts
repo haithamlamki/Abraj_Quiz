@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
 
 const { questionSchema, quizQuestionsSchema } = await import("@shared/schema");
-const { isSelectionCorrect, tallyDistribution, encodeSelection, decodeSelection } = await import("@shared/quiz-scoring");
+const { isSelectionCorrect, tallyDistribution, encodeSelection, decodeSelection, streakMultiplier } = await import("@shared/quiz-scoring");
 
 test("questionSchema normalizes a legacy single-correct question", () => {
   const legacy = { question: "Capital of Oman?", answers: ["Doha", "Riyadh", "Muscat", "Dubai"], correctAnswer: 2, timeLimit: 10 };
@@ -66,6 +66,23 @@ test("tallyDistribution sizes to answer count and decodes multi-select", () => {
   const s2 = encodeSelection("multiple", [1]);
   // option 1 chosen twice, option 3 chosen once; distribution has length 6
   assert.deepEqual(tallyDistribution(multi, [s1, s2]), [0, 2, 0, 1, 0, 0]);
+});
+
+test("streakMultiplier: x1.0 first correct, +0.1 per consecutive, capped at x1.5", () => {
+  assert.equal(streakMultiplier(1), 1.0);
+  assert.equal(streakMultiplier(2), 1.1);
+  assert.equal(streakMultiplier(3), 1.2);
+  assert.equal(streakMultiplier(6), 1.5);
+  assert.equal(streakMultiplier(60), 1.5);
+  // Defensive: 0/negative behave like a first answer.
+  assert.equal(streakMultiplier(0), 1.0);
+  assert.equal(streakMultiplier(-3), 1.0);
+});
+
+test("isSelectionCorrect: poll questions are never 'correct'", () => {
+  const poll = { type: "poll", answerType: "single", answers: ["A", "B"], correctAnswers: [] } as any;
+  assert.equal(isSelectionCorrect(poll, 0), false);
+  assert.equal(isSelectionCorrect(poll, 1), false);
 });
 
 test("quizQuestionsSchema normalizes a mixed legacy+new question array", () => {

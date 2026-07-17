@@ -126,7 +126,14 @@
     "rankLabelColon": "Rank:",
     "rankOfTotal": "{{rank}} of {{total}}",
     "submitFailedTitle": "Error",
-    "submitFailed": "Failed to submit answer. Please try again."
+    "submitFailed": "Failed to submit answer. Please try again.",
+    "streak": "🔥 Streak ×{{n}}",
+    "voteRecorded": "Vote recorded — waiting for results…",
+    "pollResults": "Poll Results",
+    "movedUp_one": "You moved up {{count}} place",
+    "movedUp_other": "You moved up {{count}} places",
+    "movedDown_one": "You dropped {{count}} place",
+    "movedDown_other": "You dropped {{count}} places"
   },
   "results": {
     "loadingResults": "Loading results...",
@@ -349,6 +356,8 @@
     "question": {
       "typeQuiz": "Quiz",
       "typeTrueFalse": "True or False",
+      "typePoll": "Poll",
+      "pollNoCorrect": "Polls have no correct answer — players just vote.",
       "railTypeTrueFalse": "T/F",
       "duplicateAction": "Duplicate",
       "deleteAction": "Delete",

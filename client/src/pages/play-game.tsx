@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
 import { useTranslation } from "react-i18next";
@@ -71,10 +71,20 @@ export default function PlayGame() {
   const [selectedIndices, setSelectedIndices] = useState<number[]>([]); // multi-select
   const [hasAnswered, setHasAnswered] = useState(false);
   const [showResult, setShowResult] = useState(false);
-  const [lastResult, setLastResult] = useState<{ isCorrect: boolean; pointsEarned: number } | null>(null);
+  const [lastResult, setLastResult] = useState<{ isCorrect: boolean; pointsEarned: number; streak: number } | null>(null);
   const [scoreAtQuestionStart, setScoreAtQuestionStart] = useState(0);
   const [showTimeUpEffect, setShowTimeUpEffect] = useState(false);
   const [soundPlayed, setSoundPlayed] = useState(false);
+  // Consecutive-correct streak from the answer-submit HTTP response (Task 1/2).
+  // Captured on submit so it's available when the question closes and the
+  // correct/incorrect screen renders.
+  const [submittedStreak, setSubmittedStreak] = useState(0);
+  // Rank movement vs. the previous question_closed — displayed on the result
+  // screen ("moved up/down N places"). prevRankRef persists ACROSS questions
+  // (it is the baseline the next close diffs against); positionDelta is the
+  // transient display value, cleared whenever a new question starts.
+  const [positionDelta, setPositionDelta] = useState<{ direction: "up" | "down"; places: number } | null>(null);
+  const prevRankRef = useRef<number | null>(null);
 
 
   // Use WebSocket for real-time updates
@@ -101,6 +111,15 @@ export default function PlayGame() {
 
   const theme = resolveQuizTheme(quiz ?? {});
 
+  // Computed early (before the hooks below reference it in dependency
+  // arrays) and defensively against game/quiz still being undefined during
+  // the initial load — the later render-only derivations (players, noLimit,
+  // etc.) stay below the loading/not-found guards where game/quiz are known.
+  const questions = (quiz?.questions as Question[] | undefined) || [];
+  const currentQuestionIndex = runtimeState.questionIndex ?? game?.currentQuestion ?? 0;
+  const currentQuestion = questions[currentQuestionIndex];
+  const isPoll = currentQuestion?.type === "poll";
+
   const submitAnswerMutation = useMutation({
     mutationFn: async (answerData: {
       selectedAnswer: number;
@@ -113,6 +132,9 @@ export default function PlayGame() {
         responseTime: answerData.responseTime
       });
       return response.json();
+    },
+    onSuccess: (data) => {
+      setSubmittedStreak(typeof data?.streak === "number" ? data.streak : 0);
     },
     onError: () => {
       setHasAnswered(false);
@@ -147,7 +169,9 @@ export default function PlayGame() {
       setScoreAtQuestionStart(currentPlayer?.score || 0);
     }
 
-    if (runtimeState.status === "closed" && hasAnswered) {
+    // Polls have no correct/incorrect framing or points — they're handled by
+    // dedicated screens further down, driven off runtimeState.status directly.
+    if (runtimeState.status === "closed" && hasAnswered && !isPoll) {
       const players = runtimeState.players || (game?.players as any[]) || [];
       const currentPlayer = players.find((player) => player.name === playerName);
       // Correctness is derived from the authoritative score delta (works for
@@ -155,7 +179,7 @@ export default function PlayGame() {
       const pointsEarned = Math.max(0, (currentPlayer?.score || 0) - scoreAtQuestionStart);
       const isCorrect = pointsEarned > 0;
 
-      setLastResult({ isCorrect, pointsEarned });
+      setLastResult({ isCorrect, pointsEarned, streak: submittedStreak });
     }
   }, [
     runtimeState.questionIndex,
@@ -168,7 +192,44 @@ export default function PlayGame() {
     hasAnswered,
     selectedAnswer,
     scoreAtQuestionStart,
+    isPoll,
+    submittedStreak,
   ]);
+
+  // Rank movement vs. the previous question_closed. prevRankRef is the
+  // baseline from the last close and MUST persist across questions (that's
+  // the whole point of "vs. the previous close") — only positionDelta (what's
+  // actually rendered) is cleared per-question, below.
+  useEffect(() => {
+    if (runtimeState.status !== "closed" || runtimeState.questionIndex == null || !runtimeState.players) return;
+
+    const sorted = [...runtimeState.players].sort((a, b) => (b.score || 0) - (a.score || 0));
+    const newRank = sorted.findIndex((p) => p.name === playerName) + 1 || null;
+    const prevRank = prevRankRef.current;
+
+    if (newRank != null && prevRank != null && newRank !== prevRank) {
+      setPositionDelta(
+        newRank < prevRank
+          ? { direction: "up", places: prevRank - newRank }
+          : { direction: "down", places: newRank - prevRank },
+      );
+    } else {
+      setPositionDelta(null);
+    }
+
+    if (newRank != null) prevRankRef.current = newRank;
+  }, [runtimeState.status, runtimeState.questionIndex, runtimeState.players, playerName]);
+
+  // A fresh lobby means a brand-new game session — the rank baseline from any
+  // earlier game no longer applies. (Mid-game "next_question" deliberately
+  // does NOT reset prevRankRef: it must persist across questions so each new
+  // close can diff against the previous one.)
+  useEffect(() => {
+    if (game?.status === "waiting") {
+      prevRankRef.current = null;
+      setPositionDelta(null);
+    }
+  }, [game?.status]);
 
   useEffect(() => {
     if (timeLeft !== null && timeLeft > 0 && timeLeft <= 3 && !hasAnswered) {
@@ -203,6 +264,10 @@ export default function PlayGame() {
     setSelectedAnswer(null);
     setSelectedIndices([]);
     setShowTimeUpEffect(false);
+    setSubmittedStreak(0);
+    // The displayed delta is per-question; the historical baseline (prevRankRef)
+    // is intentionally left alone here so the NEXT close can diff against it.
+    setPositionDelta(null);
   }, [game?.currentQuestion, runtimeState.questionIndex]);
 
   // Play sound immediately when results are shown (only once per question)
@@ -446,9 +511,8 @@ export default function PlayGame() {
     );
   }
 
-  const questions = quiz.questions as Question[];
-  const currentQuestionIndex = runtimeState.questionIndex ?? game.currentQuestion ?? 0;
-  const currentQuestion = questions[currentQuestionIndex];
+  // questions / currentQuestionIndex / currentQuestion / isPoll are computed
+  // earlier (before the hooks above) so they're available in dependency arrays.
   const noLimit = currentQuestion?.timeLimit === 0;
   const isMulti = currentQuestion?.answerType === "multiple";
   const players = runtimeState.players || (game.players as any[]) || [];
@@ -516,6 +580,53 @@ export default function PlayGame() {
     );
   }
 
+  // Poll, still open (or closing) after the player has voted: no correct/
+  // incorrect framing, no points — just an acknowledgement.
+  if (isPoll && hasAnswered && runtimeState.status !== "closed") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-700 animate-in fade-in duration-300">
+        <ConnectionBanner status={connectionStatus} />
+        <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-10 py-12 text-center shadow-2xl max-w-md">
+          <p className="text-2xl font-bold text-gray-800">{t("play.voteRecorded")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Poll closed: show the distribution via the shared renderer — reveal is on,
+  // but AnswerGrid/QuizQuestionRenderer suppress the correct ring/✓/✗ for
+  // question.type === "poll" (there is no correct answer to leak).
+  if (isPoll && runtimeState.status === "closed") {
+    return (
+      <div className="h-[calc(100dvh-68px)] overflow-hidden flex flex-col p-3 sm:p-4 bg-slate-900">
+        <ConnectionBanner status={connectionStatus} />
+        <div className={QUIZ_STAGE_CONTAINER}>
+          <div className="flex-shrink-0 mb-2 text-center">
+            <h2 className="text-white text-xl sm:text-2xl font-bold">{t("play.pollResults")}</h2>
+          </div>
+          {currentQuestion && (
+            <div className="flex-1 min-h-0">
+              <QuizQuestionRenderer
+                question={currentQuestion}
+                background={quiz?.background || "classroom"}
+                theme={theme}
+                questionNumber={currentQuestionIndex + 1}
+                totalQuestions={questions.length}
+                reveal
+                correctAnswers={[]}
+                distribution={
+                  runtimeState.answerCounts
+                    ? { counts: runtimeState.answerCounts, percentages: runtimeState.answerPercentages ?? [] }
+                    : undefined
+                }
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (showResult && lastResult) {
     return (
       <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${
@@ -540,8 +651,17 @@ export default function PlayGame() {
 
         {/* Points Earned */}
         {lastResult.isCorrect && (
-          <div className="text-white text-3xl font-bold mb-8 animate-in zoom-in-75 duration-500 delay-200">
+          <div className="text-white text-3xl font-bold mb-4 animate-in zoom-in-75 duration-500 delay-200">
             {t("play.pointsEarned", { points: lastResult.pointsEarned })}
+          </div>
+        )}
+
+        {/* Streak Badge — only for a correct answer with a streak of 2+ */}
+        {lastResult.isCorrect && lastResult.streak >= 2 && (
+          <div className="mb-8 animate-in zoom-in-75 duration-500 delay-200">
+            <span className="inline-block bg-orange-500 text-white text-xl font-extrabold px-5 py-2 rounded-full shadow-lg">
+              {t("play.streak", { n: lastResult.streak })}
+            </span>
           </div>
         )}
 
@@ -574,6 +694,15 @@ export default function PlayGame() {
             </div>
           </div>
         </div>
+
+        {/* Position Delta — vs. the previous question_closed rank */}
+        {positionDelta && (
+          <p className="text-white text-lg font-semibold mb-2 animate-in fade-in duration-500">
+            {positionDelta.direction === "up"
+              ? t("play.movedUp", { count: positionDelta.places })
+              : t("play.movedDown", { count: positionDelta.places })}
+          </p>
+        )}
 
         {/* Waiting Message */}
         <p className="text-white text-lg animate-pulse">{t("play.waitingNextQuestion")}</p>

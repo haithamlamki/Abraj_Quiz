@@ -146,7 +146,22 @@
     "rankLabelColon": "الترتيب:",
     "rankOfTotal": "{{rank}} من {{total}}",
     "submitFailedTitle": "خطأ",
-    "submitFailed": "تعذّر إرسال الإجابة. يرجى المحاولة مرة أخرى."
+    "submitFailed": "تعذّر إرسال الإجابة. يرجى المحاولة مرة أخرى.",
+    "streak": "🔥 سلسلة ×{{n}}",
+    "voteRecorded": "تم تسجيل صوتك — بانتظار النتائج…",
+    "pollResults": "نتائج الاستطلاع",
+    "movedUp_zero": "لم ترتفع في الترتيب",
+    "movedUp_one": "ارتفعت مركزًا واحدًا",
+    "movedUp_two": "ارتفعت مركزين",
+    "movedUp_few": "ارتفعت {{count}} مراكز",
+    "movedUp_many": "ارتفعت {{count}} مركزًا",
+    "movedUp_other": "ارتفعت {{count}} مركز",
+    "movedDown_zero": "لم تتراجع في الترتيب",
+    "movedDown_one": "تراجعت مركزًا واحدًا",
+    "movedDown_two": "تراجعت مركزين",
+    "movedDown_few": "تراجعت {{count}} مراكز",
+    "movedDown_many": "تراجعت {{count}} مركزًا",
+    "movedDown_other": "تراجعت {{count}} مركز"
   },
   "results": {
     "loadingResults": "جارٍ تحميل النتائج...",
@@ -389,6 +404,8 @@
     "question": {
       "typeQuiz": "اختبار",
       "typeTrueFalse": "صح أو خطأ",
+      "typePoll": "استطلاع",
+      "pollNoCorrect": "لا توجد إجابة صحيحة للاستطلاعات — يقوم اللاعبون بالتصويت فقط.",
       "railTypeTrueFalse": "ص/خ",
       "duplicateAction": "نسخ",
       "deleteAction": "حذف",

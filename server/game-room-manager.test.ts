@@ -91,7 +91,7 @@ test("runtime room rejects duplicate answers and flushes accepted answers on que
     questionIndex: 0,
     selectedAnswer: 0,
   });
-  assert.deepEqual(answer, { success: true });
+  assert.deepEqual(answer, { success: true, streak: 1 });
 
   const duplicate = await manager.submitAnswer({
     gamePin: "123456",
@@ -340,7 +340,7 @@ test("no-limit question schedules no close timer and stays open for host-paced a
     questionIndex: 0,
     selectedAnswer: 0,
   });
-  assert.deepEqual(answer, { success: true });
+  assert.deepEqual(answer, { success: true, streak: 1 });
 
   // Reconnecting mid-question must still resend question_started (regression
   // guard for sendCurrentQuestionState requiring a non-null questionClosesAt).
@@ -354,4 +354,204 @@ test("no-limit question schedules no close timer and stays open for host-paced a
   const resent = reconnectSocket.sent.find((event) => event.type === "question_started");
   assert.ok(resent, "reconnect must resend question_started for an open no-limit question");
   assert.equal(resent.durationSeconds, 0);
+});
+
+// --- Streak state + poll close semantics -----------------------------------
+//
+// All fixtures below use timeLimit: 0 (no-limit) questions so calculatePoints
+// is a deterministic flat score (no time-bonus variance from wall-clock
+// timing in tests).
+
+async function createStreakFixture(gamePin: string, questions: any[], playerNames: string[] = ["Alice"]) {
+  const [{ GameRoomManager }, { MemStorage }] = await Promise.all([
+    import("./game-room-manager"),
+    import("./storage"),
+  ]);
+
+  const storage = new MemStorage();
+  const quiz = await storage.createQuiz({ tenantId: 1 }, {
+    title: "Streak test quiz",
+    createdBy: 1,
+    questions,
+  } as any);
+
+  const game = await storage.createGame({ tenantId: 1 }, {
+    quizId: quiz.id,
+    gamePin,
+    hostId: 1,
+    status: "waiting",
+  });
+
+  for (const name of playerNames) {
+    await storage.joinGame({ tenantId: 1 }, gamePin, name);
+  }
+
+  const manager = new GameRoomManager(storage);
+  const hostSocket = new FakeSocket();
+  const playerSockets: Record<string, FakeSocket> = {};
+
+  await manager.registerClient({
+    ws: hostSocket as unknown as WebSocket,
+    gamePin,
+    userId: 1,
+    wantsHostRole: true,
+  });
+
+  for (const name of playerNames) {
+    const ws = new FakeSocket();
+    playerSockets[name] = ws;
+    await manager.registerClient({
+      ws: ws as unknown as WebSocket,
+      gamePin,
+      wantsHostRole: false,
+      playerName: name,
+    });
+  }
+
+  return { manager, storage, hostSocket, playerSockets, game };
+}
+
+test("streak: two consecutive correct answers apply a x1.1 multiplier on the second", async () => {
+  const { manager } = await createStreakFixture("300001", [
+    { question: "Q0", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+    { question: "Q1", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+  ]);
+
+  await manager.startGame("300001", 1);
+  const base = (manager as any).calculatePoints({ timeLimit: 0, points: "standard" }, 0);
+
+  const first = await manager.submitAnswer({ gamePin: "300001", playerName: "Alice", questionIndex: 0, selectedAnswer: 0 });
+  assert.deepEqual(first, { success: true, streak: 1 });
+
+  await manager.advanceQuestion("300001", 1);
+
+  const second = await manager.submitAnswer({ gamePin: "300001", playerName: "Alice", questionIndex: 1, selectedAnswer: 0 });
+  assert.deepEqual(second, { success: true, streak: 2 });
+
+  const room = (manager as any).rooms.get("300001");
+  const response = Array.from(room.acceptedAnswers.values())[0] as any;
+  assert.equal(response.pointsEarned, Math.round(base * 1.1));
+});
+
+test("streak: a wrong answer resets the streak (next correct answer scores at x1.0)", async () => {
+  const { manager } = await createStreakFixture("300002", [
+    { question: "Q0", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+    { question: "Q1", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+    { question: "Q2", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+  ]);
+
+  await manager.startGame("300002", 1);
+  const base = (manager as any).calculatePoints({ timeLimit: 0, points: "standard" }, 0);
+
+  await manager.submitAnswer({ gamePin: "300002", playerName: "Alice", questionIndex: 0, selectedAnswer: 0 }); // correct, streak 1
+  await manager.advanceQuestion("300002", 1);
+
+  const wrong = await manager.submitAnswer({ gamePin: "300002", playerName: "Alice", questionIndex: 1, selectedAnswer: 1 }); // wrong
+  assert.deepEqual(wrong, { success: true, streak: 0 });
+  await manager.advanceQuestion("300002", 1);
+
+  const third = await manager.submitAnswer({ gamePin: "300002", playerName: "Alice", questionIndex: 2, selectedAnswer: 0 }); // correct after miss
+  assert.deepEqual(third, { success: true, streak: 1 });
+
+  const room = (manager as any).rooms.get("300002");
+  const response = Array.from(room.acceptedAnswers.values())[0] as any;
+  assert.equal(response.pointsEarned, base); // x1.0, not x1.2
+});
+
+test("streak: missing a question resets the streak at close, even without submitting", async () => {
+  const { manager } = await createStreakFixture("300003", [
+    { question: "Q0", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+    { question: "Q1", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+    { question: "Q2", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+  ]);
+
+  await manager.startGame("300003", 1);
+  const base = (manager as any).calculatePoints({ timeLimit: 0, points: "standard" }, 0);
+
+  await manager.submitAnswer({ gamePin: "300003", playerName: "Alice", questionIndex: 0, selectedAnswer: 0 }); // correct, streak 1
+  await manager.advanceQuestion("300003", 1); // closes Q0; Q1 opens
+
+  // Alice never answers Q1.
+  await manager.advanceQuestion("300003", 1); // closes Q1 (no response) -> streak reset; Q2 opens
+
+  const room = (manager as any).rooms.get("300003");
+  assert.equal(room.streaks.get("alice"), 0);
+
+  const third = await manager.submitAnswer({ gamePin: "300003", playerName: "Alice", questionIndex: 2, selectedAnswer: 0 });
+  assert.deepEqual(third, { success: true, streak: 1 });
+
+  const response = Array.from(room.acceptedAnswers.values())[0] as any;
+  assert.equal(response.pointsEarned, base); // x1.0, streak restarted
+});
+
+test("streak: a poll answer earns zero points and leaves an existing streak intact through the next scored question", async () => {
+  const { manager } = await createStreakFixture(
+    "300004",
+    [
+      { question: "Q0 scored", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+      { question: "Q1 poll", type: "poll", answers: ["Red", "Blue"], correctAnswers: [], timeLimit: 0 },
+      { question: "Q2 scored", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+    ],
+    ["Alice", "Bob"],
+  );
+
+  await manager.startGame("300004", 1);
+  const base = (manager as any).calculatePoints({ timeLimit: 0, points: "standard" }, 0);
+
+  // Both players build a streak of 1 on Q0.
+  await manager.submitAnswer({ gamePin: "300004", playerName: "Alice", questionIndex: 0, selectedAnswer: 0 });
+  await manager.submitAnswer({ gamePin: "300004", playerName: "Bob", questionIndex: 0, selectedAnswer: 0 });
+  await manager.advanceQuestion("300004", 1); // closes Q0 (scored); Q1 poll opens
+
+  // Alice answers the poll; Bob does not answer it at all.
+  // Poll is streak-neutral: Alice's current streak (1, built on Q0) is reported
+  // back unchanged, not reset to 0.
+  const pollAnswer = await manager.submitAnswer({ gamePin: "300004", playerName: "Alice", questionIndex: 1, selectedAnswer: 0 });
+  assert.deepEqual(pollAnswer, { success: true, streak: 1 });
+
+  const room = (manager as any).rooms.get("300004");
+  const pollResponse = Array.from(room.acceptedAnswers.values())[0] as any;
+  assert.equal(pollResponse.pointsEarned, 0);
+
+  await manager.advanceQuestion("300004", 1); // closes Q1 poll (streak-neutral for everyone); Q2 opens
+
+  assert.equal(room.streaks.get("alice"), 1, "poll must not reset a streak for a player who answered it");
+  assert.equal(room.streaks.get("bob"), 1, "poll must not reset a streak for a player who skipped it");
+
+  const scoredAlice = await manager.submitAnswer({ gamePin: "300004", playerName: "Alice", questionIndex: 2, selectedAnswer: 0 });
+  assert.deepEqual(scoredAlice, { success: true, streak: 2 });
+
+  const response = Array.from(room.acceptedAnswers.values()).find((r: any) => r.playerName === "Alice") as any;
+  assert.equal(response.pointsEarned, Math.round(base * 1.1));
+});
+
+test("poll close broadcasts correctAnswer -1, empty correctAnswers, and a normal distribution", async () => {
+  const { manager, hostSocket } = await createStreakFixture(
+    "300005",
+    [
+      { question: "Q0 poll", type: "poll", answers: ["Red", "Blue", "Green"], correctAnswers: [], timeLimit: 0 },
+      { question: "Q1 scored", answers: ["A", "B"], correctAnswer: 0, timeLimit: 0 },
+    ],
+    ["Alice", "Bob"],
+  );
+
+  const { wsServerMessageSchema } = await import("@shared/ws-protocol");
+
+  await manager.startGame("300005", 1);
+
+  await manager.submitAnswer({ gamePin: "300005", playerName: "Alice", questionIndex: 0, selectedAnswer: 0 }); // Red
+  await manager.submitAnswer({ gamePin: "300005", playerName: "Bob", questionIndex: 0, selectedAnswer: 1 }); // Blue
+
+  await manager.advanceQuestion("300005", 1);
+
+  const pollClosed = hostSocket.sent.find((event: any) => event.type === "question_closed" && event.questionIndex === 0);
+  assert.ok(pollClosed, "poll question_closed must have been broadcast");
+  assert.equal(pollClosed.correctAnswer, -1);
+  assert.deepEqual(pollClosed.correctAnswers, []);
+  assert.deepEqual(pollClosed.distribution.answerCounts, [1, 1, 0]);
+  assert.equal(pollClosed.distribution.totalResponses, 2);
+
+  // Regression guard for the zod widening: the broadcast payload must still
+  // validate against the shared WS protocol schema (correctAnswer: -1 for polls).
+  assert.doesNotThrow(() => wsServerMessageSchema.parse(pollClosed));
 });

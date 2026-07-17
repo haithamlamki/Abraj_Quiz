@@ -15,6 +15,9 @@ export interface AnswerGridProps {
   /** When revealing: the correct set (single or multi). */
   correctAnswers?: number[];
   reveal?: boolean;
+  /** Poll reveal: show distribution bars only — never a correct/wrong ring or
+   *  a check/X icon (a poll has no correct answer to leak). */
+  isPoll?: boolean;
   /** Host distribution bars. */
   distribution?: { counts: number[]; percentages: number[] };
   className?: string;
@@ -33,6 +36,7 @@ export function AnswerGrid({
   onSelect,
   correctAnswers,
   reveal = false,
+  isPoll = false,
   distribution,
   className = "",
 }: AnswerGridProps) {
@@ -41,7 +45,9 @@ export function AnswerGrid({
     <div className={`grid grid-cols-2 ${fill ? "auto-rows-fr" : ""} ${QUIZ_GRID_GAP} ${className}`}>
       {answers.map((text, i) => {
         let rev: Reveal = "none";
-        if (reveal) rev = correct.has(i) ? "correct" : "wrong";
+        // Polls have no correct answer (correctAnswers is always []) — without
+        // this guard every option would fall through to "wrong" (opacity + X).
+        if (reveal && !isPoll) rev = correct.has(i) ? "correct" : "wrong";
         const bar =
           distribution && reveal
             ? { percent: distribution.percentages[i] ?? 0, count: distribution.counts[i] ?? 0 }
