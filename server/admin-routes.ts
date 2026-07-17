@@ -3,6 +3,7 @@ import { z } from "zod";
 import { storage, SYSTEM_CTX } from "./storage";
 import { insertTenantSchema } from "@shared/schema";
 import { tenantCache } from "./tenant-cache";
+import { captureError } from "./instrument";
 
 // Super admins manage the tenant registry across all tenants (system context).
 export function registerAdminRoutes(app: Express) {
@@ -19,6 +20,7 @@ export function registerAdminRoutes(app: Express) {
       }
       next();
     } catch (error) {
+      captureError(error, { scope: "http.admin-auth-check" });
       console.error("Authorization check failed:", error);
       res.status(500).json({ message: "Authorization check failed" });
     }
@@ -28,6 +30,7 @@ export function registerAdminRoutes(app: Express) {
     try {
       res.json(await storage.getTenants(SYSTEM_CTX));
     } catch (error) {
+      captureError(error, { scope: "http.admin-tenants-list" });
       console.error("Failed to list tenants:", error);
       res.status(500).json({ message: "Failed to list tenants" });
     }
@@ -43,6 +46,7 @@ export function registerAdminRoutes(app: Express) {
       await tenantCache.refresh();
       res.status(201).json(tenant);
     } catch (error) {
+      captureError(error, { scope: "http.admin-tenants-create" });
       console.error("Failed to create tenant:", error);
       res.status(500).json({ message: "Failed to create tenant" });
     }
@@ -65,6 +69,7 @@ export function registerAdminRoutes(app: Express) {
       await tenantCache.refresh();
       res.json(tenant);
     } catch (error) {
+      captureError(error, { scope: "http.admin-tenants-update" });
       console.error("Failed to update tenant:", error);
       res.status(500).json({ message: "Failed to update tenant" });
     }

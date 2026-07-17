@@ -28,6 +28,13 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
   - `/api/healthz` (DB-free liveness) + `/api/readyz` (DB-ping readiness with 2s timeout) (`7396147`)
   - GitHub Actions CI: typecheck + unit + integration + build, on push/PR to main, with concurrency cancel + npm cache (`8429820` → green by `c7cdb35`)
 
+## Reliability follow-ups (from feat/reliability-quick-wins final review)
+
+- [ ] Error boundary doesn't cover `Navigation` (renders above it in App.tsx) — a crash there still blank-screens; move the boundary up or add a thin one around Navigation.
+- [ ] play-game shows "Game not found" while the quiz query is still retrying (transient flash a player might act on) — gate the not-found card on the quiz query's fetch status.
+- [ ] `retryTransient` retries definitive 400s; consider failing fast on all 4xx except 408/429. Dedupe the copy-pasted retryDelay into queryClient.ts.
+- [ ] PIN-exhaustion 500 (routes.ts "Failed to generate unique game PIN") is not a catch and thus not Sentry-captured — one-line captureError candidate.
+
 ## Insights follow-up
 
 - [ ] **Question-identity in insights**: `game_responses` are keyed by `questionIndex` only, so editing a quiz (removing/reordering questions) makes historical per-question stats attach to the wrong question text, and out-of-range indexes drop silently. Real fix needs per-game question snapshots (migration). Flagged by the feat/quiz-insights final review.

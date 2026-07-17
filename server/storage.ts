@@ -134,6 +134,10 @@ export interface IStorage {
   // unique index; the configured player cap yields status "full"; transient DB
   // contention yields status "busy".
   joinGame(ctx: StorageCtx, pin: string, playerName: string): Promise<JoinGameResult>;
+  // True iff a waiting/active game (tenant-scoped) references this quiz. Used
+  // to let players fetch a private/archived quiz's sanitized data while a
+  // live game on it is in progress.
+  quizHasLiveGame(ctx: StorageCtx, quizId: number): Promise<boolean>;
 
   // Game Players (authoritative roster — replaces the legacy games.players JSON)
   getGamePlayers(ctx: StorageCtx, gameId: number): Promise<GamePlayer[]>;
@@ -437,6 +441,19 @@ export class DatabaseStorage implements IStorage {
       if (isTransientDbError(error)) return { status: "busy" };
       throw error;
     }
+  }
+
+  async quizHasLiveGame(ctx: StorageCtx, quizId: number): Promise<boolean> {
+    return withCtx(ctx, async (tx) => {
+      const rows = await tx.select({ one: sql`1` }).from(games)
+        .where(and(
+          eq(games.quizId, quizId),
+          inArray(games.status, ["waiting", "active"]),
+          tenantFilter(ctx, games.tenantId),
+        ))
+        .limit(1);
+      return rows.length > 0;
+    });
   }
 
   async getGamePlayers(ctx: StorageCtx, gameId: number): Promise<GamePlayer[]> {
@@ -952,6 +969,15 @@ export class MemStorage implements IStorage {
 
     this.gamePlayers.set(id, player);
     return { status: "ok", game, player, playerCount: rank };
+  }
+
+  async quizHasLiveGame(ctx: StorageCtx, quizId: number): Promise<boolean> {
+    return Array.from(this.games.values()).some(
+      (g) =>
+        g.quizId === quizId &&
+        (g.status === "waiting" || g.status === "active") &&
+        this.inTenant(ctx, g),
+    );
   }
 
   async getGamePlayers(ctx: StorageCtx, gameId: number): Promise<GamePlayer[]> {

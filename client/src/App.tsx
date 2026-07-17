@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { Switch, Route } from "wouter";
+import * as Sentry from "@sentry/react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -75,7 +76,31 @@ function App() {
             {/* Content */}
             <div className="relative z-10">
               <Navigation />
-              <Router />
+              {/*
+                Root error boundary: outside Suspense (so a render error inside
+                a lazy-loaded route doesn't unmount the boundary that's meant to
+                catch it) but inside all providers (so it can still use them if
+                needed). The fallback strings are deliberately hardcoded English,
+                not run through i18next's t() -- if the crash originates in the
+                i18n layer itself, a translated fallback could throw again and
+                leave the user with a blank screen instead of a reload button.
+              */}
+              <Sentry.ErrorBoundary
+                fallback={
+                  <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center">
+                    <p className="text-lg text-gray-700">Something went wrong.</p>
+                    <button
+                      onClick={() => window.location.reload()}
+                      className="px-4 py-2 rounded bg-[#019ebd] text-white font-medium"
+                      data-testid="button-error-reload"
+                    >
+                      Reload
+                    </button>
+                  </div>
+                }
+              >
+                <Router />
+              </Sentry.ErrorBoundary>
             </div>
             <Toaster />
           </div>

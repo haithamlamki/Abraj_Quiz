@@ -11,7 +11,7 @@ import { pool } from "./db";
 import multer from "multer";
 import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText, generateBackgroundImage } from "./openai-service";
 import { gameWS } from "./websocket";
-import { gameRoomManager } from "./game-room-manager";
+import { gameRoomManager, RoomError } from "./game-room-manager";
 import { tenantMiddleware, requireFeature } from "./tenant";
 import { signToken, verifyToken } from "./token";
 import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
@@ -154,6 +154,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       next();
     } catch (error) {
+      captureError(error, { scope: "http.auth-check" });
       console.error("Auth check failed:", error);
       res.status(500).json({ message: "Authentication check failed" });
     }
@@ -218,6 +219,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "User registered successfully"
       });
     } catch (error) {
+      captureError(error, { scope: "http.register" });
       console.error("Registration error:", error);
       res.status(500).json({ message: "Failed to register user" });
     }
@@ -256,6 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Login successful"
       });
     } catch (error) {
+      captureError(error, { scope: "http.login" });
       console.error("Login error:", error);
       res.status(500).json({ message: "Failed to login" });
     }
@@ -264,6 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/logout", (req, res) => {
     (req as any).session.destroy((err: any) => {
       if (err) {
+        captureError(err, { scope: "http.logout" });
         return res.status(500).json({ message: "Failed to logout" });
       }
       res.json({ message: "Logout successful" });
@@ -283,6 +287,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       res.json({ id: user.id, username: user.username });
     } catch (error) {
+      captureError(error, { scope: "http.me" });
       console.error("Failed to fetch current user:", error);
       res.status(500).json({ message: "Failed to fetch current user" });
     }
@@ -316,6 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const quizzes = await storage.getPublicQuizzes(tctx(req));
       res.json(quizzes.map((q) => sanitizeQuizForCaller(q, callerId)));
     } catch (error) {
+      captureError(error, { scope: "http.quizzes-list" });
       res.status(500).json({ message: "Failed to fetch quizzes" });
     }
   });
@@ -331,16 +337,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Quiz not found" });
       }
       const callerId = (req as any).authUserId as number | undefined;
-      // A private quiz is visible only to its creator. Players never reach a
-      // quiz through this route (they receive questions over the WebSocket),
-      // and a private quiz can only be hosted by its owner, so restricting to
-      // the creator does not break gameplay. Respond 404 (not 403) so the
-      // existence of a private quiz at this id is not disclosed.
+      // A private/archived quiz is visible to its creator, and to anyone else
+      // only while a live game (waiting/active) on it exists — players joining
+      // that game need the (sanitized) quiz even though it is hidden from
+      // listings. Without a live game, hidden quizzes stay 404 so they are not
+      // enumerable.
       if ((!quiz.isPublic || quiz.deletedAt) && callerId !== quiz.createdBy) {
-        return res.status(404).json({ message: "Quiz not found" });
+        const live = await storage.quizHasLiveGame(tctx(req), id);
+        if (!live) {
+          return res.status(404).json({ message: "Quiz not found" });
+        }
       }
       res.json(sanitizeQuizForCaller(quiz, callerId));
     } catch (error) {
+      captureError(error, { scope: "http.quiz-get" });
       res.status(500).json({ message: "Failed to fetch quiz" });
     }
   });
@@ -352,6 +362,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const quizzes = await storage.getUserQuizzes(tctx(req), userId, { archived });
       res.json(quizzes);
     } catch (error) {
+      captureError(error, { scope: "http.my-quizzes" });
       res.status(500).json({ message: "Failed to fetch user quizzes" });
     }
   });
@@ -370,6 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           apiKeyLength: process.env.OPENAI_API_KEY?.length || 0
         });
       } catch (error) {
+        captureError(error, { scope: "http.debug-openai" });
         console.error("Debug endpoint error:", error);
         res.status(500).json({ message: "Debug check failed" });
       }
@@ -392,6 +404,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const generatedQuiz = await generateQuizFromPDF(req.file.buffer);
       res.json(generatedQuiz);
     } catch (error: any) {
+      captureError(error, { scope: "http.generate-quiz-pdf" });
       console.error("Error generating quiz from PDF:", error);
       res.status(500).json({ message: error.message || "Failed to generate quiz from PDF" });
     }
@@ -421,6 +434,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const generatedQuiz = await generateQuizFromURL(url);
       res.json(generatedQuiz);
     } catch (error: any) {
+      captureError(error, { scope: "http.generate-quiz-url" });
       console.error("Error generating quiz from URL:", error);
       res.status(500).json({ message: error.message || "Failed to generate quiz from URL" });
     }
@@ -443,6 +457,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const generatedQuiz = await generateQuizFromTopics(topics.trim());
       res.json(generatedQuiz);
     } catch (error: any) {
+      captureError(error, { scope: "http.generate-quiz-topics" });
       console.error("Error generating quiz from topics:", error);
       res.status(500).json({ message: error.message || "Failed to generate quiz from topics" });
     }
@@ -465,6 +480,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const generatedQuiz = await generateQuizFromText(text.trim());
       res.json(generatedQuiz);
     } catch (error: any) {
+      captureError(error, { scope: "http.generate-quiz-text" });
       console.error("Error generating quiz from text:", error);
       res.status(500).json({ message: error.message || "Failed to generate quiz from text" });
     }
@@ -500,9 +516,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       res.json({ backgroundUrl: backgroundDataUrl });
     } catch (error: any) {
+      captureError(error, { scope: "http.generate-background" });
       console.error("Error generating background image:", error);
       // Return user-friendly error message without leaking internals
-      const userMessage = error.message?.includes('OpenAI') || error.message?.includes('API') 
+      const userMessage = error.message?.includes('OpenAI') || error.message?.includes('API')
         ? "Service temporarily unavailable. Please try again later."
         : error.message || "Failed to generate background image";
       res.status(500).json({ message: userMessage });
@@ -518,6 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const url = await uploadQuizImage(req.file.buffer, req.file.mimetype);
       res.json({ url });
     } catch (error: any) {
+      captureError(error, { scope: "http.upload-image" });
       console.error("Image upload error:", error);
       const configured = /not configured/i.test(error?.message || "");
       res
@@ -550,6 +568,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       res.status(201).json(quiz);
     } catch (error) {
+      captureError(error, { scope: "http.quiz-create" });
       res.status(500).json({ message: "Failed to create quiz" });
     }
   });
@@ -595,6 +614,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(updatedQuiz);
     } catch (error) {
+      captureError(error, { scope: "http.quiz-update" });
       res.status(500).json({ message: "Failed to update quiz" });
     }
   });
@@ -721,6 +741,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const game = await storage.createGame(tctx(req), gameData);
       res.status(201).json(game);
     } catch (error) {
+      captureError(error, { scope: "http.game-create" });
       res.status(500).json({ message: "Failed to create game" });
     }
   });
@@ -741,6 +762,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const players = roster.map((p) => ({ name: p.name, score: p.score }));
       res.json(await gameRoomManager.getGameSnapshot(pin, { ...game, players }));
     } catch (error) {
+      captureError(error, { scope: "http.game-get", gamePin: req.params.pin });
       res.status(500).json({ message: "Failed to fetch game" });
     }
   });
@@ -816,6 +838,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedGame = await gameRoomManager.startGame(pin, (req as any).authUserId);
       res.json(updatedGame);
     } catch (error) {
+      if (!(error instanceof RoomError)) {
+        captureError(error, { scope: "http.game-start", gamePin: req.params.pin });
+      }
       const runtimeError = gameRoomManager.toHttpError(error);
       res.status(runtimeError.status).json(runtimeError.body);
     }
@@ -850,6 +875,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(result);
     } catch (error) {
+      if (!(error instanceof RoomError)) {
+        captureError(error, { scope: "http.game-answer", gamePin: req.params.pin });
+      }
       const runtimeError = gameRoomManager.toHttpError(error);
       res.status(runtimeError.status).json(runtimeError.body);
     }
@@ -873,6 +901,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await gameRoomManager.advanceQuestion(pin, (req as any).authUserId);
       res.json(result);
     } catch (error) {
+      if (!(error instanceof RoomError)) {
+        captureError(error, { scope: "http.next-question", gamePin: req.params.pin });
+      }
       const runtimeError = gameRoomManager.toHttpError(error);
       res.status(runtimeError.status).json(runtimeError.body);
     }
@@ -921,6 +952,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalQuestions: Array.isArray(quiz?.questions) ? (quiz.questions as any[]).length : 0
       });
     } catch (error) {
+      captureError(error, { scope: "http.game-results", gamePin: req.params.pin });
       res.status(500).json({ message: "Failed to get game results" });
     }
   });
@@ -984,6 +1016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         responses: questionResponses
       });
     } catch (error) {
+      captureError(error, { scope: "http.question-results", gamePin: req.params.pin });
       res.status(500).json({ message: "Failed to get question results" });
     }
   });
@@ -1018,6 +1051,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }))
       });
     } catch (error) {
+      captureError(error, { scope: "http.latest-results" });
       console.error("Failed to get latest results:", error);
       res.status(500).json({ message: "Failed to get latest results" });
     }

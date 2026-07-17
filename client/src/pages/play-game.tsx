@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Check, X, Trophy } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, retryTransient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
 import { getBackgroundStyle } from "@/utils/backgrounds";
@@ -87,12 +87,16 @@ export default function PlayGame() {
 
   const { data: game, isLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
-    enabled: !!pin
+    enabled: !!pin,
+    retry: retryTransient,
+    retryDelay: (attempt) => Math.min(4000, 500 * 2 ** attempt)
   });
 
   const { data: quiz } = useQuery<Quiz>({
     queryKey: ["/api/quizzes", game?.quizId],
-    enabled: !!game?.quizId
+    enabled: !!game?.quizId,
+    retry: retryTransient,
+    retryDelay: (attempt) => Math.min(4000, 500 * 2 ** attempt)
   });
 
   const theme = resolveQuizTheme(quiz ?? {});
