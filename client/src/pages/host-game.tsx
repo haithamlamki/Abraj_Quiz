@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import Leaderboard from "@/components/leaderboard";
 import { Clock, Users, Play, SkipForward, QrCode, Copy, Share2 } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { apiRequest, retryTransient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
 import QRCode from "qrcode";
@@ -97,12 +97,16 @@ export default function HostGame() {
 
   const { data: game, isLoading: gameLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
-    enabled: !!pin
+    enabled: !!pin,
+    retry: retryTransient,
+    retryDelay: (attempt) => Math.min(4000, 500 * 2 ** attempt)
   });
 
   const { data: quiz } = useQuery<Quiz>({
     queryKey: ["/api/quizzes", game?.quizId],
-    enabled: !!game?.quizId
+    enabled: !!game?.quizId,
+    retry: retryTransient,
+    retryDelay: (attempt) => Math.min(4000, 500 * 2 ** attempt)
   });
 
   const theme = resolveQuizTheme(quiz ?? {});
@@ -355,7 +359,12 @@ export default function HostGame() {
               <CardContent className="space-y-3 flex-shrink-0">
                 {qrCodeUrl && (
                   <div className="text-center space-y-1">
-                    <img src={qrCodeUrl} alt={t("host.qrCodeAlt")} className="w-24 h-24 mx-auto" />
+                    <img
+                      src={qrCodeUrl}
+                      alt={t("host.qrCodeAlt")}
+                      className="w-24 h-24 mx-auto"
+                      data-testid="img-join-qr"
+                    />
                     <p className="text-xs text-gray-500">{t("host.scanToJoinShort")}</p>
                   </div>
                 )}

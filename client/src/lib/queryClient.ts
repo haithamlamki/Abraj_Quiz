@@ -105,6 +105,23 @@ export async function apiRequest(
   return res;
 }
 
+// Retry transient failures on live-game-critical queries; definitive client
+// errors (auth/not-found) fail fast so real 404s still show promptly.
+//
+// getQueryFn (below) can throw two shapes:
+//  1. throwIfResNotOk attaches `error.response.status` for any non-ok HTTP
+//     response (4xx/5xx) -- the definitive-error statuses are checked there.
+//  2. A bare network failure (fetch rejects, e.g. offline/DNS/CORS) has no
+//     `.response` at all, so `status` is undefined -- that's transient too,
+//     so it falls through to the attempt-count check below instead of being
+//     treated as a fail-fast case.
+export function retryTransient(failureCount: number, error: unknown): boolean {
+  const status = (error as { response?: { status?: number } } | null | undefined)?.response
+    ?.status;
+  if (status === 401 || status === 403 || status === 404) return false;
+  return failureCount < 3;
+}
+
 type UnauthorizedBehavior = "returnNull" | "throw";
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
