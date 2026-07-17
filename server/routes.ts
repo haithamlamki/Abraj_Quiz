@@ -11,7 +11,7 @@ import { pool } from "./db";
 import multer from "multer";
 import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText, generateBackgroundImage } from "./openai-service";
 import { gameWS } from "./websocket";
-import { gameRoomManager } from "./game-room-manager";
+import { gameRoomManager, RoomError } from "./game-room-manager";
 import { tenantMiddleware, requireFeature } from "./tenant";
 import { signToken, verifyToken } from "./token";
 import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
@@ -838,6 +838,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedGame = await gameRoomManager.startGame(pin, (req as any).authUserId);
       res.json(updatedGame);
     } catch (error) {
+      if (!(error instanceof RoomError)) {
+        captureError(error, { scope: "http.game-start", gamePin: req.params.pin });
+      }
       const runtimeError = gameRoomManager.toHttpError(error);
       res.status(runtimeError.status).json(runtimeError.body);
     }
@@ -872,6 +875,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       res.json(result);
     } catch (error) {
+      if (!(error instanceof RoomError)) {
+        captureError(error, { scope: "http.game-answer", gamePin: req.params.pin });
+      }
       const runtimeError = gameRoomManager.toHttpError(error);
       res.status(runtimeError.status).json(runtimeError.body);
     }
@@ -895,6 +901,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const result = await gameRoomManager.advanceQuestion(pin, (req as any).authUserId);
       res.json(result);
     } catch (error) {
+      if (!(error instanceof RoomError)) {
+        captureError(error, { scope: "http.next-question", gamePin: req.params.pin });
+      }
       const runtimeError = gameRoomManager.toHttpError(error);
       res.status(runtimeError.status).json(runtimeError.body);
     }

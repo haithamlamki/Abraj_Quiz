@@ -76,7 +76,7 @@ interface SubmitAnswerInput {
   selectedAnswer: number;
 }
 
-class RoomError extends Error {
+export class RoomError extends Error {
   constructor(
     public readonly code: WsErrorCode,
     message: string,
