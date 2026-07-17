@@ -34,6 +34,10 @@
   --abraj-pink: hsl(330, 81%, 60%);
 }
 
+html[lang="ar"] body {
+  font-family: "Tajawal", "Segoe UI", system-ui, sans-serif;
+}
+
 .dark {
   --background: hsl(240, 10%, 3.9%);
   --foreground: hsl(0, 0%, 98%);

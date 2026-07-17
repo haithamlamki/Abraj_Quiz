@@ -1,8 +1,10 @@
 import { Link, useLocation } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/lib/tenant";
+import { applyLanguage } from "@/lib/language";
 import { PlusCircle, BookOpen, Gamepad2 } from "lucide-react";
 import abrajLogo from "@assets/ABRJ.OM - Copy_1753085299475.png";
 
@@ -11,6 +13,7 @@ export default function Navigation() {
   const { user, isAuthenticated, logout, isLoggingOut } = useAuth();
   const tenant = useTenant();
   const { toast } = useToast();
+  const { i18n } = useTranslation();
 
   return (
     <nav className="bg-white shadow-lg border-b-4 border-abraj-primary sticky top-0 z-50">
@@ -79,6 +82,14 @@ export default function Navigation() {
           </div>
           
           <div className="flex items-center space-x-3">
+            <Button
+              variant="ghost"
+              size="sm"
+              data-testid="button-language-toggle"
+              onClick={() => applyLanguage(i18n.language === "ar" ? "en" : "ar")}
+            >
+              {i18n.language === "ar" ? "EN" : "عربي"}
+            </Button>
             {isAuthenticated ? (
               <>
                 <span className="text-sm text-gray-600 hidden sm:block">

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { PdfBranding } from "@/utils/enhanced-pdf-generator";
+import { applyLanguage, resolveLanguage, LANGUAGE_STORAGE_KEY } from "@/lib/language";
 
 export interface TenantConfig {
   slug: string;
@@ -9,6 +10,7 @@ export interface TenantConfig {
     appName: string;
     logoUrl: string;
     faviconUrl: string;
+    defaultLanguage: "en" | "ar";
     colors: { primary: string; secondary: string };
     pdf: { headerText: string; footerText: string; footerTagline: string; primaryColor: number[] };
     emailFromName: string;
@@ -26,6 +28,7 @@ export const DEFAULT_TENANT_CONFIG: TenantConfig = {
     appName: "Quiz",
     logoUrl: "",
     faviconUrl: "",
+    defaultLanguage: "en",
     colors: { primary: "hsl(215, 16%, 47%)", secondary: "hsl(215, 19%, 35%)" },
     pdf: {
       headerText: "QUIZ COMPLETE REPORT",
@@ -92,6 +95,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     root.style.setProperty("--abraj-primary", tenant.branding.colors.primary);
     root.style.setProperty("--abraj-secondary", tenant.branding.colors.secondary);
     document.title = tenant.branding.appName;
+    applyLanguage(resolveLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY), tenant.branding.defaultLanguage));
     if (tenant.branding.faviconUrl) {
       let link = document.querySelector<HTMLLinkElement>("link[rel='icon']");
       if (!link) {
