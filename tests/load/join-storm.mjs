@@ -128,7 +128,7 @@ async function main() {
         if (res.status === 200) successLatencies.push(ms);
         byStatus.set(res.status, (byStatus.get(res.status) ?? 0) + 1);
         return res.status;
-      } catch (err) {
+      } catch {
         latencies.push(performance.now() - start);
         byStatus.set("ERR", (byStatus.get("ERR") ?? 0) + 1);
         return "ERR";

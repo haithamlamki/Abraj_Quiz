@@ -16,12 +16,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Link, useLocation } from "wouter";
-import { Clock, Users, Eye, Edit, Trash2, FileText, BarChart3 } from "lucide-react";
+import { Clock, Users, Edit, Trash2, FileText, BarChart3 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatQuizDate } from "@/lib/language";
-import Navigation from "@/components/navigation";
 
 interface Quiz {
   id: number;

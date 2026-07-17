@@ -5,8 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import Leaderboard from "@/components/leaderboard";
-import { Clock, Users, Play, SkipForward, QrCode, Copy, Share2 } from "lucide-react";
+import { Users, Play, SkipForward, Copy, Share2 } from "lucide-react";
 import { apiRequest, retryTransient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
@@ -27,7 +26,6 @@ export default function HostGame() {
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [showResults, setShowResults] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
-  const [showQRCode, setShowQRCode] = useState(false);
   const [gameStartCountdown, setGameStartCountdown] = useState<number | null>(null);
   const [isStartingGame, setIsStartingGame] = useState(false);
   const [soundPlayed, setSoundPlayed] = useState(false);
@@ -79,7 +77,7 @@ export default function HostGame() {
         title: t("host.copiedTitle"),
         description: t("host.copiedDescription", { label }),
       });
-    } catch (error) {
+    } catch {
       toast({
         title: t("host.copyFailedTitle"),
         description: t("host.copyFailedDescription"),
@@ -445,7 +443,7 @@ export default function HostGame() {
       
       // Add harmonic chord at the end for richness
       const harmonicChord = [523, 659, 784, 1047]; // C, E, G, C (octave)
-      harmonicChord.forEach((freq, index) => {
+      harmonicChord.forEach((freq) => {
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
         
@@ -477,49 +475,6 @@ export default function HostGame() {
         
         oscillator.start(audioContext.currentTime + 0.3 + index * 0.1);
         oscillator.stop(audioContext.currentTime + 0.3 + index * 0.1 + 0.4);
-      });
-    }
-  };
-
-  const playWrongSound = () => {
-    if (typeof Audio !== 'undefined') {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      
-      // Enhanced wrong answer sound with dramatic discord
-      // Play dissonant chord progression for wrong answers
-      const discordantNotes = [200, 220, 170, 150]; // Dissonant low frequencies
-      discordantNotes.forEach((freq, index) => {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.value = freq;
-        oscillator.type = 'square'; // Harsh square wave for dramatic effect
-        gainNode.gain.setValueAtTime(0.15, audioContext.currentTime + index * 0.05);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + index * 0.05 + 0.6);
-        
-        oscillator.start(audioContext.currentTime + index * 0.05);
-        oscillator.stop(audioContext.currentTime + index * 0.05 + 0.6);
-      });
-      
-      // Add declining tone for disappointment effect
-      const decliningFreqs = [300, 250, 180, 120]; // Descending sad tones
-      decliningFreqs.forEach((freq, index) => {
-        const oscillator = audioContext.createOscillator();
-        const gainNode = audioContext.createGain();
-        
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-        
-        oscillator.frequency.value = freq;
-        oscillator.type = 'sawtooth';
-        gainNode.gain.setValueAtTime(0.12, audioContext.currentTime + 0.3 + index * 0.15);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.3 + index * 0.15 + 0.5);
-        
-        oscillator.start(audioContext.currentTime + 0.3 + index * 0.15);
-        oscillator.stop(audioContext.currentTime + 0.3 + index * 0.15 + 0.5);
       });
     }
   };

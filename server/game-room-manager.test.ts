@@ -34,7 +34,7 @@ async function createRuntimeFixture() {
   ]);
 
   const storage = new MemStorage();
-  const game = await storage.createGame({ tenantId: 1 }, {
+  await storage.createGame({ tenantId: 1 }, {
     quizId: 1,
     gamePin: "123456",
     hostId: 1,
@@ -296,7 +296,7 @@ test("no-limit question schedules no close timer and stays open for host-paced a
     ],
   } as any);
 
-  const game = await storage.createGame({ tenantId: 1 }, {
+  await storage.createGame({ tenantId: 1 }, {
     quizId: quiz.id,
     gamePin: "999000",
     hostId: 1,

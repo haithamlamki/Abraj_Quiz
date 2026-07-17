@@ -90,7 +90,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
         pdf.addImage(quizBackground, 'JPEG', 0, 0, pageWidth, pageHeight);
         pdf.setFillColor(255, 255, 255, 0.90);
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
-      } catch (error) {
+      } catch {
         pdf.setFillColor(currentTheme.secondary[0], currentTheme.secondary[1], currentTheme.secondary[2]);
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
       }
@@ -301,7 +301,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
       pdf.text(questionLines, 32, cardStartY + 22);
       
       // Calculate dynamic answer position based on question length
-      let answerYPos = cardStartY + 22 + questionHeight + 8;
+      const answerYPos = cardStartY + 22 + questionHeight + 8;
 
       // Answer choices with color-coded styling like the web UI (up to 6).
       const answerColors = [
