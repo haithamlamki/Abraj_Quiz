@@ -331,13 +331,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Quiz not found" });
       }
       const callerId = (req as any).authUserId as number | undefined;
-      // A private quiz is visible only to its creator. Players never reach a
-      // quiz through this route (they receive questions over the WebSocket),
-      // and a private quiz can only be hosted by its owner, so restricting to
-      // the creator does not break gameplay. Respond 404 (not 403) so the
-      // existence of a private quiz at this id is not disclosed.
+      // A private/archived quiz is visible to its creator, and to anyone else
+      // only while a live game (waiting/active) on it exists — players joining
+      // that game need the (sanitized) quiz even though it is hidden from
+      // listings. Without a live game, hidden quizzes stay 404 so they are not
+      // enumerable.
       if ((!quiz.isPublic || quiz.deletedAt) && callerId !== quiz.createdBy) {
-        return res.status(404).json({ message: "Quiz not found" });
+        const live = await storage.quizHasLiveGame(tctx(req), id);
+        if (!live) {
+          return res.status(404).json({ message: "Quiz not found" });
+        }
       }
       res.json(sanitizeQuizForCaller(quiz, callerId));
     } catch (error) {

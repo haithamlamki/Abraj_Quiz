@@ -289,3 +289,22 @@ test("getQuizInsights: quiz with zero completed games returns zeroed shape with 
   );
   assert.deepEqual(ins!.recentGames, []);
 });
+
+test("quizHasLiveGame: true for waiting/active games, false for completed/none/wrong tenant", async () => {
+  const s = new MemStorage();
+  const quiz = await s.createQuiz(T1, {
+    title: "Live check", description: "", questions: [], background: "classroom",
+    isPublic: false, createdBy: 3,
+  });
+  assert.equal(await s.quizHasLiveGame(T1, quiz.id), false);
+
+  const g = await s.createGame(T1, { quizId: quiz.id, gamePin: "313131", hostId: 3, status: "waiting" });
+  assert.equal(await s.quizHasLiveGame(T1, quiz.id), true);
+  await s.updateGame(T1, g.id, { status: "active" });
+  assert.equal(await s.quizHasLiveGame(T1, quiz.id), true);
+  await s.updateGame(T1, g.id, { status: "completed" });
+  assert.equal(await s.quizHasLiveGame(T1, quiz.id), false);
+
+  assert.equal(await s.quizHasLiveGame(T2, quiz.id), false);
+  assert.equal(await s.quizHasLiveGame(T1, 999999), false);
+});
