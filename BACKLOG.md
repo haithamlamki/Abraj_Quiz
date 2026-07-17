@@ -28,6 +28,11 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
   - `/api/healthz` (DB-free liveness) + `/api/readyz` (DB-ping readiness with 2s timeout) (`7396147`)
   - GitHub Actions CI: typecheck + unit + integration + build, on push/PR to main, with concurrency cancel + npm cache (`8429820` → green by `c7cdb35`)
 
+## Arabic follow-ups
+
+- [ ] **Arabic PDF reports**: jsPDF renders Arabic as disconnected LTR glyphs; needs an embedded Arabic font + RTL shaping (or a different generation approach). Blocks localized PDF exports. (Phase B deliberately kept PDFs English.)
+- [ ] `admin-tenants.tsx` remains English (super-admin-only internal tooling — deliberate Phase B exclusion).
+
 ## Reliability follow-ups (from feat/reliability-quick-wins final review)
 
 - [ ] Error boundary doesn't cover `Navigation` (renders above it in App.tsx) — a crash there still blank-screens; move the boundary up or add a thin one around Navigation.

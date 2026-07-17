@@ -1,11 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, ResponsiveContainer,
 } from "recharts";
+import { formatQuizDate } from "@/lib/language";
 
 interface QuizInsights {
   gamesPlayed: number;
@@ -16,11 +18,11 @@ interface QuizInsights {
   recentGames: Array<{ id: number; gamePin: string; createdAt: string | null; playerCount: number; avgScore: number }>;
 }
 
-function StatTile({ label, value }: { label: string; value: string }) {
+function StatTile({ testId, label, value }: { testId: string; label: string; value: string }) {
   return (
     <Card>
       <CardContent className="pt-6 text-center">
-        <div className="text-3xl font-bold text-gray-900" data-testid={`stat-${label.toLowerCase().replace(/\s/g, "-")}`}>{value}</div>
+        <div className="text-3xl font-bold text-gray-900" data-testid={`stat-${testId}`}>{value}</div>
         <div className="text-sm text-gray-500 mt-1">{label}</div>
       </CardContent>
     </Card>
@@ -28,6 +30,7 @@ function StatTile({ label, value }: { label: string; value: string }) {
 }
 
 export default function QuizInsightsPage() {
+  const { t, i18n } = useTranslation();
   const [, params] = useRoute("/quiz-insights/:id");
   const quizId = params?.id;
   const { data, isLoading, isError } = useQuery<QuizInsights>({
@@ -38,7 +41,7 @@ export default function QuizInsightsPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="flex items-center justify-center py-24 text-gray-500">Loading insights…</div>
+        <div className="flex items-center justify-center py-24 text-gray-500">{t("insights.loading")}</div>
       </div>
     );
   }
@@ -46,15 +49,15 @@ export default function QuizInsightsPage() {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <p className="text-gray-600">Couldn't load insights for this quiz.</p>
-          <Link href="/my-quizzes"><Button variant="outline"><ArrowLeft className="w-4 h-4 mr-1" />Back to My Quizzes</Button></Link>
+          <p className="text-gray-600">{t("insights.loadError")}</p>
+          <Link href="/my-quizzes"><Button variant="outline"><ArrowLeft className="w-4 h-4 me-1 rtl:rotate-180" />{t("insights.backToMyQuizzes")}</Button></Link>
         </div>
       </div>
     );
   }
 
   const chartData = data.questions.map((q) => ({
-    name: `Q${q.questionIndex + 1}. ${q.question.length > 28 ? q.question.slice(0, 28) + "…" : q.question}`,
+    name: `${t("insights.questionAxisPrefix", { n: q.questionIndex + 1 })} ${q.question.length > 28 ? q.question.slice(0, 28) + "…" : q.question}`,
     fullQuestion: q.question,
     pct: Math.round(q.correctRate * 100),
     responses: q.totalResponses,
@@ -65,21 +68,21 @@ export default function QuizInsightsPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <div className="flex items-center gap-3">
-          <Link href="/my-quizzes"><Button variant="ghost" size="sm" data-testid="button-back-insights"><ArrowLeft className="w-4 h-4 mr-1" />My Quizzes</Button></Link>
-          <h1 className="text-2xl font-bold">Quiz Insights</h1>
+          <Link href="/my-quizzes"><Button variant="ghost" size="sm" data-testid="button-back-insights"><ArrowLeft className="w-4 h-4 me-1 rtl:rotate-180" />{t("insights.myQuizzes")}</Button></Link>
+          <h1 className="text-2xl font-bold">{t("insights.title")}</h1>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatTile label="Games played" value={String(data.gamesPlayed)} />
-          <StatTile label="Total players" value={String(data.totalPlayers)} />
-          <StatTile label="Average score" value={String(Math.round(data.avgScore))} />
+          <StatTile testId="games-played" label={t("insights.gamesPlayed")} value={String(data.gamesPlayed)} />
+          <StatTile testId="total-players" label={t("insights.totalPlayers")} value={String(data.totalPlayers)} />
+          <StatTile testId="average-score" label={t("insights.averageScore")} value={String(Math.round(data.avgScore))} />
         </div>
 
         <Card>
-          <CardHeader><CardTitle>Correct answers by question</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("insights.chartTitle")}</CardTitle></CardHeader>
           <CardContent>
             {data.gamesPlayed === 0 || chartData.length === 0 ? (
-              <p className="text-gray-500 py-8 text-center">No completed games yet — host this quiz to start collecting insights.</p>
+              <p className="text-gray-500 py-8 text-center">{t("insights.noGamesYet")}</p>
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(160, chartData.length * 44)}>
                 <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 40 }}>
@@ -87,10 +90,10 @@ export default function QuizInsightsPage() {
                   <XAxis type="number" domain={[0, 100]} tickFormatter={(v) => `${v}%`} stroke="#6b7280" fontSize={12} />
                   <YAxis type="category" dataKey="name" width={230} stroke="#6b7280" fontSize={12} />
                   <Tooltip
-                    formatter={(value: number) => [`${value}% correct`, ""]}
+                    formatter={(value: number) => [t("insights.percentCorrect", { value }), ""]}
                     labelFormatter={(_label: string, payload: any[]) => {
                       const p = payload?.[0]?.payload;
-                      return p ? `${p.fullQuestion} — ${p.responses} responses, avg ${p.avgSec}s` : "";
+                      return p ? t("insights.tooltipLabel", { question: p.fullQuestion, responses: p.responses, avgSec: p.avgSec }) : "";
                     }}
                   />
                   <Bar dataKey="pct" fill="#019ebd" barSize={18} radius={[0, 4, 4, 0]}>
@@ -103,26 +106,26 @@ export default function QuizInsightsPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Recent games</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t("insights.recentGames")}</CardTitle></CardHeader>
           <CardContent>
             {data.recentGames.length === 0 ? (
-              <p className="text-gray-500 py-4 text-center">No completed games yet.</p>
+              <p className="text-gray-500 py-4 text-center">{t("insights.noRecentGames")}</p>
             ) : (
               <table className="w-full text-sm" data-testid="table-recent-games">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b">
-                    <th className="py-2 pr-4">PIN</th>
-                    <th className="py-2 pr-4">Date</th>
-                    <th className="py-2 pr-4">Players</th>
-                    <th className="py-2">Avg score</th>
+                  <tr className="text-start text-gray-500 border-b">
+                    <th className="py-2 pe-4">{t("insights.pin")}</th>
+                    <th className="py-2 pe-4">{t("insights.date")}</th>
+                    <th className="py-2 pe-4">{t("insights.players")}</th>
+                    <th className="py-2">{t("insights.avgScore")}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.recentGames.map((g) => (
                     <tr key={g.id} className="border-b last:border-0">
-                      <td className="py-2 pr-4 font-mono">{g.gamePin}</td>
-                      <td className="py-2 pr-4">{g.createdAt ? new Date(g.createdAt).toLocaleString() : "—"}</td>
-                      <td className="py-2 pr-4">{g.playerCount}</td>
+                      <td className="py-2 pe-4 font-mono">{g.gamePin}</td>
+                      <td className="py-2 pe-4">{g.createdAt ? formatQuizDate(g.createdAt, i18n.language) : "—"}</td>
+                      <td className="py-2 pe-4">{g.playerCount}</td>
                       <td className="py-2">{Math.round(g.avgScore)}</td>
                     </tr>
                   ))}
