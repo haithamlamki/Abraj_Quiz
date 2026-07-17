@@ -116,7 +116,7 @@ export function QuizQuestionRenderer({
       {question.imageUrl ? (
         <div className={QUIZ_MEDIA_WRAP}>
           <div className={`${QUIZ_MEDIA_BOX} bg-black/10 flex items-center justify-center`}>
-            <img src={question.imageUrl} alt="Question" className="w-full h-full object-contain" />
+            <img src={question.imageUrl} alt={t("renderer.questionImageAlt")} className="w-full h-full object-contain" />
           </div>
         </div>
       ) : (

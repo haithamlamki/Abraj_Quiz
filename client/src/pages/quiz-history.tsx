@@ -38,7 +38,7 @@ interface Quiz {
 }
 
 export default function QuizHistory() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { isAuthenticated, isLoading } = useAuth();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -107,7 +107,11 @@ export default function QuizHistory() {
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
+    // "ar-u-nu-latn-ca-gregory" pins Western (Latin) numerals + the Gregorian
+    // calendar for Arabic, matching what hosts read aloud elsewhere in the app
+    // (scores/PINs/timers) — plain "ar" would default to Arabic-Indic digits.
+    const locale = i18n.language === "ar" ? "ar-u-nu-latn-ca-gregory" : "en-US";
+    return new Date(dateString).toLocaleDateString(locale, {
       year: 'numeric',
       month: 'short',
       day: 'numeric',

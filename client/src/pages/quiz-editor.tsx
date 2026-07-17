@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -88,6 +89,7 @@ export default function QuizEditor() {
   const { quizId } = useParams();
   const isEditMode = Boolean(quizId);
   const [, setLocation] = useLocation();
+  const { t } = useTranslation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -110,10 +112,10 @@ export default function QuizEditor() {
   // Redirect unauthenticated users.
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      toast({ title: "Authentication Required", description: "Please login to build quizzes.", variant: "destructive" });
+      toast({ title: t("editor.toasts.authRequiredTitle"), description: t("editor.toasts.authRequiredDescription"), variant: "destructive" });
       setLocation("/login");
     }
-  }, [isAuthenticated, isLoading, setLocation, toast]);
+  }, [isAuthenticated, isLoading, setLocation, toast, t]);
 
   // Load an existing quiz in edit mode.
   const { data: loaded } = useQuery<any>({
@@ -123,7 +125,7 @@ export default function QuizEditor() {
   useEffect(() => {
     if (loaded && isEditMode) {
       if (user && loaded.createdBy !== user.id) {
-        toast({ title: "Access Denied", description: "You can only edit your own quizzes.", variant: "destructive" });
+        toast({ title: t("editor.toasts.accessDeniedTitle"), description: t("editor.toasts.accessDeniedDescription"), variant: "destructive" });
         setLocation("/my-quizzes");
         return;
       }
@@ -152,7 +154,7 @@ export default function QuizEditor() {
       });
       setCurrentIndex(0);
     }
-  }, [loaded, isEditMode, user, setLocation, toast]);
+  }, [loaded, isEditMode, user, setLocation, toast, t]);
 
   const current = quiz.questions[currentIndex] ?? quiz.questions[0];
 
@@ -249,12 +251,12 @@ export default function QuizEditor() {
       const res = await fetch(buildApiUrl("/api/upload-image"), { method: "POST", body: form, credentials: "include" });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message || "Upload failed");
+        throw new Error(err.message || t("editor.toasts.uploadFailedDefault"));
       }
       const { url } = await res.json();
       patchQuestion(currentIndex, { imageUrl: url });
     } catch (e: any) {
-      toast({ title: "Image upload failed", description: e.message, variant: "destructive" });
+      toast({ title: t("editor.toasts.imageUploadFailedTitle"), description: e.message, variant: "destructive" });
     } finally {
       setUploading(false);
     }
@@ -266,11 +268,11 @@ export default function QuizEditor() {
       const form = new FormData();
       form.append("image", file);
       const res = await fetch(buildApiUrl("/api/upload-image"), { method: "POST", body: form, credentials: "include" });
-      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || "Upload failed");
+      if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || t("editor.toasts.uploadFailedDefault"));
       const { url } = await res.json();
       setQuiz((prev) => ({ ...prev, background: url, theme: { ...prev.theme, background: url } }));
     } catch (e: any) {
-      toast({ title: "Theme upload failed", description: e.message, variant: "destructive" });
+      toast({ title: t("editor.toasts.themeUploadFailedTitle"), description: e.message, variant: "destructive" });
     } finally {
       setUploading(false);
     }
@@ -278,15 +280,16 @@ export default function QuizEditor() {
 
   // ---- validation + save ----
   const validate = (): string | null => {
-    if (!quiz.title.trim()) return "Give your quiz a title.";
+    if (!quiz.title.trim()) return t("editor.toasts.validationTitleRequired");
     for (let i = 0; i < quiz.questions.length; i++) {
       const q = quiz.questions[i];
-      if (!q.question.trim()) return `Question ${i + 1} needs text.`;
-      if (q.answers.length < 2) return `Question ${i + 1} needs at least 2 answers.`;
-      if (q.answers.some((a) => !a.trim())) return `Question ${i + 1} has an empty answer.`;
-      if (q.correctAnswers.length === 0) return `Question ${i + 1} needs a correct answer.`;
+      const n = i + 1;
+      if (!q.question.trim()) return t("editor.toasts.validationQuestionNeedsText", { n });
+      if (q.answers.length < 2) return t("editor.toasts.validationNeedsTwoAnswers", { n });
+      if (q.answers.some((a) => !a.trim())) return t("editor.toasts.validationEmptyAnswer", { n });
+      if (q.correctAnswers.length === 0) return t("editor.toasts.validationNeedsCorrectAnswer", { n });
       if (q.answerType === "single" && q.correctAnswers.length !== 1)
-        return `Question ${i + 1} (single-select) must have exactly one correct answer.`;
+        return t("editor.toasts.validationSingleSelectOneCorrect", { n });
     }
     return null;
   };
@@ -315,22 +318,22 @@ export default function QuizEditor() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/my-quizzes"] });
-      toast({ title: isEditMode ? "Quiz updated!" : "Quiz created!" });
+      toast({ title: isEditMode ? t("editor.toasts.quizUpdated") : t("editor.toasts.quizCreated") });
       setLocation(isEditMode ? "/my-quizzes" : `/host-quiz/${data.id}`);
     },
     onError: (error: any) => {
       const errs = error?.response?.data?.errors;
       const msg = Array.isArray(errs)
         ? errs.map((e: any) => (e.path?.length ? `${e.path.join(".")}: ${e.message}` : e.message)).join("; ")
-        : error?.response?.data?.message || "Failed to save quiz.";
-      toast({ title: "Could not save", description: msg, variant: "destructive" });
+        : error?.response?.data?.message || t("editor.toasts.saveFailedDefault");
+      toast({ title: t("editor.toasts.saveFailedTitle"), description: msg, variant: "destructive" });
     },
   });
 
   const handleSave = () => {
     const err = validate();
     if (err) {
-      toast({ title: "Almost there", description: err, variant: "destructive" });
+      toast({ title: t("editor.toasts.almostThereTitle"), description: err, variant: "destructive" });
       return;
     }
     saveMutation.mutate();
@@ -346,17 +349,17 @@ export default function QuizEditor() {
 
   const applyGenerated = (generated: any) => {
     if (!generated || !Array.isArray(generated.questions) || generated.questions.length === 0) {
-      throw new Error("The generator returned no questions.");
+      throw new Error(t("editor.toasts.generatorNoQuestions"));
     }
     setQuiz((p) => ({
       ...p,
-      title: p.title || generated.title || "Generated Quiz",
+      title: p.title || generated.title || t("editor.ai.generatedQuizDefaultTitle"),
       description: p.description || generated.description || "",
       questions: generated.questions.map(fromGenerated),
     }));
     setCurrentIndex(0);
     setAiOpen(false);
-    toast({ title: "Quiz generated", description: `Added ${generated.questions.length} questions — review before saving.` });
+    toast({ title: t("editor.toasts.quizGeneratedTitle"), description: t("editor.toasts.quizGeneratedDescription", { count: generated.questions.length }) });
   };
 
   const runGeneration = async (kind: "topics" | "text" | "url" | "pdf") => {
@@ -364,11 +367,11 @@ export default function QuizEditor() {
     try {
       let generated: any;
       if (kind === "pdf") {
-        if (!aiFile) throw new Error("Choose a PDF file first.");
+        if (!aiFile) throw new Error(t("editor.toasts.choosePdfFirst"));
         const form = new FormData();
         form.append("pdf", aiFile);
         const res = await fetch(buildApiUrl("/api/generate-quiz/pdf"), { method: "POST", body: form, credentials: "include" });
-        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || "PDF generation failed");
+        if (!res.ok) throw new Error((await res.json().catch(() => ({}))).message || t("editor.toasts.pdfGenerationFailedDefault"));
         generated = await res.json();
       } else {
         const body = kind === "topics" ? { topics: aiTopics } : kind === "text" ? { text: aiText } : { url: aiUrl };
@@ -377,7 +380,7 @@ export default function QuizEditor() {
       }
       applyGenerated(generated);
     } catch (e: any) {
-      toast({ title: "Generation failed", description: e?.message || "Please try again.", variant: "destructive" });
+      toast({ title: t("editor.toasts.generationFailedTitle"), description: e?.message || t("editor.toasts.generationFailedDefault"), variant: "destructive" });
     } finally {
       setAiBusy(false);
     }
@@ -394,66 +397,66 @@ export default function QuizEditor() {
       <header className="flex flex-wrap items-center justify-between gap-2 sm:gap-3 px-4 py-3 bg-white border-b">
         <div className="flex items-center gap-3 min-w-0">
           <Button variant="ghost" size="sm" onClick={() => setLocation("/my-quizzes")}>
-            <ArrowLeft className="w-4 h-4 mr-1" /> Exit
+            <ArrowLeft className="w-4 h-4 me-1 rtl:rotate-180" /> {t("editor.topbar.exit")}
           </Button>
           <Input
             value={quiz.title}
             onChange={(e) => setQuiz((p) => ({ ...p, title: e.target.value }))}
-            placeholder="Enter quiz title..."
+            placeholder={t("editor.topbar.quizTitlePlaceholder")}
             className="max-w-md font-semibold"
           />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button variant="outline" onClick={() => setSettingsOpen(true)}>
-            <Settings className="w-4 h-4 mr-1" /> Settings
+            <Settings className="w-4 h-4 me-1" /> {t("editor.topbar.settings")}
           </Button>
           <Dialog open={aiOpen} onOpenChange={setAiOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline"><Wand2 className="w-4 h-4 mr-1" /> Create with AI</Button>
+              <Button variant="outline"><Wand2 className="w-4 h-4 me-1" /> {t("editor.ai.triggerButton")}</Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg">
-              <DialogHeader><DialogTitle>Generate questions with AI</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{t("editor.ai.dialogTitle")}</DialogTitle></DialogHeader>
               <Tabs defaultValue="topics">
                 <TabsList className="grid grid-cols-4 w-full">
-                  <TabsTrigger value="topics">Topics</TabsTrigger>
-                  <TabsTrigger value="text">Text</TabsTrigger>
-                  <TabsTrigger value="url">URL</TabsTrigger>
-                  <TabsTrigger value="pdf">PDF</TabsTrigger>
+                  <TabsTrigger value="topics">{t("editor.ai.tabTopics")}</TabsTrigger>
+                  <TabsTrigger value="text">{t("editor.ai.tabText")}</TabsTrigger>
+                  <TabsTrigger value="url">{t("editor.ai.tabUrl")}</TabsTrigger>
+                  <TabsTrigger value="pdf">{t("editor.ai.tabPdf")}</TabsTrigger>
                 </TabsList>
                 <TabsContent value="topics" className="space-y-2">
-                  <Textarea value={aiTopics} onChange={(e) => setAiTopics(e.target.value)} placeholder="e.g. Photosynthesis, the water cycle, food chains" rows={3} />
+                  <Textarea value={aiTopics} onChange={(e) => setAiTopics(e.target.value)} placeholder={t("editor.ai.topicsPlaceholder")} rows={3} />
                   <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("topics")}>
-                    {aiBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null} Generate
+                    {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="text" className="space-y-2">
-                  <Textarea value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder="Paste study text (min ~50 characters)" rows={5} />
+                  <Textarea value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder={t("editor.ai.textPlaceholder")} rows={5} />
                   <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("text")}>
-                    {aiBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null} Generate
+                    {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="url" className="space-y-2">
-                  <Input value={aiUrl} onChange={(e) => setAiUrl(e.target.value)} placeholder="https://example.com/article" />
+                  <Input value={aiUrl} onChange={(e) => setAiUrl(e.target.value)} placeholder={t("editor.ai.urlPlaceholder")} />
                   <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("url")}>
-                    {aiBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null} Generate
+                    {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="pdf" className="space-y-2">
                   <Input type="file" accept="application/pdf" onChange={(e) => setAiFile(e.target.files?.[0] ?? null)} />
                   <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("pdf")}>
-                    {aiBusy ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null} Generate
+                    {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
               </Tabs>
-              <p className="text-xs text-gray-400">Generated questions replace the current ones — review and edit before saving.</p>
+              <p className="text-xs text-gray-400">{t("editor.ai.footerNote")}</p>
             </DialogContent>
           </Dialog>
           <Button variant="outline" onClick={() => { setPreviewIdx(currentIndex); setPreviewOpen(true); }}>
-            <Eye className="w-4 h-4 mr-1" /> Preview
+            <Eye className="w-4 h-4 me-1" /> {t("editor.topbar.preview")}
           </Button>
           <Button className="abraj-primary text-white" onClick={handleSave} disabled={saveMutation.isPending}>
-            {saveMutation.isPending ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : null}
-            {isEditMode ? "Save changes" : "Save"}
+            {saveMutation.isPending ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null}
+            {isEditMode ? t("editor.topbar.saveChanges") : t("editor.topbar.save")}
           </Button>
         </div>
       </header>
@@ -469,7 +472,7 @@ export default function QuizEditor() {
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl">
-          <DialogHeader><DialogTitle>Preview</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("editor.topbar.previewDialogTitle")}</DialogTitle></DialogHeader>
           <div className="h-[460px]">
             <QuizQuestionRenderer
               question={quiz.questions[Math.min(previewIdx, quiz.questions.length - 1)]}
@@ -481,9 +484,9 @@ export default function QuizEditor() {
             />
           </div>
           <div className="flex items-center justify-center gap-4">
-            <Button variant="ghost" size="sm" disabled={previewIdx === 0} onClick={() => setPreviewIdx((i) => i - 1)}>Prev</Button>
-            <span className="text-sm text-gray-500">{Math.min(previewIdx, quiz.questions.length - 1) + 1} / {quiz.questions.length}</span>
-            <Button variant="ghost" size="sm" disabled={previewIdx >= quiz.questions.length - 1} onClick={() => setPreviewIdx((i) => i + 1)}>Next</Button>
+            <Button variant="ghost" size="sm" disabled={previewIdx === 0} onClick={() => setPreviewIdx((i) => i - 1)}>{t("editor.topbar.previewPrev")}</Button>
+            <span className="text-sm text-gray-500">{t("editor.topbar.previewCounter", { current: Math.min(previewIdx, quiz.questions.length - 1) + 1, total: quiz.questions.length })}</span>
+            <Button variant="ghost" size="sm" disabled={previewIdx >= quiz.questions.length - 1} onClick={() => setPreviewIdx((i) => i + 1)}>{t("editor.topbar.previewNext")}</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -491,22 +494,22 @@ export default function QuizEditor() {
       <div className="flex-1 flex flex-col lg:flex-row min-h-0">
         {/* Left: question rail — mini-stage thumbnails mirroring the question
             structure (question line, media placeholder, answer bars) */}
-        <aside className={`${EDITOR_LEFT_RAIL} order-2 lg:order-1 shrink-0 bg-white border-t lg:border-t-0 lg:border-r p-2 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto`}>
+        <aside className={`${EDITOR_LEFT_RAIL} order-2 lg:order-1 shrink-0 bg-white border-t lg:border-t-0 lg:border-e p-2 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto`}>
           {quiz.questions.map((q, i) => (
             <div key={i} onClick={() => setCurrentIndex(i)} className="cursor-pointer shrink-0 w-40 lg:w-auto">
               <div className="flex items-center justify-between px-1 mb-0.5 text-[11px] text-gray-500">
-                <span>{i + 1} · {q.type === "true_false" ? "T/F" : "Quiz"}</span>
+                <span>{i + 1} · {q.type === "true_false" ? t("editor.question.railTypeTrueFalse") : t("editor.question.typeQuiz")}</span>
                 <div className="flex gap-1">
-                  <button title="Duplicate" onClick={(e) => { e.stopPropagation(); duplicateQuestion(i); }}><Copy className="w-3 h-3" /></button>
+                  <button title={t("editor.question.duplicateAction")} onClick={(e) => { e.stopPropagation(); duplicateQuestion(i); }}><Copy className="w-3 h-3" /></button>
                   {quiz.questions.length > 1 && (
-                    <button title="Delete" onClick={(e) => { e.stopPropagation(); removeQuestion(i); }}><Trash2 className="w-3 h-3 text-red-500" /></button>
+                    <button title={t("editor.question.deleteAction")} onClick={(e) => { e.stopPropagation(); removeQuestion(i); }}><Trash2 className="w-3 h-3 text-red-500" /></button>
                   )}
                 </div>
               </div>
               <div className={`rounded-lg border bg-white p-2 ${i === currentIndex ? "border-abraj-primary ring-2 ring-abraj-primary" : "hover:bg-gray-50"}`}>
-                <div className="text-[10px] font-medium text-gray-800 text-center line-clamp-1 mb-1">{q.question || "Untitled"}</div>
+                <div className="text-[10px] font-medium text-gray-800 text-center line-clamp-1 mb-1">{q.question || t("editor.question.untitled")}</div>
                 <div className="flex items-center gap-1 mb-1">
-                  <span className="text-[9px] text-gray-400 border rounded-full w-5 h-5 flex items-center justify-center shrink-0">{q.timeLimit === 0 ? "∞" : q.timeLimit}</span>
+                  <span className="text-[9px] text-gray-400 border rounded-full w-5 h-5 flex items-center justify-center shrink-0">{q.timeLimit === 0 ? t("editor.question.noLimitBadge") : q.timeLimit}</span>
                   <div className="flex-1 bg-gray-100 rounded h-7 flex items-center justify-center">
                     <ImagePlus className="w-3.5 h-3.5 text-gray-300" />
                   </div>
@@ -520,7 +523,7 @@ export default function QuizEditor() {
             </div>
           ))}
           <Button variant="outline" className="w-auto lg:w-full shrink-0 self-center lg:self-auto" size="sm" onClick={addQuestion}>
-            <Plus className="w-4 h-4 mr-1" /> Add
+            <Plus className="w-4 h-4 me-1" /> {t("editor.question.addButton")}
           </Button>
         </aside>
 
@@ -534,7 +537,7 @@ export default function QuizEditor() {
             <Input
               value={current.question}
               onChange={(e) => patchQuestion(currentIndex, { question: e.target.value })}
-              placeholder="Start typing your question"
+              placeholder={t("editor.question.placeholder")}
               className={`shrink-0 ${QUIZ_QUESTION_BAR} text-center text-lg sm:text-xl font-semibold bg-white`}
             />
 
@@ -545,11 +548,11 @@ export default function QuizEditor() {
               <div className={`${QUIZ_MEDIA_BOX} bg-white/85 flex flex-col items-center justify-center relative`}>
                 {current.imageUrl ? (
                   <>
-                    <img src={current.imageUrl} alt="Question" className="w-full h-full object-contain" />
+                    <img src={current.imageUrl} alt={t("editor.question.imageAlt")} className="w-full h-full object-contain" />
                     <button
                       onClick={() => patchQuestion(currentIndex, { imageUrl: undefined })}
-                      className="absolute top-2 right-2 bg-white rounded-full shadow p-1"
-                      title="Remove image"
+                      className="absolute top-2 end-2 bg-white rounded-full shadow p-1"
+                      title={t("editor.question.removeImageTitle")}
                     >
                       <X className="w-4 h-4" />
                     </button>
@@ -561,8 +564,8 @@ export default function QuizEditor() {
                     disabled={uploading}
                   >
                     {uploading ? <Loader2 className="w-8 h-8 animate-spin" /> : <ImagePlus className="w-8 h-8" />}
-                    <span>{uploading ? "Uploading..." : "Find and insert media"}</span>
-                    <span className="text-xs text-gray-400"><span className="underline font-medium">Upload file</span> or drag here to upload</span>
+                    <span>{uploading ? t("editor.question.uploading") : t("editor.question.findAndInsertMedia")}</span>
+                    <span className="text-xs text-gray-400"><span className="underline font-medium">{t("editor.question.uploadFileLink")}</span> {t("editor.question.orDragHereToUpload")}</span>
                   </button>
                 )}
                 <input
@@ -587,12 +590,12 @@ export default function QuizEditor() {
                     <Input
                       value={answer}
                       onChange={(e) => setAnswerText(index, e.target.value)}
-                      placeholder={`Answer ${index + 1}`}
+                      placeholder={t("editor.answers.placeholder", { index: index + 1 })}
                       disabled={current.type === "true_false"}
                       className="bg-white/90 text-gray-900 border-0 h-10"
                     />
                     <button
-                      title={isCorrect ? "Correct" : "Mark correct"}
+                      title={isCorrect ? t("editor.answers.correctTitle") : t("editor.answers.markCorrectTitle")}
                       onClick={() => toggleCorrect(index)}
                       aria-pressed={isCorrect}
                       className={`shrink-0 w-9 h-9 rounded-full border-2 border-white flex items-center justify-center ${isCorrect ? "bg-white" : "bg-transparent"}`}
@@ -600,7 +603,7 @@ export default function QuizEditor() {
                       {isCorrect && <Check className="w-5 h-5 text-green-600" />}
                     </button>
                     {current.type !== "true_false" && current.answers.length > 2 && (
-                      <button title="Remove answer" aria-label={`Remove answer ${index + 1}`} onClick={() => removeAnswer(index)}>
+                      <button title={t("editor.answers.removeTitle")} aria-label={t("editor.answers.removeAriaLabel", { index: index + 1 })} onClick={() => removeAnswer(index)}>
                         <X className="w-4 h-4" />
                       </button>
                     )}
@@ -612,7 +615,7 @@ export default function QuizEditor() {
             {current.type !== "true_false" && current.answers.length < 6 && (
               <div className="shrink-0 text-center">
                 <Button variant="secondary" size="sm" onClick={addAnswer}>
-                  <Plus className="w-4 h-4 mr-1" /> Add more answers
+                  <Plus className="w-4 h-4 me-1" /> {t("editor.answers.addMore")}
                 </Button>
               </div>
             )}
@@ -620,39 +623,41 @@ export default function QuizEditor() {
         </main>
 
         {/* Right: properties panel */}
-        <aside className={`${EDITOR_RIGHT_PANEL} order-3 shrink-0 bg-white border-t lg:border-t-0 lg:border-l p-4 lg:overflow-y-auto space-y-5 flex flex-col`}>
-          <div className="font-semibold text-gray-800">Question properties</div>
+        <aside className={`${EDITOR_RIGHT_PANEL} order-3 shrink-0 bg-white border-t lg:border-t-0 lg:border-s p-4 lg:overflow-y-auto space-y-5 flex flex-col`}>
+          <div className="font-semibold text-gray-800">{t("editor.question.propertiesHeading")}</div>
 
           <div>
-            <label className="text-xs text-gray-500">Question type</label>
+            <label className="text-xs text-gray-500">{t("editor.question.questionTypeLabel")}</label>
             <Select value={current.type} onValueChange={(v) => setType(v as Question["type"])}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="quiz">Quiz</SelectItem>
-                <SelectItem value="true_false">True or False</SelectItem>
+                <SelectItem value="quiz">{t("editor.question.typeQuiz")}</SelectItem>
+                <SelectItem value="true_false">{t("editor.question.typeTrueFalse")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <div>
-            <label className="text-xs text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3" /> Time limit</label>
+            <label className="text-xs text-gray-500 flex items-center gap-1"><Clock className="w-3 h-3" /> {t("editor.timing.label")}</label>
             <Select value={String(current.timeLimit)} onValueChange={(v) => patchQuestion(currentIndex, { timeLimit: parseInt(v, 10) })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="0">No limit</SelectItem>
-                {TIME_OPTIONS.map((t) => <SelectItem key={t} value={String(t)}>{t} seconds</SelectItem>)}
+                <SelectItem value="0">{t("editor.timing.noLimit")}</SelectItem>
+                {TIME_OPTIONS.map((secs) => (
+                  <SelectItem key={secs} value={String(secs)}>{t("editor.timing.secondsOption", { count: secs })}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
             <button
               className="text-xs text-abraj-primary underline mt-1"
               onClick={() => setQuiz((p) => ({ ...p, questions: p.questions.map((q) => ({ ...q, timeLimit: current.timeLimit })) }))}
             >
-              Apply to all questions
+              {t("editor.timing.applyToAll")}
             </button>
           </div>
 
           <div>
-            <label className="text-xs text-gray-500">Answer options</label>
+            <label className="text-xs text-gray-500">{t("editor.question.answerOptionsLabel")}</label>
             <Select
               value={current.answerType}
               onValueChange={(v) => setAnswerMode(v as Question["answerType"])}
@@ -660,35 +665,35 @@ export default function QuizEditor() {
             >
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="single">Single select</SelectItem>
-                <SelectItem value="multiple">Multi-select</SelectItem>
+                <SelectItem value="single">{t("editor.question.answerModeSingle")}</SelectItem>
+                <SelectItem value="multiple">{t("editor.question.answerModeMultiple")}</SelectItem>
               </SelectContent>
             </Select>
             <p className="text-[11px] text-gray-400 mt-1">
-              {current.answerType === "multiple" ? "Players must pick ALL correct answers." : "Players pick one answer."}
+              {current.answerType === "multiple" ? t("editor.question.answerModeMultipleHint") : t("editor.question.answerModeSingleHint")}
             </p>
           </div>
 
           <div>
-            <label className="text-xs text-gray-500">Points</label>
+            <label className="text-xs text-gray-500">{t("editor.question.pointsLabel")}</label>
             <Select value={current.points} onValueChange={(v) => patchQuestion(currentIndex, { points: v as Question["points"] })}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="standard">Standard</SelectItem>
-                <SelectItem value="double">Double points</SelectItem>
+                <SelectItem value="standard">{t("editor.question.pointsStandard")}</SelectItem>
+                <SelectItem value="double">{t("editor.question.pointsDouble")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           {/* Theme picker */}
           <div>
-            <label className="text-xs text-gray-500 flex items-center gap-1"><Palette className="w-3 h-3" /> Theme</label>
+            <label className="text-xs text-gray-500 flex items-center gap-1"><Palette className="w-3 h-3" /> {t("editor.theme.fieldLabel")}</label>
             <Dialog>
               <DialogTrigger asChild>
-                <button className="mt-1 w-full h-10 rounded-lg border" style={getBackgroundStyle(quiz.theme.background)} title="Change theme" />
+                <button className="mt-1 w-full h-10 rounded-lg border" style={getBackgroundStyle(quiz.theme.background)} title={t("editor.theme.changeThemeTitle")} />
               </DialogTrigger>
               <DialogContent className="max-w-2xl">
-                <DialogHeader><DialogTitle>Quiz theme</DialogTitle></DialogHeader>
+                <DialogHeader><DialogTitle>{t("editor.theme.dialogTitle")}</DialogTitle></DialogHeader>
                 <ThemeBuilder
                   theme={quiz.theme}
                   uploading={uploading}
@@ -708,10 +713,10 @@ export default function QuizEditor() {
               disabled={quiz.questions.length <= 1}
               onClick={() => removeQuestion(currentIndex)}
             >
-              Delete
+              {t("editor.question.deleteAction")}
             </Button>
             <Button variant="outline" size="sm" className="flex-1" onClick={() => duplicateQuestion(currentIndex)}>
-              Duplicate
+              {t("editor.question.duplicateAction")}
             </Button>
           </div>
         </aside>
