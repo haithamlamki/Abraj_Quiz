@@ -15,7 +15,9 @@
     "check": "tsc",
     "test": "node --import tsx --test server/game-room-manager.test.ts server/websocket.test.ts server/tenant.test.ts server/storage.test.ts server/token.test.ts server/quiz-scoring.test.ts server/rate-limits.test.ts shared/schema.test.ts shared/quiz-theme.test.ts client/src/lib/ws-reconnect.test.ts client/src/lib/language.test.ts",
     "integration": "vitest run tests/integration",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@fontsource/tajawal": "^5.2.7",
@@ -125,6 +127,7 @@
     "drizzle-kit": "^0.30.4",
     "esbuild": "^0.25.0",
     "postcss": "^8.4.47",
+    "prettier": "^3.9.5",
     "tailwindcss": "^3.4.17",
     "tsx": "^4.19.1",
     "typescript": "5.6.3",
