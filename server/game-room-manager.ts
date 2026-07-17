@@ -284,10 +284,9 @@ export class GameRoomManager {
     if (question.type === "poll") {
       // Polls are a tally, not a scored question: zero points, and the streak
       // Map is left untouched (a poll neither extends nor breaks a streak).
-      // The `streak` returned here is 0 for simplicity — it reflects "no
-      // streak change happened", not the player's actual (unchanged) streak.
+      // poll is streak-neutral — report the player's current streak unchanged
       pointsEarned = 0;
-      streak = 0;
+      streak = room.streaks.get(streakKey) ?? 0;
     } else if (isCorrect) {
       streak = (room.streaks.get(streakKey) ?? 0) + 1;
       room.streaks.set(streakKey, streak);

@@ -504,8 +504,10 @@ test("streak: a poll answer earns zero points and leaves an existing streak inta
   await manager.advanceQuestion("300004", 1); // closes Q0 (scored); Q1 poll opens
 
   // Alice answers the poll; Bob does not answer it at all.
+  // Poll is streak-neutral: Alice's current streak (1, built on Q0) is reported
+  // back unchanged, not reset to 0.
   const pollAnswer = await manager.submitAnswer({ gamePin: "300004", playerName: "Alice", questionIndex: 1, selectedAnswer: 0 });
-  assert.deepEqual(pollAnswer, { success: true, streak: 0 });
+  assert.deepEqual(pollAnswer, { success: true, streak: 1 });
 
   const room = (manager as any).rooms.get("300004");
   const pollResponse = Array.from(room.acceptedAnswers.values())[0] as any;
