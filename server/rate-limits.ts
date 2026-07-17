@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 import type { Request, Response, NextFunction, RequestHandler } from "express";
 
 // HTTP rate limiting. In-memory store is CORRECT here: the backend is
@@ -51,9 +51,9 @@ function toLimiter(setting: LimiterSetting, message: string): RequestHandler {
     standardHeaders: true,
     legacyHeaders: false,
     keyGenerator: (req: Request) =>
-      setting.keyBy === "user"
-        ? String((req as any).authUserId ?? req.ip)
-        : (req.ip ?? "unknown"),
+      setting.keyBy === "user" && (req as any).authUserId != null
+        ? String((req as any).authUserId)
+        : ipKeyGenerator(req.ip ?? "unknown"),
     handler: (_req: Request, res: Response) => {
       res.status(429).json({ message, code: "RATE_LIMITED" });
     },

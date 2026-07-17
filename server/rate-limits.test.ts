@@ -35,3 +35,19 @@ test("garbage env values fall back to defaults", () => {
   assert.equal(s.auth.max, 30);
   assert.equal(s.join.max, 600);
 });
+
+test("buildRateLimiters constructs all four limiters without express-rate-limit validation errors", async () => {
+  const { buildRateLimiters } = await import("./rate-limits");
+  const logged: string[] = [];
+  const orig = console.error;
+  console.error = (...args: unknown[]) => { logged.push(args.map(String).join(" ")); };
+  try {
+    const limiters = buildRateLimiters({} as NodeJS.ProcessEnv);
+    assert.equal(typeof limiters.authLimiter, "function");
+    assert.equal(typeof limiters.joinLimiter, "function");
+  } finally {
+    console.error = orig;
+  }
+  const validationNoise = logged.filter((l) => l.includes("ERR_ERL"));
+  assert.deepEqual(validationNoise, []);
+});
