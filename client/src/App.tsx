@@ -6,6 +6,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { TenantProvider } from "@/lib/tenant";
+import { ThemeProvider } from "@/components/theme-provider";
 import Navigation from "@/components/navigation";
 import { PageLoader } from "@/components/page-loader";
 import classroomBg from "@assets/classroom-background.jpg";
@@ -54,8 +55,9 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TenantProvider>
-        <TooltipProvider>
+      <ThemeProvider>
+        <TenantProvider>
+          <TooltipProvider>
           <div className="min-h-screen relative">
             {/* Classroom background */}
             <div
@@ -96,6 +98,7 @@ function App() {
           </div>
         </TooltipProvider>
       </TenantProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 }
