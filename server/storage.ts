@@ -8,7 +8,7 @@ import {
   type Tenant, type InsertTenant
 } from "@shared/schema";
 import { db } from "./db";
-import { and, asc, desc, eq, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 
 // Safety cap on active participants per game. Configurable via env; the default
 // leaves headroom over the 400-player target. This is a bound, not an exact
@@ -61,6 +61,32 @@ export type JoinGameResult =
   | { status: "full" }
   | { status: "busy" };
 
+// Aggregated analytics for a single quiz, computed over its COMPLETED games
+// only. avgScore is the mean over ALL players of those games (weighted by
+// per-game player count), not the mean of per-game averages. Question text
+// only — never answer keys — so this is safe to return to a quiz owner
+// before/without exposing correctAnswer(s).
+export interface QuizInsights {
+  gamesPlayed: number;            // completed games only
+  totalPlayers: number;           // sum of game_players rows across those games
+  avgScore: number;               // weighted mean of game_players.score across those games, 0 when no players
+  lastPlayedAt: Date | null;      // latest completed game's createdAt
+  questions: Array<{
+    questionIndex: number;
+    question: string;             // text from quizzes.questions (never answer keys)
+    totalResponses: number;
+    correctRate: number;          // 0..1, correct responses / total, 0 when none
+    avgResponseMs: number;        // mean responseTime, 0 when none
+  }>;
+  recentGames: Array<{
+    id: number;
+    gamePin: string;
+    createdAt: Date | null;
+    playerCount: number;
+    avgScore: number;
+  }>;                             // newest first, cap 20
+}
+
 export function requireTenantId(ctx: StorageCtx): number {
   if ("system" in ctx) {
     throw new Error("Tenant context required");
@@ -93,6 +119,9 @@ export interface IStorage {
   updateQuiz(ctx: StorageCtx, id: number, quiz: Partial<InsertQuiz>): Promise<Quiz>;
   deleteQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined>;
   restoreQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined>;
+  // Aggregated analytics over this quiz's completed games. undefined when the
+  // quiz is not visible in ctx (same tenant-visibility rule as getQuiz).
+  getQuizInsights(ctx: StorageCtx, quizId: number): Promise<QuizInsights | undefined>;
 
   // Games
   getGame(ctx: StorageCtx, id: number): Promise<Game | undefined>;
@@ -240,6 +269,83 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)))
         .returning();
       return row;
+    });
+  }
+
+  async getQuizInsights(ctx: StorageCtx, quizId: number): Promise<QuizInsights | undefined> {
+    return withCtx(ctx, async (tx) => {
+      // Same tenant-visibility rule as getQuiz.
+      const [quiz] = await tx.select().from(quizzes)
+        .where(and(eq(quizzes.id, quizId), tenantFilter(ctx, quizzes.tenantId)));
+      if (!quiz) return undefined;
+
+      // Per-game aggregates over completed games only, newest first. avgScore
+      // here is per-game (used by recentGames); the headline avgScore below is
+      // the weighted mean over ALL players, not the mean of these per-game
+      // averages.
+      const gameRows = await tx
+        .select({
+          id: games.id,
+          gamePin: games.gamePin,
+          createdAt: games.createdAt,
+          playerCount: sql<number>`count(${gamePlayers.id})::int`,
+          avgScore: sql<number>`coalesce(avg(${gamePlayers.score}), 0)::float`,
+        })
+        .from(games)
+        .leftJoin(gamePlayers, eq(gamePlayers.gameId, games.id))
+        .where(and(
+          eq(games.quizId, quizId),
+          eq(games.status, "completed"),
+          tenantFilter(ctx, games.tenantId),
+        ))
+        .groupBy(games.id)
+        .orderBy(desc(games.createdAt), desc(games.id));
+
+      const gamesPlayed = gameRows.length;
+      const totalPlayers = gameRows.reduce((sum, r) => sum + r.playerCount, 0);
+      const totalScoreSum = gameRows.reduce((sum, r) => sum + r.avgScore * r.playerCount, 0);
+      const avgScore = totalPlayers > 0 ? totalScoreSum / totalPlayers : 0;
+      const lastPlayedAt = gamesPlayed > 0 ? gameRows[0].createdAt : null;
+
+      const gameIds = gameRows.map((r) => r.id);
+      const questionAggRows = gameIds.length > 0
+        ? await tx
+            .select({
+              questionIndex: gameResponses.questionIndex,
+              total: sql<number>`count(*)::int`,
+              correctRate: sql<number>`avg(case when ${gameResponses.isCorrect} then 1.0 else 0.0 end)::float`,
+              avgMs: sql<number>`coalesce(avg(${gameResponses.responseTime}), 0)::float`,
+            })
+            .from(gameResponses)
+            .where(and(
+              inArray(gameResponses.gameId, gameIds),
+              tenantFilter(ctx, gameResponses.tenantId),
+            ))
+            .groupBy(gameResponses.questionIndex)
+        : [];
+
+      // Question TEXT only — never answer keys.
+      const rawQuestions = (quiz.questions as any[]) || [];
+      const questions = rawQuestions.map((q, questionIndex) => {
+        const row = questionAggRows.find((r) => r.questionIndex === questionIndex);
+        return {
+          questionIndex,
+          question: q.question,
+          totalResponses: row?.total ?? 0,
+          correctRate: row?.correctRate ?? 0,
+          avgResponseMs: row?.avgMs ?? 0,
+        };
+      });
+
+      const recentGames = gameRows.slice(0, 20).map((r) => ({
+        id: r.id,
+        gamePin: r.gamePin,
+        createdAt: r.createdAt,
+        playerCount: r.playerCount,
+        avgScore: r.avgScore,
+      }));
+
+      return { gamesPlayed, totalPlayers, avgScore, lastPlayedAt, questions, recentGames };
     });
   }
 
@@ -718,6 +824,60 @@ export class MemStorage implements IStorage {
     const updated: Quiz = { ...existing, deletedAt: null };
     this.quizzes.set(id, updated);
     return updated;
+  }
+
+  async getQuizInsights(ctx: StorageCtx, quizId: number): Promise<QuizInsights | undefined> {
+    // Same tenant-visibility rule as getQuiz.
+    const quiz = await this.getQuiz(ctx, quizId);
+    if (!quiz) return undefined;
+
+    const completedGames = Array.from(this.games.values())
+      .filter((g) => g.quizId === quizId && g.status === "completed" && this.inTenant(ctx, g))
+      .sort((a, b) => {
+        const at = a.createdAt?.getTime() ?? 0;
+        const bt = b.createdAt?.getTime() ?? 0;
+        return bt !== at ? bt - at : b.id - a.id;
+      });
+
+    const gameIds = new Set(completedGames.map((g) => g.id));
+    const players = Array.from(this.gamePlayers.values())
+      .filter((p) => gameIds.has(p.gameId) && this.inTenant(ctx, p));
+
+    const gamesPlayed = completedGames.length;
+    const totalPlayers = players.length;
+    // Weighted mean over ALL players of these games, not mean-of-game-means.
+    const avgScore = totalPlayers > 0
+      ? players.reduce((sum, p) => sum + (p.score ?? 0), 0) / totalPlayers
+      : 0;
+    const lastPlayedAt = gamesPlayed > 0 ? (completedGames[0].createdAt ?? null) : null;
+
+    const responses = Array.from(this.gameResponses.values())
+      .filter((r) => gameIds.has(r.gameId) && this.inTenant(ctx, r));
+
+    // Question TEXT only — never answer keys.
+    const rawQuestions = (quiz.questions as any[]) || [];
+    const questions = rawQuestions.map((q, questionIndex) => {
+      const matching = responses.filter((r) => r.questionIndex === questionIndex);
+      const totalResponses = matching.length;
+      const correctRate = totalResponses > 0
+        ? matching.filter((r) => r.isCorrect).length / totalResponses
+        : 0;
+      const avgResponseMs = totalResponses > 0
+        ? matching.reduce((sum, r) => sum + r.responseTime, 0) / totalResponses
+        : 0;
+      return { questionIndex, question: q.question, totalResponses, correctRate, avgResponseMs };
+    });
+
+    const recentGames = completedGames.slice(0, 20).map((g) => {
+      const gamePlayersForGame = players.filter((p) => p.gameId === g.id);
+      const playerCount = gamePlayersForGame.length;
+      const gAvgScore = playerCount > 0
+        ? gamePlayersForGame.reduce((sum, p) => sum + (p.score ?? 0), 0) / playerCount
+        : 0;
+      return { id: g.id, gamePin: g.gamePin, createdAt: g.createdAt ?? null, playerCount, avgScore: gAvgScore };
+    });
+
+    return { gamesPlayed, totalPlayers, avgScore, lastPlayedAt, questions, recentGames };
   }
 
   // Games
