@@ -19,6 +19,7 @@ import { getAllowedOrigins } from "./origins";
 import { registerAdminRoutes } from "./admin-routes";
 import { uploadQuizImage } from "./supabase-storage";
 import { captureError } from "./instrument";
+import { buildRateLimiters } from "./rate-limits";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -114,6 +115,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     next();
   });
 
+  // Build rate limiters once per server startup
+  const { authLimiter, aiLimiter, uploadLimiter, joinLimiter } = buildRateLimiters();
+
   app.get("/api/tenant/config", (req, res) => {
     const tenant = req.tenant as Tenant;
     res.json({
@@ -177,7 +181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   // Authentication routes
-  app.post("/api/register", async (req, res) => {
+  app.post("/api/register", authLimiter, async (req, res) => {
     try {
       const validation = insertUserSchema.safeParse(req.body);
       if (!validation.success) {
@@ -219,7 +223,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/login", async (req, res) => {
+  app.post("/api/login", authLimiter, async (req, res) => {
     try {
       const { username, password } = req.body;
 
@@ -373,7 +377,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Auto-generation routes
-  app.post("/api/generate-quiz/pdf", requireAuth, requireFeature("aiGeneration"), upload.single('pdf'), async (req, res) => {
+  app.post("/api/generate-quiz/pdf", aiLimiter, requireAuth, requireFeature("aiGeneration"), upload.single('pdf'), async (req, res) => {
     try {
       console.log("PDF quiz generation request - User ID:", (req as any).authUserId);
       
@@ -393,7 +397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/generate-quiz/url", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
+  app.post("/api/generate-quiz/url", aiLimiter, requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
       console.log("URL quiz generation request - User ID:", (req as any).authUserId);
       
@@ -422,7 +426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/generate-quiz/topics", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
+  app.post("/api/generate-quiz/topics", aiLimiter, requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
       console.log("Topics quiz generation request - User ID:", (req as any).authUserId);
       
@@ -444,7 +448,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/generate-quiz/text", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
+  app.post("/api/generate-quiz/text", aiLimiter, requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
       console.log("Text quiz generation request - User ID:", (req as any).authUserId);
       
@@ -466,7 +470,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/generate-background", requireAuth, requireFeature("aiGeneration"), async (req, res) => {
+  app.post("/api/generate-background", aiLimiter, requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
       console.log("Background image generation request - User ID:", (req as any).authUserId);
       
@@ -506,7 +510,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload a question or theme image to Supabase Storage; returns { url }.
-  app.post("/api/upload-image", requireAuth, imageUpload.single("image"), async (req, res) => {
+  app.post("/api/upload-image", uploadLimiter, requireAuth, imageUpload.single("image"), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No image uploaded" });
@@ -718,7 +722,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/games/:pin/join", async (req, res) => {
+  app.post("/api/games/:pin/join", joinLimiter, async (req, res) => {
     try {
       const pin = getValidatedGamePin(req.params.pin, res);
       if (!pin) return;
