@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +18,7 @@ import { QUIZ_STAGE_CONTAINER } from "@/components/quiz/layout";
 import { resolveQuizTheme } from "@shared/quiz-theme";
 
 export default function PlayGame() {
+  const { t } = useTranslation();
   const { pin } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -112,8 +114,8 @@ export default function PlayGame() {
       setHasAnswered(false);
       setSelectedAnswer(null);
       toast({
-        title: "Error",
-        description: "Failed to submit answer. Please try again.",
+        title: t("play.submitFailedTitle"),
+        description: t("play.submitFailed"),
         variant: "destructive",
       });
     }
@@ -419,7 +421,7 @@ export default function PlayGame() {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">Loading game...</p>
+          <p className="text-lg text-gray-600">{t("play.loadingGame")}</p>
         </div>
       </div>
     );
@@ -430,9 +432,9 @@ export default function PlayGame() {
       <div className="min-h-screen flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">
           <CardContent className="pt-6 text-center">
-            <p className="text-lg text-gray-600 mb-4">Game not found</p>
+            <p className="text-lg text-gray-600 mb-4">{t("play.gameNotFound")}</p>
             <Button onClick={() => setLocation("/")} className="abraj-primary">
-              Go Home
+              {t("play.goHome")}
             </Button>
           </CardContent>
         </Card>
@@ -461,8 +463,8 @@ export default function PlayGame() {
           <div className="w-40 h-40 rounded-full bg-white flex items-center justify-center font-bold text-4xl mx-auto mb-6 animate-bounce text-red-500 shadow-2xl">
             ⏰
           </div>
-          <h2 className="text-white text-4xl font-bold mb-2 animate-bounce">TIME'S UP!</h2>
-          <p className="text-white text-xl">You didn't answer in time</p>
+          <h2 className="text-white text-4xl font-bold mb-2 animate-bounce">{t("play.timesUp")}</h2>
+          <p className="text-white text-xl">{t("play.didntAnswerInTime")}</p>
         </div>
       </div>
     );
@@ -481,23 +483,23 @@ export default function PlayGame() {
             </div>
             
             <div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">Welcome, {playerName}!</h2>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">{t("play.welcomePlayer", { name: playerName })}</h2>
               <Badge variant="secondary" className="text-lg px-4 py-2">
-                Game PIN: {game.gamePin}
+                {t("play.gamePinBadge", { pin: game.gamePin })}
               </Badge>
             </div>
-            
+
             <div>
               <h3 className="font-bold text-lg mb-2">{quiz.title}</h3>
               <p className="text-gray-600">{quiz.description}</p>
             </div>
-            
+
             <div className="flex justify-between text-sm text-gray-500 bg-gray-50 rounded-lg p-4">
-              <span>{questions.length} questions</span>
-              <span>{players.length} players</span>
+              <span>{t("play.questionsCount", { count: questions.length })}</span>
+              <span>{t("play.playersCount", { count: players.length })}</span>
             </div>
-            
-            <p className="text-gray-600">Waiting for host to start the game...</p>
+
+            <p className="text-gray-600">{t("play.waitingForHost")}</p>
             
             <div className="animate-pulse flex justify-center">
               <div className="abraj-primary w-2 h-2 rounded-full mx-1"></div>
@@ -529,36 +531,36 @@ export default function PlayGame() {
         
         {/* Result Text */}
         <h1 className="text-white text-6xl md:text-7xl font-black mb-6 animate-in slide-in-from-bottom-4 duration-500 delay-100 drop-shadow-lg">
-          {lastResult.isCorrect ? "Correct!" : "Incorrect"}
+          {lastResult.isCorrect ? t("play.correct") : t("play.incorrect")}
         </h1>
-        
+
         {/* Points Earned */}
         {lastResult.isCorrect && (
           <div className="text-white text-3xl font-bold mb-8 animate-in zoom-in-75 duration-500 delay-200">
-            +{lastResult.pointsEarned} points
+            {t("play.pointsEarned", { points: lastResult.pointsEarned })}
           </div>
         )}
-        
+
         {/* Correct answer is shown on the host/results screens, not leaked from the answer API. */}
         {!lastResult.isCorrect && (
           <div className="bg-white/20 backdrop-blur-sm rounded-2xl px-8 py-4 mb-8 animate-in slide-in-from-bottom-3 duration-500 delay-200">
             <p className="text-white text-xl font-semibold text-center">
-              Wait for the host to reveal the answer.
+              {t("play.waitForReveal")}
             </p>
           </div>
         )}
-        
+
         {/* Score and Rank Cards */}
         <div className="flex gap-4 mb-8 animate-in slide-in-from-bottom-2 duration-500 delay-300">
           {/* Score Card */}
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-8 py-6 text-center shadow-2xl">
-            <p className="text-gray-600 text-sm mb-1">Score</p>
+            <p className="text-gray-600 text-sm mb-1">{t("play.scoreLabel")}</p>
             <p className="text-4xl font-black text-gray-800">{(currentPlayer?.score || 0).toLocaleString()}</p>
           </div>
-          
+
           {/* Rank Card */}
           <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-8 py-6 text-center shadow-2xl">
-            <p className="text-gray-600 text-sm mb-1">Rank</p>
+            <p className="text-gray-600 text-sm mb-1">{t("play.rankLabel")}</p>
             <div className="flex items-center justify-center">
               {currentRank === 1 ? (
                 <Trophy className="w-10 h-10 text-yellow-500" />
@@ -568,9 +570,9 @@ export default function PlayGame() {
             </div>
           </div>
         </div>
-        
+
         {/* Waiting Message */}
-        <p className="text-white text-lg animate-pulse">Waiting for next question...</p>
+        <p className="text-white text-lg animate-pulse">{t("play.waitingNextQuestion")}</p>
       </div>
     );
   }
@@ -605,7 +607,7 @@ export default function PlayGame() {
               disabled={selectedIndices.length === 0}
               className="w-full abraj-primary text-white font-bold py-3 rounded-xl"
             >
-              Submit {selectedIndices.length > 0 ? `(${selectedIndices.length} selected)` : ""}
+              {t("play.submit")} {selectedIndices.length > 0 ? t("play.selectedCount", { count: selectedIndices.length }) : ""}
             </Button>
           </div>
         )}
@@ -614,12 +616,12 @@ export default function PlayGame() {
         <div className="flex-shrink-0">
           <div className="glass card-3d-enhanced rounded-lg p-2">
             <div className="flex justify-between items-center text-xs">
-              <span className="text-gray-600">Score:</span>
+              <span className="text-gray-600">{t("play.scoreLabelColon")}</span>
               <span className="font-bold gradient-text text-sm">{(currentPlayer?.score || 0).toLocaleString()}</span>
             </div>
             <div className="flex justify-between items-center text-xs">
-              <span className="text-gray-600">Rank:</span>
-              <span className="font-bold">{currentRank} of {players.length}</span>
+              <span className="text-gray-600">{t("play.rankLabelColon")}</span>
+              <span className="font-bold">{t("play.rankOfTotal", { rank: currentRank, total: players.length })}</span>
             </div>
           </div>
         </div>

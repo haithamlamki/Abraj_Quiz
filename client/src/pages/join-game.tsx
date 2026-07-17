@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useLocation, useParams } from "wouter";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function JoinGame() {
+  const { t } = useTranslation();
   const { pin: urlPin } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -43,8 +45,8 @@ export default function JoinGame() {
     },
     onError: () => {
       toast({
-        title: "Game Not Found",
-        description: "Please check the game PIN and try again.",
+        title: t("join.gameNotFoundTitle"),
+        description: t("join.gameNotFoundDescription"),
         variant: "destructive",
       });
     }
@@ -65,9 +67,18 @@ export default function JoinGame() {
       setLocation(`/play/${gamePin}?player=${encodeURIComponent(playerName.trim())}`);
     },
     onError: (error: any) => {
+      // Known server error codes get a translated message; unknown codes fall
+      // back to whatever the server sent (English, as received).
+      const code = error?.response?.code as string | undefined;
+      const description =
+        code === "GAME_FULL"
+          ? t("join.gameFull")
+          : code === "GAME_BUSY"
+            ? t("join.gameBusy")
+            : error.message || t("join.unableToJoin");
       toast({
-        title: "Failed to Join",
-        description: error.message || "Unable to join the game. Please try again.",
+        title: t("join.failedToJoinTitle"),
+        description,
         variant: "destructive",
       });
     }
@@ -76,8 +87,8 @@ export default function JoinGame() {
   const handlePinSubmit = () => {
     if (!gamePin.trim()) {
       toast({
-        title: "Invalid PIN",
-        description: "Please enter a valid game PIN.",
+        title: t("join.invalidPinTitle"),
+        description: t("join.invalidPinDescription"),
         variant: "destructive",
       });
       return;
@@ -92,8 +103,8 @@ export default function JoinGame() {
     if (joinGameMutation.isPending) return;
     if (!playerName.trim()) {
       toast({
-        title: "Invalid Name",
-        description: "Please enter your name.",
+        title: t("join.invalidNameTitle"),
+        description: t("join.invalidNameDescription"),
         variant: "destructive",
       });
       return;
@@ -107,49 +118,49 @@ export default function JoinGame() {
         {step === "pin" ? (
           <Card className="card-3d-enhanced glass">
             <CardHeader>
-              <CardTitle className="text-center text-2xl gradient-text">Join a Game</CardTitle>
+              <CardTitle className="text-center text-2xl gradient-text">{t("join.title")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">
-                <img 
-                  src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=200" 
-                  alt="Students actively using mobile devices to participate in quiz" 
+                <img
+                  src="https://images.unsplash.com/photo-1434030216411-0b793f4b4173?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&h=200"
+                  alt={t("join.heroImageAlt")}
                   className="rounded-lg w-full h-32 object-cover mb-4"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Game PIN
+                  {t("join.gamePinLabel")}
                 </label>
                 <Input
                   type="text"
                   value={gamePin}
                   onChange={(e) => setGamePin(e.target.value)}
-                  placeholder="Enter Game PIN"
+                  placeholder={t("join.gamePinPlaceholder")}
                   className="text-center text-2xl font-bold shimmer"
                   onKeyPress={(e) => e.key === 'Enter' && handlePinSubmit()}
                   autoFocus
                   data-testid="input-game-pin"
                 />
               </div>
-              
+
               <Button
                 onClick={handlePinSubmit}
                 disabled={checkGameMutation.isPending}
                 className="w-full abraj-primary hover:abraj-secondary text-white font-bold text-lg py-3 btn-glow"
                 data-testid="button-continue"
               >
-                {checkGameMutation.isPending ? "Checking..." : "Continue"}
+                {checkGameMutation.isPending ? t("join.checking") : t("join.continue")}
               </Button>
-              
+
               <div className="text-center">
                 <Button
                   variant="ghost"
                   onClick={() => setLocation("/")}
                   className="text-gray-500"
                 >
-                  Back to Home
+                  {t("join.backToHome")}
                 </Button>
               </div>
             </CardContent>
@@ -157,8 +168,8 @@ export default function JoinGame() {
         ) : (
           <Card className="card-3d-enhanced glass">
             <CardHeader>
-              <CardTitle className="text-center text-2xl gradient-text">Enter Your Name</CardTitle>
-              <p className="text-center text-gray-600">Game PIN: {gamePin}</p>
+              <CardTitle className="text-center text-2xl gradient-text">{t("join.enterYourName")}</CardTitle>
+              <p className="text-center text-gray-600">{t("join.gamePinDisplay", { pin: gamePin })}</p>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">
@@ -166,13 +177,13 @@ export default function JoinGame() {
                   {playerName.charAt(0).toUpperCase() || "?"}
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Your Name
+                  {t("join.yourNameLabel")}
                   {isAuthenticated && user && (
-                    <span className="text-abraj-primary text-xs ml-2">
-                      (Auto-filled from your account)
+                    <span className="text-abraj-primary text-xs ms-2">
+                      {t("join.autoFilledFromAccount")}
                     </span>
                   )}
                 </label>
@@ -180,7 +191,7 @@ export default function JoinGame() {
                   type="text"
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
-                  placeholder={isAuthenticated && user ? user.username : "Enter your name"}
+                  placeholder={isAuthenticated && user ? user.username : t("join.namePlaceholder")}
                   className="text-center text-xl font-medium shimmer"
                   maxLength={20}
                   onKeyPress={(e) => e.key === 'Enter' && handleNameSubmit()}
@@ -194,29 +205,29 @@ export default function JoinGame() {
                       onClick={() => setLocation("/login")}
                       className="text-abraj-primary p-0 h-auto text-xs"
                     >
-                      Login
+                      {t("join.login")}
                     </Button>
-                    {" "}to auto-fill your name
+                    {" "}{t("join.autoFillHint")}
                   </p>
                 )}
               </div>
-              
+
               <Button
                 onClick={handleNameSubmit}
                 disabled={joinGameMutation.isPending}
                 className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3 btn-glow"
                 data-testid="button-join-game"
               >
-                {joinGameMutation.isPending ? "Joining..." : "Join Game"}
+                {joinGameMutation.isPending ? t("join.joining") : t("join.joinGame")}
               </Button>
-              
+
               <div className="text-center">
                 <Button
                   variant="ghost"
                   onClick={() => setStep("pin")}
                   className="text-gray-500"
                 >
-                  Change PIN
+                  {t("join.changePin")}
                 </Button>
               </div>
             </CardContent>
