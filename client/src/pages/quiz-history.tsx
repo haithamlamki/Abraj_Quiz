@@ -22,6 +22,7 @@ import { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatQuizDate } from "@/lib/language";
+import { EmptyState } from "@/components/empty-state";
 
 interface Quiz {
   id: number;
@@ -121,32 +122,20 @@ export default function QuizHistory() {
           </div>
 
           {!quizzes || quizzes.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="card-3d-enhanced glass p-8 max-w-md mx-auto">
-                <div className="mb-6">
-                  <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto flex items-center justify-center mb-4">
-                    <Clock className="w-12 h-12 text-gray-400" />
-                  </div>
-                  {showArchived ? (
-                    <>
-                      <h3 className="text-xl font-semibold gradient-text mb-2">{t("history.noArchivedQuizzes")}</h3>
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="text-xl font-semibold gradient-text mb-2">{t("history.noQuizzesYetTitle")}</h3>
-                      <p className="text-gray-600 mb-6">
-                        {t("history.noQuizzesYetDescription")}
-                      </p>
-                      <Link href="/create">
-                        <Button className="abraj-primary hover:abraj-secondary text-white font-medium btn-glow">
-                          {t("history.createFirstQuiz")}
-                        </Button>
-                      </Link>
-                    </>
-                  )}
-                </div>
-              </div>
-            </div>
+            <EmptyState
+              icon={<Clock />}
+              title={showArchived ? t("history.noArchivedQuizzes") : t("history.noQuizzesYetTitle")}
+              description={showArchived ? undefined : t("history.noQuizzesYetDescription")}
+              action={
+                showArchived ? undefined : (
+                  <Link href="/create">
+                    <Button className="abraj-primary hover:abraj-secondary text-white font-medium btn-glow">
+                      {t("history.createFirstQuiz")}
+                    </Button>
+                  </Link>
+                )
+              }
+            />
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {quizzes.map((quiz) => (
