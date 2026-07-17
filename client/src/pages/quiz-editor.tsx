@@ -232,6 +232,12 @@ export default function QuizEditor() {
   const setType = (type: Question["type"]) => {
     if (type === "true_false") {
       patchQuestion(currentIndex, trueFalseQuestion(current));
+    } else if (type === "poll") {
+      patchQuestion(currentIndex, {
+        type: "poll",
+        answers: current.answers.length >= 2 ? current.answers : ["", "", "", ""],
+        correctAnswers: [],
+      });
     } else {
       patchQuestion(currentIndex, {
         type: "quiz",
@@ -293,9 +299,11 @@ export default function QuizEditor() {
       if (!q.question.trim()) return t("editor.toasts.validationQuestionNeedsText", { n });
       if (q.answers.length < 2) return t("editor.toasts.validationNeedsTwoAnswers", { n });
       if (q.answers.some((a) => !a.trim())) return t("editor.toasts.validationEmptyAnswer", { n });
-      if (q.correctAnswers.length === 0) return t("editor.toasts.validationNeedsCorrectAnswer", { n });
-      if (q.answerType === "single" && q.correctAnswers.length !== 1)
-        return t("editor.toasts.validationSingleSelectOneCorrect", { n });
+      if (q.type !== "poll") {
+        if (q.correctAnswers.length === 0) return t("editor.toasts.validationNeedsCorrectAnswer", { n });
+        if (q.answerType === "single" && q.correctAnswers.length !== 1)
+          return t("editor.toasts.validationSingleSelectOneCorrect", { n });
+      }
     }
     return null;
   };
@@ -504,7 +512,7 @@ export default function QuizEditor() {
           {quiz.questions.map((q, i) => (
             <div key={i} onClick={() => setCurrentIndex(i)} className="cursor-pointer shrink-0 w-40 lg:w-auto">
               <div className="flex items-center justify-between px-1 mb-0.5 text-[11px] text-gray-500">
-                <span>{i + 1} · {q.type === "true_false" ? t("editor.question.railTypeTrueFalse") : t("editor.question.typeQuiz")}</span>
+                <span>{i + 1} · {q.type === "true_false" ? t("editor.question.railTypeTrueFalse") : q.type === "poll" ? t("editor.question.typePoll") : t("editor.question.typeQuiz")}</span>
                 <div className="flex gap-1">
                   <button title={t("editor.question.duplicateAction")} onClick={(e) => { e.stopPropagation(); duplicateQuestion(i); }}><Copy className="w-3 h-3" /></button>
                   {quiz.questions.length > 1 && (
@@ -600,14 +608,16 @@ export default function QuizEditor() {
                       disabled={current.type === "true_false"}
                       className="bg-white/90 text-gray-900 border-0 h-10"
                     />
-                    <button
-                      title={isCorrect ? t("editor.answers.correctTitle") : t("editor.answers.markCorrectTitle")}
-                      onClick={() => toggleCorrect(index)}
-                      aria-pressed={isCorrect}
-                      className={`shrink-0 w-9 h-9 rounded-full border-2 border-white flex items-center justify-center ${isCorrect ? "bg-white" : "bg-transparent"}`}
-                    >
-                      {isCorrect && <Check className="w-5 h-5 text-green-600" />}
-                    </button>
+                    {current.type !== "poll" && (
+                      <button
+                        title={isCorrect ? t("editor.answers.correctTitle") : t("editor.answers.markCorrectTitle")}
+                        onClick={() => toggleCorrect(index)}
+                        aria-pressed={isCorrect}
+                        className={`shrink-0 w-9 h-9 rounded-full border-2 border-white flex items-center justify-center ${isCorrect ? "bg-white" : "bg-transparent"}`}
+                      >
+                        {isCorrect && <Check className="w-5 h-5 text-green-600" />}
+                      </button>
+                    )}
                     {current.type !== "true_false" && current.answers.length > 2 && (
                       <button title={t("editor.answers.removeTitle")} aria-label={t("editor.answers.removeAriaLabel", { index: index + 1 })} onClick={() => removeAnswer(index)}>
                         <X className="w-4 h-4" />
@@ -639,6 +649,7 @@ export default function QuizEditor() {
               <SelectContent>
                 <SelectItem value="quiz">{t("editor.question.typeQuiz")}</SelectItem>
                 <SelectItem value="true_false">{t("editor.question.typeTrueFalse")}</SelectItem>
+                <SelectItem value="poll">{t("editor.question.typePoll")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -680,16 +691,20 @@ export default function QuizEditor() {
             </p>
           </div>
 
-          <div>
-            <label className="text-xs text-gray-500">{t("editor.question.pointsLabel")}</label>
-            <Select value={current.points} onValueChange={(v) => patchQuestion(currentIndex, { points: v as Question["points"] })}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="standard">{t("editor.question.pointsStandard")}</SelectItem>
-                <SelectItem value="double">{t("editor.question.pointsDouble")}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          {current.type === "poll" ? (
+            <p className="text-[11px] text-gray-400">{t("editor.question.pollNoCorrect")}</p>
+          ) : (
+            <div>
+              <label className="text-xs text-gray-500">{t("editor.question.pointsLabel")}</label>
+              <Select value={current.points} onValueChange={(v) => patchQuestion(currentIndex, { points: v as Question["points"] })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="standard">{t("editor.question.pointsStandard")}</SelectItem>
+                  <SelectItem value="double">{t("editor.question.pointsDouble")}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          )}
 
           {/* Theme picker */}
           <div>

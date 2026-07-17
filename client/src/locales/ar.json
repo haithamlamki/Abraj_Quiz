@@ -404,6 +404,8 @@
     "question": {
       "typeQuiz": "اختبار",
       "typeTrueFalse": "صح أو خطأ",
+      "typePoll": "استطلاع",
+      "pollNoCorrect": "لا توجد إجابة صحيحة للاستطلاعات — يقوم اللاعبون بالتصويت فقط.",
       "railTypeTrueFalse": "ص/خ",
       "duplicateAction": "نسخ",
       "deleteAction": "حذف",

@@ -356,6 +356,8 @@
     "question": {
       "typeQuiz": "Quiz",
       "typeTrueFalse": "True or False",
+      "typePoll": "Poll",
+      "pollNoCorrect": "Polls have no correct answer — players just vote.",
       "railTypeTrueFalse": "T/F",
       "duplicateAction": "Duplicate",
       "deleteAction": "Delete",
