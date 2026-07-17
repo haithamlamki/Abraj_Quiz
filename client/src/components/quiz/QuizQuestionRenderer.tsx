@@ -131,6 +131,7 @@ export function QuizQuestionRenderer({
         onSelect={onSelect}
         correctAnswers={correctAnswers}
         reveal={reveal}
+        isPoll={question.type === "poll"}
         distribution={distribution}
         className="shrink-0"
       />
