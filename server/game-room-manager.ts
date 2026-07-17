@@ -3,7 +3,7 @@ import { storage as defaultStorage, SYSTEM_CTX } from "./storage";
 import type { IStorage } from "./storage";
 import type { Game, Question } from "@shared/schema";
 import { quizQuestionsSchema } from "@shared/schema";
-import { isSelectionCorrect, tallyDistribution } from "@shared/quiz-scoring";
+import { isSelectionCorrect, streakMultiplier, tallyDistribution } from "@shared/quiz-scoring";
 import type { WsErrorCode, WsServerMessage } from "@shared/ws-protocol";
 import { captureError } from "./instrument";
 
@@ -32,6 +32,11 @@ interface RuntimeRoom {
   currentQuestion: number;
   questions: Question[];
   players: Map<string, RuntimePlayer>;
+  // Consecutive-correct-answer streak per player, keyed by playerKey (the same
+  // case/whitespace-normalized key used by `players`/`acceptedAnswers`). Lives
+  // on the room, so it survives a player's reconnect (new socket, same room)
+  // and only resets on a wrong answer or a missed question (see closeQuestion).
+  streaks: Map<string, number>;
   acceptedAnswers: Map<string, RuntimeAnswer>;
   persistedQuestionIndexes: Set<number>;
   closedResults: Map<number, QuestionCloseResult>;
@@ -236,7 +241,7 @@ export class GameRoomManager {
     return game;
   }
 
-  async submitAnswer(input: SubmitAnswerInput): Promise<{ success: true }> {
+  async submitAnswer(input: SubmitAnswerInput): Promise<{ success: true; streak: number }> {
     const room = await this.getOrCreateRoom(input.gamePin);
     this.touch(room);
 
@@ -269,9 +274,29 @@ export class GameRoomManager {
 
     const responseTime = Math.max(0, Date.now() - room.questionStartedAt);
     // Single-select: selectedAnswer is a chosen index. Multi-select: a bitmask.
-    // isSelectionCorrect handles both (multi is all-or-nothing).
+    // isSelectionCorrect handles both (multi is all-or-nothing; polls are never "correct").
     const isCorrect = isSelectionCorrect(question, input.selectedAnswer);
-    const pointsEarned = isCorrect ? this.calculatePoints(question, responseTime) : 0;
+
+    const streakKey = this.playerKey(player.name);
+    let pointsEarned = 0;
+    let streak = 0;
+
+    if (question.type === "poll") {
+      // Polls are a tally, not a scored question: zero points, and the streak
+      // Map is left untouched (a poll neither extends nor breaks a streak).
+      // The `streak` returned here is 0 for simplicity — it reflects "no
+      // streak change happened", not the player's actual (unchanged) streak.
+      pointsEarned = 0;
+      streak = 0;
+    } else if (isCorrect) {
+      streak = (room.streaks.get(streakKey) ?? 0) + 1;
+      room.streaks.set(streakKey, streak);
+      pointsEarned = Math.round(this.calculatePoints(question, responseTime) * streakMultiplier(streak));
+    } else {
+      room.streaks.set(streakKey, 0);
+      pointsEarned = 0;
+      streak = 0;
+    }
 
     room.acceptedAnswers.set(answerKey, {
       playerName: player.name,
@@ -283,7 +308,7 @@ export class GameRoomManager {
       answeredAt: Date.now(),
     });
 
-    return { success: true };
+    return { success: true, streak };
   }
 
   async advanceQuestion(gamePin: string, hostId: number): Promise<{ gameComplete: boolean; game: Game }> {
@@ -375,6 +400,7 @@ export class GameRoomManager {
       currentQuestion: game.currentQuestion || 0,
       questions: normalizedQuestions,
       players,
+      streaks: new Map(),
       acceptedAnswers: new Map(),
       persistedQuestionIndexes: new Set(),
       closedResults: new Map(),
@@ -486,6 +512,18 @@ export class GameRoomManager {
           player.score += response.pointsEarned;
         }
       }
+
+      // A roster player who did NOT respond to this question breaks their
+      // streak (they can't have answered correctly) — except a poll, which is
+      // streak-neutral for everyone, answered or not.
+      if (question?.type !== "poll") {
+        const answeredKeys = new Set(responses.map((r) => this.playerKey(r.playerName)));
+        for (const key of Array.from(room.players.keys())) {
+          if (!answeredKeys.has(key)) {
+            room.streaks.set(key, 0);
+          }
+        }
+      }
     }
 
     const result = this.buildQuestionResult(room, questionIndex, question);
@@ -547,10 +585,13 @@ export class GameRoomManager {
     );
 
     const correctAnswers = question?.correctAnswers ?? [];
+    // Polls have no correct answer to reveal — send -1 rather than leaking a
+    // meaningless 0 that a client could mistake for "option 0 is correct".
+    const correctAnswer = question?.type === "poll" ? -1 : (correctAnswers[0] ?? 0);
 
     return {
       questionIndex,
-      correctAnswer: correctAnswers[0] ?? 0,
+      correctAnswer,
       correctAnswers,
       answerCounts,
       answerPercentages,

@@ -80,7 +80,8 @@ export const wsServerMessageSchema = z.discriminatedUnion("type", [
     gamePin: z.string(),
     questionIndex: z.number().int().min(0),
     // correctAnswer = first correct index (back-compat); correctAnswers = full set.
-    correctAnswer: z.number().int().min(0).max(5),
+    // -1 = poll (no correct answer to reveal — a poll is a tally, not scored).
+    correctAnswer: z.number().int().min(-1).max(5),
     correctAnswers: z.array(z.number().int().min(0).max(5)).default([]),
     distribution: wsAnswerDistributionSchema,
     players: z.array(z.any()),
