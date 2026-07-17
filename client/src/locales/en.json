@@ -127,7 +127,7 @@
     "rankOfTotal": "{{rank}} of {{total}}",
     "submitFailedTitle": "Error",
     "submitFailed": "Failed to submit answer. Please try again.",
-    "streak": "🔥 Streak ×{{count}}",
+    "streak": "🔥 Streak ×{{n}}",
     "voteRecorded": "Vote recorded — waiting for results…",
     "pollResults": "Poll Results",
     "movedUp_one": "You moved up {{count}} place",

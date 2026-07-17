@@ -660,7 +660,7 @@ export default function PlayGame() {
         {lastResult.isCorrect && lastResult.streak >= 2 && (
           <div className="mb-8 animate-in zoom-in-75 duration-500 delay-200">
             <span className="inline-block bg-orange-500 text-white text-xl font-extrabold px-5 py-2 rounded-full shadow-lg">
-              {t("play.streak", { count: lastResult.streak })}
+              {t("play.streak", { n: lastResult.streak })}
             </span>
           </div>
         )}

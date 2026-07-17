@@ -147,7 +147,7 @@
     "rankOfTotal": "{{rank}} من {{total}}",
     "submitFailedTitle": "خطأ",
     "submitFailed": "تعذّر إرسال الإجابة. يرجى المحاولة مرة أخرى.",
-    "streak": "🔥 سلسلة ×{{count}}",
+    "streak": "🔥 سلسلة ×{{n}}",
     "voteRecorded": "تم تسجيل صوتك — بانتظار النتائج…",
     "pollResults": "نتائج الاستطلاع",
     "movedUp_zero": "لم ترتفع في الترتيب",

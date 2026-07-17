@@ -91,6 +91,13 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
 - [ ] **Phase 4** — Durable reconnect state (PRD §17 line 470).
 - [ ] **Phase 4** — Operational metrics + alerts (PRD §17 line 471).
 
+## Gameplay energy-pack follow-ups (from final review)
+
+- [ ] Position delta ("moved up N places") is wiped if a WS reconnect re-delivers question_closed mid-reveal (play-game.tsx effect re-runs, sets delta null). Guard with a lastDeltaQuestionRef so a given question's delta computes once. Cosmetic/transient.
+- [ ] Host PDF (quiz-pdf-generator.ts) shows a blank correct-answer label for poll questions; render "Poll" or omit the label instead.
+- ACCEPTED LIMITATIONS (by design, not bugs): (1) server restart wipes in-memory streaks mid-game — streaks restart at 1 (single-process room design); (2) poll questions read 0% correct-rate in insights since isCorrect persists false.
+- Deploy note: ship client+server together for the poll feature — a stale cached AnswerGrid bundle (pre-isPoll-guard) receiving correctAnswers [] would dim every poll option with an ✗ (no correct-answer leak, just cosmetic-wrong) until refresh.
+
 ## Known divergences from `tests/smoke/api-contract.md` (intentional, not bugs)
 
 - ~~`DELETE /api/quizzes/:id` is not implemented.~~ Implemented as soft delete (archive) with restore — mirrors `PUT`'s ownership check; archived quizzes stay resolvable by id for game history (migration 0008).
