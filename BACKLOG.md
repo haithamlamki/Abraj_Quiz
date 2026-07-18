@@ -110,3 +110,7 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
 
 - ~~`DELETE /api/quizzes/:id` is not implemented.~~ Implemented as soft delete (archive) with restore — mirrors `PUT`'s ownership check; archived quizzes stay resolvable by id for game history (migration 0008).
 - `POST /api/games/:pin/answer` is intentionally public — players don't have user accounts; identity is `playerName` matching a runtime-room registration. There is no path that returns 401 from this endpoint.
+
+## Integration-suite staleness (found 2026-07-18 while verifying migration 0009)
+
+- [ ] 4 of 7 `tests/integration/` files fail against a live DB (5 test failures) because they still assert the LEGACY question shape (`correctAnswer: number` in API responses, e.g. results-and-validation.test.ts:70,170). They were last updated 2026-07-15 (4cb0b05), one day before the Kahoot revamp migrated the model to `correctAnswers[]` with normalize-on-write; the suite needs a real DATABASE_URL so it never runs in the standard `npm test` gate and the drift went unnoticed. NOT a product bug: the mid-game answer-secrecy invariant strips BOTH legacy and canonical fields (unit-tested), and `bank-questions-migration.test.ts` + `migration.test.ts` pass. Fix = update the stale expectations to the canonical shape (mid-game: neither field present; completed: `correctAnswers` array), then wire `npm run integration` into a scheduled/pre-deploy check so it can't rot silently again.
