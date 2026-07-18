@@ -95,6 +95,13 @@ export function requireTenantId(ctx: StorageCtx): number {
   return ctx.tenantId;
 }
 
+// Escape LIKE/ILIKE wildcard characters so search strings match literally,
+// mirroring MemStorage's plain-substring semantics. Postgres's default LIKE
+// escape character is backslash.
+export function escapeLike(s: string): string {
+  return s.replace(/[\\%_]/g, "\\$&");
+}
+
 function requireSystem(ctx: StorageCtx): void {
   if (!("system" in ctx)) {
     throw new Error("System context required");
@@ -309,7 +316,7 @@ export class DatabaseStorage implements IStorage {
       }
       const search = filters?.search?.trim();
       if (search) {
-        conds.push(sql`${bankQuestions.question}->>'question' ilike ${"%" + search + "%"}`);
+        conds.push(sql`${bankQuestions.question}->>'question' ilike ${"%" + escapeLike(search) + "%"}`);
       }
       return tx.select().from(bankQuestions)
         .where(and(...conds))

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
 
-const { MemStorage, SYSTEM_CTX, requireTenantId, isTransientDbError } = await import("./storage");
+const { MemStorage, SYSTEM_CTX, requireTenantId, isTransientDbError, escapeLike } = await import("./storage");
 
 const T1 = { tenantId: 1 } as const;
 const T2 = { tenantId: 2 } as const;
@@ -378,4 +378,17 @@ test("getBankSubjectsAndTags: distinct over live rows only, tenant-scoped", asyn
   const meta = await s.getBankSubjectsAndTags(T1);
   assert.deepEqual(meta.subjects.sort(), ["Safety"]);
   assert.deepEqual(meta.tags.sort(), ["fire", "ppe"]);
+});
+
+test("escapeLike escapes LIKE wildcards so ilike search matches literally", () => {
+  assert.equal(escapeLike("50%_done\\"), "50\\%\\_done\\\\");
+  assert.equal(escapeLike("plain text"), "plain text");
+});
+
+test("bank search treats % and _ as literal characters (MemStorage semantics)", async () => {
+  const s = new MemStorage();
+  await s.createBankQuestion(T1, { question: { ...BANK_Q, question: "Is 50% enough?" }, tags: [], createdBy: 1 });
+  await s.createBankQuestion(T1, { question: { ...BANK_Q, question: "Is half enough?" }, tags: [], createdBy: 1 });
+  assert.equal((await s.getBankQuestions(T1, { search: "50%" })).length, 1);
+  assert.equal((await s.getBankQuestions(T1, { search: "%" })).length, 1);
 });
