@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Check, X, Trophy } from "lucide-react";
+import { Check, X, Trophy } from "lucide-react";
 import { apiRequest, retryTransient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
@@ -22,26 +22,6 @@ export default function PlayGame() {
   const { pin } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-
-  // Sound effects for countdown
-  const playCountdownSound = (count: number) => {
-    if (typeof Audio !== 'undefined') {
-      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      oscillator.frequency.value = count === 0 ? 880 : 440;
-      oscillator.type = 'sine';
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-      
-      oscillator.start(audioContext.currentTime);
-      oscillator.stop(audioContext.currentTime + 0.5);
-    }
-  };
 
   const playUrgentCountdownSound = () => {
     if (typeof Audio !== 'undefined') {
@@ -357,18 +337,18 @@ export default function PlayGame() {
       
       // Add harmonic chord at the end for richness
       const harmonicChord = [523, 659, 784, 1047]; // C, E, G, C (octave)
-      harmonicChord.forEach((freq, index) => {
+      harmonicChord.forEach((freq) => {
         const oscillator = audioContext.createOscillator();
         const gainNode = audioContext.createGain();
-        
+
         oscillator.connect(gainNode);
         gainNode.connect(audioContext.destination);
-        
+
         oscillator.frequency.value = freq;
         oscillator.type = 'triangle';
         gainNode.gain.setValueAtTime(0.1, audioContext.currentTime + 0.5);
         gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 1.2);
-        
+
         oscillator.start(audioContext.currentTime + 0.5);
         oscillator.stop(audioContext.currentTime + 1.2);
       });

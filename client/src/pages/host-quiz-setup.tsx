@@ -10,7 +10,6 @@ import { Clock, Users, Play, Settings, Share2, Copy, QrCode } from "lucide-react
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
-import Navigation from "@/components/navigation";
 import QRCode from "qrcode";
 
 interface Quiz {
@@ -56,7 +55,7 @@ export default function HostQuizSetup() {
         title: t("host.copiedTitle"),
         description: t("host.copiedDescription", { label }),
       });
-    } catch (error) {
+    } catch {
       toast({
         title: t("host.copyFailedTitle"),
         description: t("host.copyFailedDescription"),

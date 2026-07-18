@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage, SYSTEM_CTX, type StorageCtx } from "./storage";
-import { insertQuizSchema, insertGameSchema, quizQuestionsSchema, questionSchema, insertUserSchema } from "@shared/schema";
+import { insertQuizSchema, quizQuestionsSchema, questionSchema, insertUserSchema } from "@shared/schema";
 import { tallyDistribution } from "@shared/quiz-scoring";
 import { z } from "zod";
 import bcrypt from "bcryptjs";

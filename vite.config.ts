@@ -3,10 +3,12 @@ import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 import { sentryVitePlugin } from "@sentry/vite-plugin";
+import { visualizer } from "rollup-plugin-visualizer";
 
 // Source maps are only generated + uploaded when the CI/deploy environment
 // provides a Sentry auth token; maps never ship to the public bundle.
 const uploadSentrySourceMaps = Boolean(process.env.SENTRY_AUTH_TOKEN);
+const analyzeBundle = process.env.ANALYZE === "1";
 
 export default defineConfig({
   plugins: [
@@ -29,6 +31,16 @@ export default defineConfig({
             sourcemaps: {
               filesToDeleteAfterUpload: ["dist/public/**/*.map"],
             },
+          }),
+        ]
+      : []),
+    ...(analyzeBundle
+      ? [
+          visualizer({
+            filename: "dist/public/stats.html",
+            template: "treemap",
+            gzipSize: true,
+            brotliSize: true,
           }),
         ]
       : []),

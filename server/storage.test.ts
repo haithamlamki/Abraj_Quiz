@@ -239,7 +239,7 @@ test("getQuizInsights aggregates completed games only, per-question stats, recen
   await s.updateGame(T1, g1.id, { status: "completed" });
 
   // A waiting (NOT completed) game with a player — must be excluded everywhere.
-  const g2 = await s.createGame(T1, { quizId: quiz.id, gamePin: "202020", hostId: 9, status: "waiting" });
+  await s.createGame(T1, { quizId: quiz.id, gamePin: "202020", hostId: 9, status: "waiting" });
   await s.joinGame(T1, "202020", "Ghost");
 
   const ins = await s.getQuizInsights(T1, quiz.id);

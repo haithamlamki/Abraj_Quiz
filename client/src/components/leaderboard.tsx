@@ -1,4 +1,4 @@
-import { Trophy, Medal, Award } from "lucide-react";
+import { Trophy } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 interface Player {

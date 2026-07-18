@@ -82,7 +82,7 @@ export default function Home() {
         videoRef.current.srcObject = stream;
         videoRef.current.play();
       }
-    } catch (error) {
+    } catch {
       toast({
         title: t("home.cameraAccessFailedTitle"),
         description: t("home.cameraAccessFailedDesc"),
@@ -120,7 +120,6 @@ export default function Home() {
 
   const handleVideoClick = () => {
     // Simulate QR code detection when user taps the video area
-    const currentUrl = window.location.origin;
     const gamePin = prompt(t("home.qrDemoPrompt"));
 
     if (gamePin && gamePin.trim()) {

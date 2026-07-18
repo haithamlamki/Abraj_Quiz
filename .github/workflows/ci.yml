@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   lint-and-typecheck:
-    name: Type check
+    name: Lint & type check
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
@@ -23,7 +23,13 @@ jobs:
           node-version-file: '.nvmrc'
           cache: 'npm'
       - run: npm ci
-      - run: npm run check
+      - name: Type check
+        run: npm run check
+      - name: Lint
+        run: npm run lint
+      - name: Format check (informational)
+        run: npm run format:check
+        continue-on-error: true
 
   unit-tests:
     name: Unit tests

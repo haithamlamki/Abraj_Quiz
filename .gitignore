@@ -84,4 +84,15 @@ files/
 .claude/settings.local.json
 .claude/agent-memory/
 
+# Ruflo / claude-flow — local runtime artifacts (keep tracked .claude/ config)
+.claude-flow/
+.swarm/
+ruvector.db
+ruvector.db-wal
+ruvector.db-shm
+
+# Shell-redirect accident fragments at repo root (see Wave 0 cleanup).
+# These are 0-byte files created by mistyped terminal redirects.
+/[!.A-Za-z]*
+
 .env
