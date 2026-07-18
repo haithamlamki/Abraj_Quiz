@@ -217,7 +217,8 @@ export default function JoinGame() {
               <Button
                 onClick={handleNameSubmit}
                 disabled={joinGameMutation.isPending}
-                className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3"
+                variant="success"
+                className="w-full font-bold text-lg py-3"
                 data-testid="button-join-game"
               >
                 {joinGameMutation.isPending ? t("join.joining") : t("join.joinGame")}

@@ -396,7 +396,8 @@ export default function HostGame() {
                       setGameStartCountdown(3);
                     }}
                     disabled={players.length === 0 || startGameMutation.isPending || isStartingGame}
-                    className="w-full abraj-green hover:bg-green-600 text-white font-bold text-base py-2"
+                    variant="success"
+                    className="w-full font-bold text-base py-2"
                   >
                     <Play className="w-4 h-4 me-2" />
                     {isStartingGame ? t("host.startingInCountdown", { count: gameStartCountdown }) : t("host.startGame")}

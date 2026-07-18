@@ -420,7 +420,7 @@ export default function Home() {
                       <div className="abraj-blue text-white p-4 rounded-lg text-center font-bold">
                         B
                       </div>
-                      <div className="abraj-green text-white p-4 rounded-lg text-center font-bold">
+                      <div className="bg-success text-success-foreground p-4 rounded-lg text-center font-bold">
                         C
                       </div>
                       <div className="abraj-yellow text-white p-4 rounded-lg text-center font-bold">
