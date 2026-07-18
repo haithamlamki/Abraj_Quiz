@@ -43,6 +43,8 @@ describe("GET /api/quizzes/:id — correctAnswer disclosure", () => {
       // Both the legacy field and the canonical correct-set must be stripped.
       expect(question.correctAnswer).toBeUndefined();
       expect(question.correctAnswers).toBeUndefined();
+      // Explanation (answer-key-equivalent) must also be stripped.
+      expect(question.explanation).toBeUndefined();
     }
   });
 
@@ -60,6 +62,8 @@ describe("GET /api/quizzes/:id — correctAnswer disclosure", () => {
     for (const question of body.questions) {
       expect(question.correctAnswer).toBeUndefined();
       expect(question.correctAnswers).toBeUndefined();
+      // Explanation (answer-key-equivalent) must also be stripped.
+      expect(question.explanation).toBeUndefined();
     }
   });
 
@@ -80,6 +84,8 @@ describe("GET /api/quizzes/:id — correctAnswer disclosure", () => {
       for (const idx of question.correctAnswers) {
         expect(typeof idx).toBe("number");
       }
+      // Difficulty is safe and stays visible to creators.
+      expect(question.difficulty === undefined || ["easy", "medium", "hard"].includes(question.difficulty)).toBe(true);
     }
   });
 });

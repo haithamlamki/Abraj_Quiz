@@ -303,9 +303,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (callerId === quiz.createdBy) return quiz;
     if (!Array.isArray(quiz.questions)) return quiz;
     const questions = (quiz.questions as Array<Record<string, unknown>>).map((q) => {
-      // Strip BOTH the legacy single-correct field and the new correct-set field
-      // so players can't read the answer key mid-game.
-      const { correctAnswer: _omit, correctAnswers: _omit2, ...rest } = q;
+      // Strip the legacy single-correct field, the canonical correct-set field, AND
+      // the explanation (which typically states the correct answer) so players
+      // can't read the answer key mid-game. difficulty is safe and kept.
+      const { correctAnswer: _omit, correctAnswers: _omit2, explanation: _omit3, ...rest } = q;
       return rest;
     });
     return { ...quiz, questions } as T;
