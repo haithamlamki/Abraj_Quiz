@@ -520,7 +520,14 @@
       "savedToast": "Question saved to bank",
       "saveFailedTitle": "Could not save to bank",
       "incompleteTitle": "Finish the question first",
-      "incompleteDescription": "The question needs text, filled answers, and a correct answer before saving to the bank."
+      "incompleteDescription": "The question needs text, filled answers, and a correct answer before saving to the bank.",
+      "pickerTitle": "Add from bank",
+      "pickerEmpty": "No matching bank questions",
+      "addFromBank": "From bank",
+      "addSelected_one": "Add {{count}} question",
+      "addSelected_other": "Add {{count}} questions",
+      "addedToast_one": "Added {{count}} question from the bank",
+      "addedToast_other": "Added {{count}} questions from the bank"
     }
   }
 }
