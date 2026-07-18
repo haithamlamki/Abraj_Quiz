@@ -106,10 +106,13 @@ describe("WebSocket game flow", () => {
     const questionStartedPlayer = await playerStream.waitFor((m) => m.type === "question_started" && m.questionIndex === 0);
 
     expect((questionStartedHost as any).correctAnswer).toBeUndefined();
+    expect((questionStartedHost as any).correctAnswers).toBeUndefined();
     expect((questionStartedPlayer as any).correctAnswer).toBeUndefined();
+    expect((questionStartedPlayer as any).correctAnswers).toBeUndefined();
     for (const m of [...hostStream.messages, ...playerStream.messages]) {
       if ((m as any).type === "question_started") {
         expect((m as any).correctAnswer).toBeUndefined();
+        expect((m as any).correctAnswers).toBeUndefined();
       }
     }
   });
@@ -130,7 +133,7 @@ describe("WebSocket game flow", () => {
     await hostAgent.fetch(`/api/games/${pin}/start`, { method: "POST", body: "{}" });
     await playerStream.waitFor((m) => m.type === "question_started" && m.questionIndex === 0);
 
-    const correctIndex = quiz.questions[0].correctAnswer;
+    const correctIndex = quiz.questions[0].correctAnswers[0];
     const answerRes = await fetch(`http://localhost:5000/api/games/${pin}/answer`, {
       method: "POST",
       headers: { "content-type": "application/json", origin: "http://localhost:5000" },
@@ -138,8 +141,12 @@ describe("WebSocket game flow", () => {
     });
     expect(answerRes.status).toBe(200);
     const answerBody = await answerRes.json();
-    expect(answerBody).toEqual({ success: true });
+    // Exact shape = the leak guard: success ACK plus the player's running
+    // streak (energy-pack feature; first correct answer → streak 1). Nothing
+    // else — no correctness, points, or answer-key fields before close.
+    expect(answerBody).toEqual({ success: true, streak: 1 });
     expect((answerBody as any).correctAnswer).toBeUndefined();
+    expect((answerBody as any).correctAnswers).toBeUndefined();
     expect((answerBody as any).pointsEarned).toBeUndefined();
     expect((answerBody as any).isCorrect).toBeUndefined();
 
@@ -174,10 +181,10 @@ describe("WebSocket game flow", () => {
         body: JSON.stringify({ playerName: "Dave", questionIndex: 0, selectedAnswer: selected, responseTime: 800 }),
       });
 
-    const first = await submit(quiz.questions[0].correctAnswer);
+    const first = await submit(quiz.questions[0].correctAnswers[0]);
     expect(first.status).toBe(200);
 
-    const second = await submit(quiz.questions[0].correctAnswer);
+    const second = await submit(quiz.questions[0].correctAnswers[0]);
     expect(second.status).toBe(409);
     const body = await second.json();
     expect(body.code).toBe("DUPLICATE_ANSWER");
