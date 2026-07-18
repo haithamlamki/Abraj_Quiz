@@ -602,3 +602,42 @@ test("room hydration freezes a questions snapshot; rehydration replays it after 
   const gameFinal = await storage.getGameByPin({ tenantId: 1 }, "778899");
   assert.equal((gameFinal!.questionsSnapshot as any[])[0].question, originalFirstText);
 });
+
+test("toClientGame strips questionsSnapshot from a game object", async () => {
+  const { toClientGame } = await import("./game-room-manager");
+
+  const game = {
+    id: 1,
+    gamePin: "778899",
+    status: "waiting",
+    questionsSnapshot: [{ question: "Q", correctAnswers: [0] }],
+  };
+
+  const stripped = toClientGame(game);
+  assert.equal((stripped as any).questionsSnapshot, undefined);
+  assert.equal(stripped.id, 1);
+  assert.equal(stripped.gamePin, "778899");
+});
+
+test("questionsSnapshot never reaches a client over WS broadcasts (game_started/game_updated/question_closed)", async () => {
+  const { manager, hostSocket, playerSocket } = await createRuntimeFixture();
+
+  await manager.startGame("123456", 1);
+  await manager.submitAnswer({ gamePin: "123456", playerName: "Alice", questionIndex: 0, selectedAnswer: 0 });
+  await manager.advanceQuestion("123456", 1);
+
+  const allSent = [...hostSocket.sent, ...playerSocket.sent];
+  const gameCarryingMessages = allSent.filter((event: any) => event && typeof event === "object" && "game" in event);
+
+  // Sanity: this fixture's game_started/game_updated/next_question broadcasts
+  // are actually present, so the assertion below isn't vacuous.
+  assert.ok(gameCarryingMessages.length > 0, "expected at least one broadcast carrying a game object");
+
+  for (const event of gameCarryingMessages) {
+    assert.equal(
+      (event.game as any)?.questionsSnapshot,
+      undefined,
+      `message type ${event.type} leaked questionsSnapshot to a client`,
+    );
+  }
+});

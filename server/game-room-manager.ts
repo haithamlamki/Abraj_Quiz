@@ -81,6 +81,17 @@ interface SubmitAnswerInput {
   selectedAnswer: number;
 }
 
+// The games row carries questions_snapshot — the FULL question set including
+// answer keys — for the engine and insights. It must NEVER reach a client.
+// Every path that returns or broadcasts a game object strips it here.
+export function toClientGame<T extends { questionsSnapshot?: unknown }>(game: T): Omit<T, "questionsSnapshot"> {
+  const { questionsSnapshot: _omit, ...rest } = game;
+  return rest;
+}
+
+// Shape returned to callers/broadcasts once questionsSnapshot has been stripped.
+export type ClientGame = Omit<Game, "questionsSnapshot">;
+
 export class RoomError extends Error {
   constructor(
     public readonly code: WsErrorCode,
@@ -217,7 +228,7 @@ export class GameRoomManager {
     this.broadcast(room, { type: "game_updated", game: this.applyRuntimeState(game) });
   }
 
-  async startGame(gamePin: string, hostId: number): Promise<Game> {
+  async startGame(gamePin: string, hostId: number): Promise<ClientGame> {
     const room = await this.getOrCreateRoom(gamePin);
     this.assertHost(room, hostId);
 
@@ -310,7 +321,7 @@ export class GameRoomManager {
     return { success: true, streak };
   }
 
-  async advanceQuestion(gamePin: string, hostId: number): Promise<{ gameComplete: boolean; game: Game }> {
+  async advanceQuestion(gamePin: string, hostId: number): Promise<{ gameComplete: boolean; game: ClientGame }> {
     const room = await this.getOrCreateRoom(gamePin);
     this.assertHost(room, hostId);
     this.touch(room);
@@ -341,9 +352,9 @@ export class GameRoomManager {
     return { gameComplete: false, game };
   }
 
-  async getGameSnapshot(gamePin: string, game: Game): Promise<Game> {
+  async getGameSnapshot(gamePin: string, game: Game): Promise<ClientGame> {
     const room = this.rooms.get(gamePin);
-    if (!room) return game;
+    if (!room) return toClientGame(game);
     return this.applyRuntimeState(game);
   }
 
@@ -424,7 +435,7 @@ export class GameRoomManager {
     return room;
   }
 
-  private startQuestion(room: RuntimeRoom, questionIndex: number, game: Game) {
+  private startQuestion(room: RuntimeRoom, questionIndex: number, game: ClientGame) {
     const question = room.questions[questionIndex];
     if (!question) return;
 
@@ -556,7 +567,7 @@ export class GameRoomManager {
     return result;
   }
 
-  private async completeGame(room: RuntimeRoom): Promise<Game> {
+  private async completeGame(room: RuntimeRoom): Promise<ClientGame> {
     room.status = "completed";
     room.questionOpen = false;
     this.clearQuestionTimers(room);
@@ -645,20 +656,20 @@ export class GameRoomManager {
     }
   }
 
-  private applyRuntimeState(game?: Game): Game {
+  private applyRuntimeState(game?: Game): ClientGame {
     if (!game) {
       throw new RoomError("ROOM_NOT_FOUND", "Game not found", 404);
     }
 
     const room = this.rooms.get(game.gamePin);
-    if (!room) return game;
+    if (!room) return toClientGame(game);
 
-    return {
+    return toClientGame({
       ...game,
       status: room.status,
       currentQuestion: room.currentQuestion,
       players: this.runtimePlayers(room),
-    };
+    });
   }
 
   private runtimePlayers(room: RuntimeRoom): RuntimePlayer[] {

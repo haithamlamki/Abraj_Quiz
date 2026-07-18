@@ -49,6 +49,9 @@ describe("GET /api/games/:pin/results — correctAnswer is not leaked mid-game",
       expect(q.correctAnswer).toBeUndefined();
       expect(q.correctAnswers).toBeUndefined();
     }
+    // The games row's questions_snapshot (full question set incl. answer keys)
+    // must never ride along on the game object either.
+    expect(waitingBody.game.questionsSnapshot).toBeUndefined();
 
     // Host drives the game to completion over HTTP.
     const start = await agent.fetch(`/api/games/${pin}/start`, { method: "POST" });
@@ -73,6 +76,9 @@ describe("GET /api/games/:pin/results — correctAnswer is not leaked mid-game",
       expect(Array.isArray(q.correctAnswers)).toBe(true);
       expect(typeof q.correctAnswers[0]).toBe("number");
     }
+    // quiz.questions legitimately carries answers post-completion, but the raw
+    // games.questions_snapshot column must still never reach the client.
+    expect(doneBody.game.questionsSnapshot).toBeUndefined();
   });
 });
 

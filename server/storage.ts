@@ -475,12 +475,18 @@ export class DatabaseStorage implements IStorage {
 
       // Question TEXT only — never answer keys.
       const currentTexts = ((quiz.questions as any[]) || []).map((q) => String(q?.question ?? ""));
-      const perGame: GameQuestionData[] = snapshotRows.map((g) => ({
-        snapshotTexts: Array.isArray(g.questionsSnapshot)
-          ? (g.questionsSnapshot as any[]).map((q) => String(q?.question ?? ""))
-          : null,
-        byIndex: aggsByGame.get(g.id) ?? new Map<number, InsightAgg>(),
-      }));
+      // snapshotRows has no ORDER BY of its own — build perGame by walking
+      // gameRows (already ordered desc createdAt, desc id) and looking up each
+      // game's snapshot, so first-seen order of historical texts is deterministic.
+      const snapshotsById = new Map<number, unknown>();
+      snapshotRows.forEach((g) => snapshotsById.set(g.id, g.questionsSnapshot));
+      const perGame: GameQuestionData[] = gameRows.map((g) => {
+        const snap = snapshotsById.get(g.id);
+        return {
+          snapshotTexts: Array.isArray(snap) ? (snap as any[]).map((q) => String(q?.question ?? "")) : null,
+          byIndex: aggsByGame.get(g.id) ?? new Map<number, InsightAgg>(),
+        };
+      });
       const questions = mergeInsightQuestions(currentTexts, perGame);
 
       const recentGames = gameRows.slice(0, 20).map((r) => ({
