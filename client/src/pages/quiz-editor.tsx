@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye, Settings,
+  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye, Settings, Library,
 } from "lucide-react";
 import { apiRequest, buildApiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -37,6 +37,8 @@ import {
 } from "@/lib/question-form-utils";
 import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
 import { QuizSettingsDialog } from "@/components/quiz/QuizSettingsDialog";
+import { SaveToBankDialog } from "@/components/bank/SaveToBankDialog";
+import { BankPickerDialog } from "@/components/bank/BankPickerDialog";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { PageLoader } from "@/components/page-loader";
 
@@ -94,6 +96,8 @@ export default function QuizEditor() {
   const [previewIdx, setPreviewIdx] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [saveToBankOpen, setSaveToBankOpen] = useState(false);
+  const [bankPickerOpen, setBankPickerOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   // Guards the hydration effect below against react-i18next handing out a new
   // `t` identity on every language change — without this, toggling language
@@ -169,6 +173,23 @@ export default function QuizEditor() {
   const addQuestion = () => {
     setQuiz((prev) => ({ ...prev, questions: [...prev.questions, blankQuestion()] }));
     setCurrentIndex(quiz.questions.length);
+  };
+
+  const addFromBank = (picked: Question[]) => {
+    if (!picked.length) return;
+    setQuiz((prev) => {
+      // Replace the starter card only if it is truly pristine — no text, no
+      // answers, no uploaded image, default type. Otherwise append, never destroy.
+      const onlyBlank = prev.questions.length === 1
+        && !prev.questions[0].question.trim()
+        && prev.questions[0].answers.every((a) => !a.trim())
+        && !prev.questions[0].imageUrl
+        && prev.questions[0].type === "quiz";
+      const questions = onlyBlank ? picked : [...prev.questions, ...picked];
+      return { ...prev, questions };
+    });
+    setCurrentIndex(quiz.questions.length);
+    toast({ title: t("editor.bank.addedToast", { count: picked.length }) });
   };
 
   const duplicateQuestion = (index: number) => {
@@ -425,6 +446,10 @@ export default function QuizEditor() {
         onChange={(patch) => setQuiz((p) => ({ ...p, ...patch }))}
       />
 
+      <SaveToBankDialog open={saveToBankOpen} onOpenChange={setSaveToBankOpen} question={current} />
+
+      <BankPickerDialog open={bankPickerOpen} onOpenChange={setBankPickerOpen} onAdd={addFromBank} />
+
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader><DialogTitle>{t("editor.topbar.previewDialogTitle")}</DialogTitle></DialogHeader>
@@ -492,6 +517,9 @@ export default function QuizEditor() {
           ))}
           <Button variant="outline" className="w-auto lg:w-full shrink-0 self-center lg:self-auto" size="sm" onClick={addQuestion}>
             <Plus className="w-4 h-4 me-1" /> {t("editor.question.addButton")}
+          </Button>
+          <Button variant="outline" className="w-auto lg:w-full shrink-0 self-center lg:self-auto" size="sm" onClick={() => setBankPickerOpen(true)}>
+            <Library className="w-4 h-4 me-1" /> {t("editor.bank.addFromBank")}
           </Button>
         </aside>
 
@@ -681,8 +709,8 @@ export default function QuizEditor() {
             </Dialog>
           </div>
 
-          {/* Delete / Duplicate — bottom of the panel, as in the reference */}
-          <div className="mt-auto pt-4 border-t flex gap-2">
+          {/* Delete / Duplicate / Save to bank — bottom of the panel, as in the reference */}
+          <div className="mt-auto pt-4 border-t flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -694,6 +722,9 @@ export default function QuizEditor() {
             </Button>
             <Button variant="outline" size="sm" className="flex-1" onClick={() => duplicateQuestion(currentIndex)}>
               {t("editor.question.duplicateAction")}
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => setSaveToBankOpen(true)}>
+              {t("editor.bank.saveAction")}
             </Button>
           </div>
         </aside>

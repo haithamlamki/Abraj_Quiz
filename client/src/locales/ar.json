@@ -568,6 +568,30 @@
       "pdfGenerationFailedDefault": "فشل توليد الأسئلة من PDF",
       "generationFailedTitle": "فشل التوليد",
       "generationFailedDefault": "يرجى المحاولة مرة أخرى."
+    },
+    "bank": {
+      "saveAction": "حفظ في البنك",
+      "saveDialogTitle": "حفظ السؤال في بنك الأسئلة",
+      "saveButton": "حفظ في البنك",
+      "savedToast": "تم حفظ السؤال في البنك",
+      "saveFailedTitle": "تعذّر الحفظ في البنك",
+      "incompleteTitle": "أكمل السؤال أولًا",
+      "incompleteDescription": "يحتاج السؤال إلى نص وإجابات مكتملة وإجابة صحيحة قبل حفظه في البنك.",
+      "pickerTitle": "إضافة من البنك",
+      "pickerEmpty": "لا توجد أسئلة مطابقة في البنك",
+      "addFromBank": "من البنك",
+      "addSelected_zero": "أضف {{count}} سؤال",
+      "addSelected_one": "أضف سؤالًا واحدًا",
+      "addSelected_two": "أضف سؤالين",
+      "addSelected_few": "أضف {{count}} أسئلة",
+      "addSelected_many": "أضف {{count}} سؤالًا",
+      "addSelected_other": "أضف {{count}} سؤال",
+      "addedToast_zero": "تمت إضافة {{count}} سؤال من البنك",
+      "addedToast_one": "تمت إضافة سؤال واحد من البنك",
+      "addedToast_two": "تمت إضافة سؤالين من البنك",
+      "addedToast_few": "تمت إضافة {{count}} أسئلة من البنك",
+      "addedToast_many": "تمت إضافة {{count}} سؤالًا من البنك",
+      "addedToast_other": "تمت إضافة {{count}} سؤال من البنك"
     }
   }
 }
