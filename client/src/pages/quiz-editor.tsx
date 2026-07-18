@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Question } from "@shared/schema";
 import { answerStyle } from "@/lib/answer-style";
+import { normalizeGeneratedQuestions } from "@/lib/from-generated";
 import {
   EDITOR_LEFT_RAIL,
   EDITOR_RIGHT_PANEL,
@@ -60,19 +61,6 @@ const VALIDATION_MSG: Record<QuestionValidationKey, string> = {
   needsCorrectAnswer: "editor.toasts.validationNeedsCorrectAnswer",
   singleSelectOneCorrect: "editor.toasts.validationSingleSelectOneCorrect",
 };
-
-// Map an AI-generated (legacy-shaped) question into the canonical shape.
-function fromGenerated(q: any): Question {
-  return {
-    question: q.question ?? "",
-    type: "quiz",
-    answerType: "single",
-    answers: Array.isArray(q.answers) && q.answers.length >= 2 ? q.answers : ["", "", "", ""],
-    correctAnswers: [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
-    timeLimit: q.timeLimit ?? 20,
-    points: q.points === "double" ? "double" : "standard",
-  };
-}
 
 export default function QuizEditor() {
   const { quizId } = useParams();
@@ -324,18 +312,19 @@ export default function QuizEditor() {
   const [aiFile, setAiFile] = useState<File | null>(null);
 
   const applyGenerated = (generated: any) => {
-    if (!generated || !Array.isArray(generated.questions) || generated.questions.length === 0) {
+    const questions = normalizeGeneratedQuestions(generated?.questions);
+    if (questions.length === 0) {
       throw new Error(t("editor.toasts.generatorNoQuestions"));
     }
     setQuiz((p) => ({
       ...p,
       title: p.title || generated.title || t("editor.ai.generatedQuizDefaultTitle"),
       description: p.description || generated.description || "",
-      questions: generated.questions.map(fromGenerated),
+      questions,
     }));
     setCurrentIndex(0);
     setAiOpen(false);
-    toast({ title: t("editor.toasts.quizGeneratedTitle"), description: t("editor.toasts.quizGeneratedDescription", { count: generated.questions.length }) });
+    toast({ title: t("editor.toasts.quizGeneratedTitle"), description: t("editor.toasts.quizGeneratedDescription", { count: questions.length }) });
   };
 
   const runGeneration = async (kind: "topics" | "text" | "url" | "pdf") => {
