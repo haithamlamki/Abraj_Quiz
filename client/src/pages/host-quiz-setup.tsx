@@ -139,7 +139,7 @@ export default function HostQuizSetup() {
             <div className="card-3d-enhanced glass p-8 max-w-md mx-auto">
               <h1 className="text-2xl font-bold gradient-text mb-4">{t("host.quizNotFoundTitle")}</h1>
               <p className="text-gray-600 mb-6">{t("host.quizNotFoundDescription")}</p>
-              <Button onClick={() => setLocation("/")} className="abraj-primary hover:abraj-secondary text-white btn-glow">
+              <Button onClick={() => setLocation("/")}>
                 {t("play.goHome")}
               </Button>
             </div>
@@ -238,7 +238,7 @@ export default function HostQuizSetup() {
                     <Button
                       onClick={() => createGameMutation.mutate()}
                       disabled={createGameMutation.isPending}
-                      className="w-full abraj-primary hover:abraj-secondary text-white font-medium py-3 text-lg btn-glow"
+                      className="w-full font-medium py-3 text-lg"
                       data-testid="button-create-game"
                     >
                       {createGameMutation.isPending ? (
@@ -257,7 +257,7 @@ export default function HostQuizSetup() {
                 ) : (
                   <div className="text-center space-y-6">
                     {/* Game PIN Display */}
-                    <div className="bg-abraj-primary/10 rounded-lg p-6">
+                    <div className="bg-primary/10 rounded-lg p-6">
                       <h3 className="font-semibold text-lg text-gray-800 mb-2">{t("host.gamePinLabel")}</h3>
                       <div className="text-4xl font-bold text-abraj-primary mb-2">
                         {createdGame.gamePin}
@@ -342,7 +342,7 @@ export default function HostQuizSetup() {
                     {/* Start Hosting */}
                     <Button
                       onClick={() => setLocation(`/host/${createdGame.gamePin}`)}
-                      className="w-full abraj-green hover:bg-green-600 text-white font-medium py-3 text-lg btn-glow"
+                      className="w-full abraj-green hover:bg-green-600 text-white font-medium py-3 text-lg"
                       data-testid="button-start-hosting"
                     >
                       <Play className="w-5 h-5 me-2" />

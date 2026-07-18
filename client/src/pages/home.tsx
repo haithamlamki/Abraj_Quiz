@@ -212,7 +212,11 @@ export default function Home() {
                             </DialogTitle>
                           </DialogHeader>
                           <div className="flex flex-col items-center space-y-4 p-4">
-                            <div className="relative bg-black rounded-lg overflow-hidden cursor-pointer" onClick={handleVideoClick}>
+                            <button
+                              type="button"
+                              onClick={handleVideoClick}
+                              className="relative block p-0 border-0 bg-black rounded-lg overflow-hidden cursor-pointer"
+                            >
                               <video
                                 ref={videoRef}
                                 className="w-64 h-64 object-cover"
@@ -233,7 +237,7 @@ export default function Home() {
                               <div className="absolute bottom-2 start-2 end-2 bg-black/70 text-white text-xs px-2 py-1 rounded pointer-events-none">
                                 {t("home.tapToScanDemo")}
                               </div>
-                            </div>
+                            </button>
                             <div className="text-center">
                               <p className="text-sm text-gray-600 mb-2">{t("home.scanHintPoint")}</p>
                               <p className="text-xs text-gray-500">{t("home.scanHintAuto")}</p>
@@ -262,7 +266,7 @@ export default function Home() {
                       />
                       <Button
                         onClick={handleJoinGame}
-                        className="abraj-primary hover:abraj-secondary text-white px-8 py-3 rounded-xl font-bold text-lg shadow-lg btn-glow"
+                        className="px-8 py-3 rounded-xl font-bold text-lg shadow-lg"
                       >
                         {t("home.joinGame")}
                       </Button>
@@ -354,7 +358,7 @@ export default function Home() {
               <div className="mb-12">
                 <div className="text-center pt-[-7px] pb-[-7px] mt-[15px] mb-[15px]">
                   <Link href="/create">
-                    <Button className="abraj-primary hover:abraj-secondary text-white font-medium mb-4">
+                    <Button className="font-medium mb-4">
                       {t("home.createNewQuiz")}
                     </Button>
                   </Link>
@@ -385,7 +389,7 @@ export default function Home() {
                           </span>
                         </div>
                         <Link href={`/host-quiz/${quiz.id}`}>
-                          <Button className="w-full abraj-primary hover:abraj-secondary text-white font-medium">
+                          <Button className="w-full font-medium">
                             <Play className="w-4 h-4 me-2" />
                             {t("home.hostQuiz")}
                           </Button>
@@ -425,7 +429,7 @@ export default function Home() {
                     </div>
                     
                     <Link href="/create">
-                      <Button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary hover:bg-primary/90 h-10 px-4 py-2 w-full abraj-primary hover:abraj-secondary text-white font-bold pt-[2px] pb-[2px] ps-[13px] pe-[13px] mt-[14px] mb-[14px]">
+                      <Button className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 bg-primary hover:bg-primary/90 h-10 px-4 py-2 w-full font-bold pt-[2px] pb-[2px] ps-[13px] pe-[13px] mt-[14px] mb-[14px]">
                         {t("home.startCreating")}
                       </Button>
                     </Link>

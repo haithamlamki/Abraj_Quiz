@@ -476,7 +476,7 @@ export default function PlayGame() {
         <Card className="w-full max-w-md mx-4">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">{t("play.gameNotFound")}</p>
-            <Button onClick={() => setLocation("/")} className="abraj-primary">
+            <Button onClick={() => setLocation("/")}>
               {t("play.goHome")}
             </Button>
           </CardContent>
@@ -520,7 +520,7 @@ export default function PlayGame() {
         <ConnectionBanner status={connectionStatus} />
         <Card className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm">
           <CardContent className="pt-6 text-center space-y-6">
-            <div className="abraj-primary text-white w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl mx-auto">
+            <div className="bg-primary text-primary-foreground w-20 h-20 rounded-full flex items-center justify-center font-bold text-2xl mx-auto">
               {playerName.charAt(0).toUpperCase()}
             </div>
             
@@ -544,9 +544,9 @@ export default function PlayGame() {
             <p className="text-gray-600">{t("play.waitingForHost")}</p>
             
             <div className="animate-pulse flex justify-center">
-              <div className="abraj-primary w-2 h-2 rounded-full mx-1"></div>
-              <div className="abraj-primary w-2 h-2 rounded-full mx-1"></div>
-              <div className="abraj-primary w-2 h-2 rounded-full mx-1"></div>
+              <div className="bg-primary w-2 h-2 rounded-full mx-1"></div>
+              <div className="bg-primary w-2 h-2 rounded-full mx-1"></div>
+              <div className="bg-primary w-2 h-2 rounded-full mx-1"></div>
             </div>
           </CardContent>
         </Card>
@@ -712,7 +712,7 @@ export default function PlayGame() {
             <Button
               onClick={handleSubmitMulti}
               disabled={selectedIndices.length === 0}
-              className="w-full abraj-primary text-white font-bold py-3 rounded-xl"
+              className="w-full font-bold py-3 rounded-xl"
             >
               {t("play.submit")} {selectedIndices.length > 0 ? t("play.selectedCount", { count: selectedIndices.length }) : ""}
             </Button>

@@ -9,7 +9,8 @@
     "seconds": "seconds",
     "reconnecting": "Connection lost — reconnecting…",
     "connectionLost": "Can't reach the game server. Check your internet connection, then reload the page.",
-    "pts": "pts"
+    "pts": "pts",
+    "skipToContent": "Skip to content"
   },
   "nav": {
     "create": "Create",

@@ -443,25 +443,25 @@ export default function QuizEditor() {
                 </TabsList>
                 <TabsContent value="topics" className="space-y-2">
                   <Textarea value={aiTopics} onChange={(e) => setAiTopics(e.target.value)} placeholder={t("editor.ai.topicsPlaceholder")} rows={3} />
-                  <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("topics")}>
+                  <Button className="w-full" disabled={aiBusy} onClick={() => runGeneration("topics")}>
                     {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="text" className="space-y-2">
                   <Textarea value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder={t("editor.ai.textPlaceholder")} rows={5} />
-                  <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("text")}>
+                  <Button className="w-full" disabled={aiBusy} onClick={() => runGeneration("text")}>
                     {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="url" className="space-y-2">
                   <Input value={aiUrl} onChange={(e) => setAiUrl(e.target.value)} placeholder={t("editor.ai.urlPlaceholder")} />
-                  <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("url")}>
+                  <Button className="w-full" disabled={aiBusy} onClick={() => runGeneration("url")}>
                     {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="pdf" className="space-y-2">
                   <Input type="file" accept="application/pdf" onChange={(e) => setAiFile(e.target.files?.[0] ?? null)} />
-                  <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("pdf")}>
+                  <Button className="w-full" disabled={aiBusy} onClick={() => runGeneration("pdf")}>
                     {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
@@ -472,7 +472,7 @@ export default function QuizEditor() {
           <Button variant="outline" onClick={() => { setPreviewIdx(currentIndex); setPreviewOpen(true); }}>
             <Eye className="w-4 h-4 me-1" /> {t("editor.topbar.preview")}
           </Button>
-          <Button className="abraj-primary text-white" onClick={handleSave} disabled={saveMutation.isPending}>
+          <Button onClick={handleSave} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null}
             {isEditMode ? t("editor.topbar.saveChanges") : t("editor.topbar.save")}
           </Button>
@@ -514,7 +514,20 @@ export default function QuizEditor() {
             structure (question line, media placeholder, answer bars) */}
         <aside className={`${EDITOR_LEFT_RAIL} order-2 lg:order-1 shrink-0 bg-white border-t lg:border-t-0 lg:border-e p-2 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto`}>
           {quiz.questions.map((q, i) => (
-            <div key={i} onClick={() => setCurrentIndex(i)} className="cursor-pointer shrink-0 w-40 lg:w-auto">
+            <div
+              key={i}
+              onClick={() => setCurrentIndex(i)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setCurrentIndex(i);
+                }
+              }}
+              className="cursor-pointer shrink-0 w-40 lg:w-auto"
+            >
               <div className="flex items-center justify-between px-1 mb-0.5 text-[11px] text-gray-500">
                 <span>{i + 1} · {q.type === "true_false" ? t("editor.question.railTypeTrueFalse") : q.type === "poll" ? t("editor.question.typePoll") : t("editor.question.typeQuiz")}</span>
                 <div className="flex gap-1">
@@ -550,7 +563,7 @@ export default function QuizEditor() {
             middle (absorbs spare height), fixed-height answer grid pinned at
             the bottom, "Add more answers" directly below it. Full canvas
             width — no narrow centered column. */}
-        <main className="order-1 lg:order-2 flex-1 min-w-0 overflow-y-auto" style={getBackgroundStyle(quiz.theme.background)}>
+        <div className="order-1 lg:order-2 flex-1 min-w-0 overflow-y-auto" style={getBackgroundStyle(quiz.theme.background)}>
           <div className={`h-full min-h-[480px] flex flex-col ${QUIZ_STAGE_PAD} ${QUIZ_STAGE_GAP}`}>
             <Input
               value={current.question}
@@ -640,7 +653,7 @@ export default function QuizEditor() {
               </div>
             )}
           </div>
-        </main>
+        </div>
 
         {/* Right: properties panel */}
         <aside className={`${EDITOR_RIGHT_PANEL} order-3 shrink-0 bg-white border-t lg:border-t-0 lg:border-s p-4 lg:overflow-y-auto space-y-5 flex flex-col`}>

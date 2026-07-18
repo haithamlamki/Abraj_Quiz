@@ -140,6 +140,7 @@ export default function JoinGame() {
                   placeholder={t("join.gamePinPlaceholder")}
                   className="text-center text-2xl font-bold shimmer"
                   onKeyPress={(e) => e.key === 'Enter' && handlePinSubmit()}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- sole input on this dedicated PIN-entry step
                   autoFocus
                   data-testid="input-game-pin"
                 />
@@ -148,7 +149,7 @@ export default function JoinGame() {
               <Button
                 onClick={handlePinSubmit}
                 disabled={checkGameMutation.isPending}
-                className="w-full abraj-primary hover:abraj-secondary text-white font-bold text-lg py-3 btn-glow"
+                className="w-full font-bold text-lg py-3"
                 data-testid="button-continue"
               >
                 {checkGameMutation.isPending ? t("join.checking") : t("join.continue")}
@@ -173,7 +174,7 @@ export default function JoinGame() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="text-center">
-                <div className="abraj-primary text-white w-20 h-20 rounded-full flex items-center justify-center font-bold text-3xl mx-auto mb-4">
+                <div className="bg-primary text-primary-foreground w-20 h-20 rounded-full flex items-center justify-center font-bold text-3xl mx-auto mb-4">
                   {playerName.charAt(0).toUpperCase() || "?"}
                 </div>
               </div>
@@ -195,6 +196,7 @@ export default function JoinGame() {
                   className="text-center text-xl font-medium shimmer"
                   maxLength={20}
                   onKeyPress={(e) => e.key === 'Enter' && handleNameSubmit()}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- sole input on this dedicated name-entry step
                   autoFocus
                   data-testid="input-player-name"
                 />
@@ -203,7 +205,7 @@ export default function JoinGame() {
                     <Button
                       variant="link"
                       onClick={() => setLocation("/login")}
-                      className="text-abraj-primary p-0 h-auto text-xs"
+                      className="text-primary p-0 h-auto text-xs"
                     >
                       {t("join.login")}
                     </Button>
@@ -215,7 +217,7 @@ export default function JoinGame() {
               <Button
                 onClick={handleNameSubmit}
                 disabled={joinGameMutation.isPending}
-                className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3 btn-glow"
+                className="w-full abraj-green hover:bg-green-600 text-white font-bold text-lg py-3"
                 data-testid="button-join-game"
               >
                 {joinGameMutation.isPending ? t("join.joining") : t("join.joinGame")}

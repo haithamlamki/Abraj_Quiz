@@ -108,7 +108,7 @@ export default function Login() {
             </div>
             <Button
               type="submit"
-              className="w-full abraj-primary hover:abraj-secondary btn-glow"
+              className="w-full"
               disabled={loginMutation.isPending}
               data-testid="button-signin"
             >
@@ -122,7 +122,7 @@ export default function Login() {
                 variant="ghost"
                 size="sm"
                 onClick={() => setLocation("/signup")}
-                className="text-abraj-primary hover:underline p-0 h-auto font-normal"
+                className="text-primary hover:underline p-0 h-auto font-normal"
               >
                 {t("auth.signUpHere")}
               </Button>
