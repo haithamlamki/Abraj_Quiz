@@ -512,6 +512,15 @@
       "pdfGenerationFailedDefault": "PDF generation failed",
       "generationFailedTitle": "Generation failed",
       "generationFailedDefault": "Please try again."
+    },
+    "bank": {
+      "saveAction": "Save to bank",
+      "saveDialogTitle": "Save question to bank",
+      "saveButton": "Save to bank",
+      "savedToast": "Question saved to bank",
+      "saveFailedTitle": "Could not save to bank",
+      "incompleteTitle": "Finish the question first",
+      "incompleteDescription": "The question needs text, filled answers, and a correct answer before saving to the bank."
     }
   }
 }

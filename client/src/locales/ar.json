@@ -568,6 +568,15 @@
       "pdfGenerationFailedDefault": "فشل توليد الأسئلة من PDF",
       "generationFailedTitle": "فشل التوليد",
       "generationFailedDefault": "يرجى المحاولة مرة أخرى."
+    },
+    "bank": {
+      "saveAction": "حفظ في البنك",
+      "saveDialogTitle": "حفظ السؤال في بنك الأسئلة",
+      "saveButton": "حفظ في البنك",
+      "savedToast": "تم حفظ السؤال في البنك",
+      "saveFailedTitle": "تعذّر الحفظ في البنك",
+      "incompleteTitle": "أكمل السؤال أولًا",
+      "incompleteDescription": "يحتاج السؤال إلى نص وإجابات مكتملة وإجابة صحيحة قبل حفظه في البنك."
     }
   }
 }

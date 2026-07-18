@@ -37,6 +37,7 @@ import {
 } from "@/lib/question-form-utils";
 import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
 import { QuizSettingsDialog } from "@/components/quiz/QuizSettingsDialog";
+import { SaveToBankDialog } from "@/components/bank/SaveToBankDialog";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { PageLoader } from "@/components/page-loader";
 
@@ -94,6 +95,7 @@ export default function QuizEditor() {
   const [previewIdx, setPreviewIdx] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [saveToBankOpen, setSaveToBankOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   // Guards the hydration effect below against react-i18next handing out a new
   // `t` identity on every language change — without this, toggling language
@@ -425,6 +427,8 @@ export default function QuizEditor() {
         onChange={(patch) => setQuiz((p) => ({ ...p, ...patch }))}
       />
 
+      <SaveToBankDialog open={saveToBankOpen} onOpenChange={setSaveToBankOpen} question={current} />
+
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl">
           <DialogHeader><DialogTitle>{t("editor.topbar.previewDialogTitle")}</DialogTitle></DialogHeader>
@@ -681,8 +685,8 @@ export default function QuizEditor() {
             </Dialog>
           </div>
 
-          {/* Delete / Duplicate — bottom of the panel, as in the reference */}
-          <div className="mt-auto pt-4 border-t flex gap-2">
+          {/* Delete / Duplicate / Save to bank — bottom of the panel, as in the reference */}
+          <div className="mt-auto pt-4 border-t flex flex-wrap gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -694,6 +698,9 @@ export default function QuizEditor() {
             </Button>
             <Button variant="outline" size="sm" className="flex-1" onClick={() => duplicateQuestion(currentIndex)}>
               {t("editor.question.duplicateAction")}
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => setSaveToBankOpen(true)}>
+              {t("editor.bank.saveAction")}
             </Button>
           </div>
         </aside>
