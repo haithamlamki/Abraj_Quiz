@@ -49,7 +49,7 @@ export default tseslint.config(
     },
   },
 
-  // Client: React + browser globals + a11y (a11y is warn until Wave 3).
+  // Client: React + browser globals + a11y (a11y rules promoted to error in Wave 2; exhaustive-deps stays warn).
   {
     files: ["client/src/**/*.{ts,tsx}"],
     plugins: {
