@@ -31,6 +31,10 @@ import {
 } from "@/components/quiz/layout";
 import { getBackgroundStyle } from "@/utils/backgrounds";
 import { resolveQuizTheme, type QuizTheme } from "@shared/quiz-theme";
+import {
+  blankQuestion, withAnswerText, withAddedAnswer, withRemovedAnswer,
+  withToggledCorrect, withType, withAnswerMode, validateQuestion, type QuestionValidationKey,
+} from "@/lib/question-form-utils";
 import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
 import { QuizSettingsDialog } from "@/components/quiz/QuizSettingsDialog";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
@@ -47,30 +51,13 @@ interface QuizForm {
 
 const TIME_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120];
 
-function blankQuestion(): Question {
-  return {
-    question: "",
-    type: "quiz",
-    answerType: "single",
-    answers: ["", "", "", ""],
-    correctAnswers: [0],
-    timeLimit: 20,
-    points: "standard",
-  };
-}
-
-function trueFalseQuestion(existing?: Partial<Question>): Question {
-  return {
-    question: existing?.question ?? "",
-    imageUrl: existing?.imageUrl,
-    type: "true_false",
-    answerType: "single",
-    answers: ["True", "False"],
-    correctAnswers: [0],
-    timeLimit: existing?.timeLimit ?? 20,
-    points: existing?.points ?? "standard",
-  };
-}
+const VALIDATION_MSG: Record<QuestionValidationKey, string> = {
+  needsText: "editor.toasts.validationQuestionNeedsText",
+  needsTwoAnswers: "editor.toasts.validationNeedsTwoAnswers",
+  emptyAnswer: "editor.toasts.validationEmptyAnswer",
+  needsCorrectAnswer: "editor.toasts.validationNeedsCorrectAnswer",
+  singleSelectOneCorrect: "editor.toasts.validationSingleSelectOneCorrect",
+};
 
 // Map an AI-generated (legacy-shaped) question into the canonical shape.
 function fromGenerated(q: any): Question {
@@ -172,6 +159,13 @@ export default function QuizEditor() {
     }));
   };
 
+  const replaceQuestion = (index: number, next: Question) => {
+    setQuiz((prev) => ({
+      ...prev,
+      questions: prev.questions.map((q, i) => (i === index ? next : q)),
+    }));
+  };
+
   const addQuestion = () => {
     setQuiz((prev) => ({ ...prev, questions: [...prev.questions, blankQuestion()] }));
     setCurrentIndex(quiz.questions.length);
@@ -193,70 +187,21 @@ export default function QuizEditor() {
     setCurrentIndex((ci) => Math.max(0, ci >= index ? ci - 1 : ci));
   };
 
-  const setAnswerText = (answerIndex: number, value: string) => {
-    patchQuestion(currentIndex, {
-      answers: current.answers.map((a, i) => (i === answerIndex ? value : a)),
-    });
-  };
+  const setAnswerText = (answerIndex: number, value: string) =>
+    replaceQuestion(currentIndex, withAnswerText(current, answerIndex, value));
 
-  const addAnswer = () => {
-    if (current.answers.length >= 6 || current.type === "true_false") return;
-    patchQuestion(currentIndex, { answers: [...current.answers, ""] });
-  };
+  const addAnswer = () => replaceQuestion(currentIndex, withAddedAnswer(current));
 
-  const removeAnswer = (answerIndex: number) => {
-    if (current.answers.length <= 2 || current.type === "true_false") return;
-    const answers = current.answers.filter((_, i) => i !== answerIndex);
-    // Re-map correct indices after removal.
-    const correctAnswers = current.correctAnswers
-      .filter((ci) => ci !== answerIndex)
-      .map((ci) => (ci > answerIndex ? ci - 1 : ci));
-    patchQuestion(currentIndex, {
-      answers,
-      // Polls must never have correct answers; never backfill [0] for them.
-      correctAnswers: current.type === "poll" ? [] : correctAnswers.length ? correctAnswers : [0],
-    });
-  };
+  const removeAnswer = (answerIndex: number) =>
+    replaceQuestion(currentIndex, withRemovedAnswer(current, answerIndex));
 
-  const toggleCorrect = (answerIndex: number) => {
-    if (current.answerType === "single") {
-      patchQuestion(currentIndex, { correctAnswers: [answerIndex] });
-    } else {
-      const set = new Set(current.correctAnswers);
-      if (set.has(answerIndex)) set.delete(answerIndex);
-      else set.add(answerIndex);
-      const next = Array.from(set).sort((a, b) => a - b);
-      patchQuestion(currentIndex, { correctAnswers: next.length ? next : [answerIndex] });
-    }
-  };
+  const toggleCorrect = (answerIndex: number) =>
+    replaceQuestion(currentIndex, withToggledCorrect(current, answerIndex));
 
-  const setType = (type: Question["type"]) => {
-    if (type === "true_false") {
-      patchQuestion(currentIndex, trueFalseQuestion(current));
-    } else if (type === "poll") {
-      patchQuestion(currentIndex, {
-        type: "poll",
-        answers: current.answers.length >= 2 ? current.answers : ["", "", "", ""],
-        correctAnswers: [],
-      });
-    } else {
-      patchQuestion(currentIndex, {
-        type: "quiz",
-        answers: current.answers.length >= 2 ? current.answers : ["", "", "", ""],
-      });
-    }
-  };
+  const setType = (type: Question["type"]) => replaceQuestion(currentIndex, withType(current, type));
 
-  const setAnswerMode = (answerType: Question["answerType"]) => {
-    if (current.type === "poll") {
-      // Polls must never have correct answers, regardless of answer mode.
-      patchQuestion(currentIndex, { answerType, correctAnswers: [] });
-    } else if (answerType === "single") {
-      patchQuestion(currentIndex, { answerType, correctAnswers: [current.correctAnswers[0] ?? 0] });
-    } else {
-      patchQuestion(currentIndex, { answerType });
-    }
-  };
+  const setAnswerMode = (answerType: Question["answerType"]) =>
+    replaceQuestion(currentIndex, withAnswerMode(current, answerType));
 
   // ---- image upload ----
   const uploadImage = async (file: File) => {
@@ -298,16 +243,8 @@ export default function QuizEditor() {
   const validate = (): string | null => {
     if (!quiz.title.trim()) return t("editor.toasts.validationTitleRequired");
     for (let i = 0; i < quiz.questions.length; i++) {
-      const q = quiz.questions[i];
-      const n = i + 1;
-      if (!q.question.trim()) return t("editor.toasts.validationQuestionNeedsText", { n });
-      if (q.answers.length < 2) return t("editor.toasts.validationNeedsTwoAnswers", { n });
-      if (q.answers.some((a) => !a.trim())) return t("editor.toasts.validationEmptyAnswer", { n });
-      if (q.type !== "poll") {
-        if (q.correctAnswers.length === 0) return t("editor.toasts.validationNeedsCorrectAnswer", { n });
-        if (q.answerType === "single" && q.correctAnswers.length !== 1)
-          return t("editor.toasts.validationSingleSelectOneCorrect", { n });
-      }
+      const key = validateQuestion(quiz.questions[i]);
+      if (key) return t(VALIDATION_MSG[key], { n: i + 1 });
     }
     return null;
   };
