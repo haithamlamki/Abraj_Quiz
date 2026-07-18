@@ -520,6 +520,7 @@ export default function QuizEditor() {
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return;
                 if (e.key === "Enter" || e.key === " ") {
                   e.preventDefault();
                   setCurrentIndex(i);
@@ -562,7 +563,7 @@ export default function QuizEditor() {
             middle (absorbs spare height), fixed-height answer grid pinned at
             the bottom, "Add more answers" directly below it. Full canvas
             width — no narrow centered column. */}
-        <main className="order-1 lg:order-2 flex-1 min-w-0 overflow-y-auto" style={getBackgroundStyle(quiz.theme.background)}>
+        <div className="order-1 lg:order-2 flex-1 min-w-0 overflow-y-auto" style={getBackgroundStyle(quiz.theme.background)}>
           <div className={`h-full min-h-[480px] flex flex-col ${QUIZ_STAGE_PAD} ${QUIZ_STAGE_GAP}`}>
             <Input
               value={current.question}
@@ -652,7 +653,7 @@ export default function QuizEditor() {
               </div>
             )}
           </div>
-        </main>
+        </div>
 
         {/* Right: properties panel */}
         <aside className={`${EDITOR_RIGHT_PANEL} order-3 shrink-0 bg-white border-t lg:border-t-0 lg:border-s p-4 lg:overflow-y-auto space-y-5 flex flex-col`}>
