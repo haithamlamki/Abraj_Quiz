@@ -16,6 +16,7 @@ import { encodeSelection } from "@shared/quiz-scoring";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { QUIZ_STAGE_CONTAINER } from "@/components/quiz/layout";
 import { resolveQuizTheme } from "@shared/quiz-theme";
+import { PageLoader } from "@/components/page-loader";
 
 export default function PlayGame() {
   const { t } = useTranslation();
@@ -466,14 +467,7 @@ export default function PlayGame() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-          <p className="text-lg text-gray-600">{t("play.loadingGame")}</p>
-        </div>
-      </div>
-    );
+    return <PageLoader label={t("play.loadingGame")} />;
   }
 
   if (!game || !quiz) {

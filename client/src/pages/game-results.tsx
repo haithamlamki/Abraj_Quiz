@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Leaderboard from "@/components/leaderboard";
+import { PageLoader } from "@/components/page-loader";
 import { Trophy, Home, RotateCcw, Star, Award, Crown, Download, PlusCircle } from "lucide-react";
 import { useTenant, tenantPdfBranding } from "@/lib/tenant";
 
@@ -111,16 +112,7 @@ export default function GameResults() {
   };
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-pulse card-3d-enhanced glass p-8 rounded-2xl">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-abraj-primary mx-auto mb-4"></div>
-            <p className="text-lg text-gray-600">{t("results.loadingResults")}</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoader label={t("results.loadingResults")} />;
   }
 
   if (!results) {

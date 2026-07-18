@@ -13,15 +13,15 @@
   --card-foreground: hsl(20, 14.3%, 4.1%);
   --border: hsl(20, 5.9%, 90%);
   --input: hsl(20, 5.9%, 90%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
+  --primary: var(--abraj-primary);
+  --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(60, 4.8%, 95.9%);
   --secondary-foreground: hsl(24, 9.8%, 10%);
   --accent: hsl(60, 4.8%, 95.9%);
   --accent-foreground: hsl(24, 9.8%, 10%);
   --destructive: hsl(0, 84.2%, 60.2%);
   --destructive-foreground: hsl(60, 9.1%, 97.8%);
-  --ring: hsl(20, 14.3%, 4.1%);
+  --ring: var(--abraj-primary);
   --radius: 0.5rem;
 
   /* Abraj Quiz brand colors */
@@ -32,6 +32,7 @@
   --abraj-green: hsl(142, 71%, 45%);
   --abraj-yellow: hsl(45, 100%, 50%);
   --abraj-pink: hsl(330, 81%, 60%);
+  --abraj-orange: hsl(25, 95%, 53%);
 }
 
 html[lang="ar"] body {
@@ -49,15 +50,15 @@ html[lang="ar"] body {
   --card-foreground: hsl(0, 0%, 98%);
   --border: hsl(240, 3.7%, 15.9%);
   --input: hsl(240, 3.7%, 15.9%);
-  --primary: hsl(207, 90%, 54%);
-  --primary-foreground: hsl(211, 100%, 99%);
+  --primary: var(--abraj-primary);
+  --primary-foreground: hsl(0, 0%, 100%);
   --secondary: hsl(240, 3.7%, 15.9%);
   --secondary-foreground: hsl(0, 0%, 98%);
   --accent: hsl(240, 3.7%, 15.9%);
   --accent-foreground: hsl(0, 0%, 98%);
   --destructive: hsl(0, 62.8%, 30.6%);
   --destructive-foreground: hsl(0, 0%, 98%);
-  --ring: hsl(240, 4.9%, 83.9%);
+  --ring: var(--abraj-primary);
   --radius: 0.5rem;
 }
 
@@ -185,84 +186,6 @@ html[lang="ar"] body {
   @keyframes wiggle {
     0%, 100% { transform: rotate(-3deg); }
     50% { transform: rotate(3deg); }
-  }
-
-  /* 3D Button Effects */
-  .btn-3d {
-    transform: translateZ(0);
-    box-shadow: 
-      0 4px 8px rgba(0, 0, 0, 0.2),
-      0 2px 4px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-  }
-
-  .btn-3d:hover {
-    transform: translateY(-2px) translateZ(0);
-    box-shadow: 
-      0 8px 16px rgba(0, 0, 0, 0.25),
-      0 4px 8px rgba(0, 0, 0, 0.15),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  }
-
-  .btn-3d:active {
-    transform: translateY(0px) translateZ(0);
-    box-shadow: 
-      0 2px 4px rgba(0, 0, 0, 0.15),
-      0 1px 2px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  }
-
-  /* 3D Primary Button */
-  .btn-3d-primary {
-    background: linear-gradient(145deg, var(--abraj-primary), var(--abraj-secondary));
-    box-shadow: 
-      0 4px 8px rgba(1, 158, 189, 0.3),
-      0 2px 4px rgba(1, 158, 189, 0.2),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  }
-
-  .btn-3d-primary:hover {
-    background: linear-gradient(145deg, var(--abraj-secondary), var(--abraj-primary));
-    box-shadow: 
-      0 8px 16px rgba(1, 158, 189, 0.4),
-      0 4px 8px rgba(1, 158, 189, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.4);
-  }
-
-  /* 3D Secondary Button */
-  .btn-3d-secondary {
-    background: linear-gradient(145deg, #f8fafc, #e2e8f0);
-    color: #334155;
-    box-shadow: 
-      0 4px 8px rgba(0, 0, 0, 0.1),
-      0 2px 4px rgba(0, 0, 0, 0.06),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  }
-
-  .btn-3d-secondary:hover {
-    background: linear-gradient(145deg, #e2e8f0, #cbd5e1);
-    box-shadow: 
-      0 8px 16px rgba(0, 0, 0, 0.15),
-      0 4px 8px rgba(0, 0, 0, 0.1),
-      inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  }
-
-  /* Apply 3D effects to all buttons */
-  button, .btn, input[type="submit"], input[type="button"] {
-    @apply btn-3d;
-  }
-
-  /* Special handling for primary colored buttons */
-  .abraj-primary, .bg-abraj-primary {
-    @apply btn-3d-primary;
-  }
-
-  /* Special handling for secondary buttons */
-  .bg-gray-100, .bg-gray-200, .bg-white {
-    @apply btn-3d-secondary;
   }
 
   /* 3D Card Effects */

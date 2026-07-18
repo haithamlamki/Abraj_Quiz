@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
+import { EmptyState } from "@/components/empty-state";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, ResponsiveContainer,
 } from "recharts";
@@ -82,7 +83,7 @@ export default function QuizInsightsPage() {
           <CardHeader><CardTitle>{t("insights.chartTitle")}</CardTitle></CardHeader>
           <CardContent>
             {data.gamesPlayed === 0 || chartData.length === 0 ? (
-              <p className="text-gray-500 py-8 text-center">{t("insights.noGamesYet")}</p>
+              <EmptyState title={t("insights.noGamesYet")} />
             ) : (
               <ResponsiveContainer width="100%" height={Math.max(160, chartData.length * 44)}>
                 <BarChart data={chartData} layout="vertical" margin={{ left: 8, right: 40 }}>

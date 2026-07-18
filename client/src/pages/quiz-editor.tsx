@@ -34,6 +34,7 @@ import { resolveQuizTheme, type QuizTheme } from "@shared/quiz-theme";
 import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
 import { QuizSettingsDialog } from "@/components/quiz/QuizSettingsDialog";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
+import { PageLoader } from "@/components/page-loader";
 
 interface QuizForm {
   title: string;
@@ -403,7 +404,7 @@ export default function QuizEditor() {
     }
   };
 
-  if (isLoading || !isAuthenticated) return null;
+  if (isLoading || !isAuthenticated) return <PageLoader />;
 
   return (
     // Fill exactly the viewport below the sticky 68px nav (h-16 + border-b-4)

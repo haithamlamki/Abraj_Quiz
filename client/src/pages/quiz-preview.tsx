@@ -7,6 +7,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Monitor, Smartphone } from "lucid
 import type { Quiz, Question } from "@shared/schema";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { resolveQuizTheme } from "@shared/quiz-theme";
+import { PageLoader } from "@/components/page-loader";
 
 // Normalize a stored question (legacy or new) to the fields the renderer needs.
 function normalize(q: any): Question {
@@ -36,7 +37,7 @@ export default function QuizPreview() {
     enabled: !!quizId,
   });
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center text-white bg-slate-900">{t("preview.loading")}</div>;
+  if (isLoading) return <PageLoader label={t("preview.loading")} />;
   if (!quiz) return <div className="min-h-screen flex items-center justify-center text-white bg-slate-900">{t("preview.notFound")}</div>;
 
   const questions = (Array.isArray(quiz.questions) ? quiz.questions : []).map(normalize);
