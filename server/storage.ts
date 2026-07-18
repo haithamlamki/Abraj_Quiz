@@ -436,34 +436,52 @@ export class DatabaseStorage implements IStorage {
       const lastPlayedAt = gamesPlayed > 0 ? gameRows[0].createdAt : null;
 
       const gameIds = gameRows.map((r) => r.id);
-      const questionAggRows = gameIds.length > 0
+      // Per-(game, question) SUMS (not rates) so cross-game merging stays
+      // weighted correctly, plus each game's frozen snapshot. Attribution and
+      // text-keyed merging live in mergeInsightQuestions (shared with
+      // MemStorage so the two backends cannot drift).
+      const snapshotRows = gameIds.length > 0
+        ? await tx
+            .select({ id: games.id, questionsSnapshot: games.questionsSnapshot })
+            .from(games)
+            .where(and(inArray(games.id, gameIds), tenantFilter(ctx, games.tenantId)))
+        : [];
+      const respAggRows = gameIds.length > 0
         ? await tx
             .select({
+              gameId: gameResponses.gameId,
               questionIndex: gameResponses.questionIndex,
               total: sql<number>`count(*)::int`,
-              correctRate: sql<number>`avg(case when ${gameResponses.isCorrect} then 1.0 else 0.0 end)::float`,
-              avgMs: sql<number>`coalesce(avg(${gameResponses.responseTime}), 0)::float`,
+              correct: sql<number>`count(*) filter (where ${gameResponses.isCorrect})::int`,
+              msSum: sql<number>`coalesce(sum(${gameResponses.responseTime}), 0)::float`,
             })
             .from(gameResponses)
             .where(and(
               inArray(gameResponses.gameId, gameIds),
               tenantFilter(ctx, gameResponses.tenantId),
             ))
-            .groupBy(gameResponses.questionIndex)
+            .groupBy(gameResponses.gameId, gameResponses.questionIndex)
         : [];
 
-      // Question TEXT only — never answer keys.
-      const rawQuestions = (quiz.questions as any[]) || [];
-      const questions = rawQuestions.map((q, questionIndex) => {
-        const row = questionAggRows.find((r) => r.questionIndex === questionIndex);
-        return {
-          questionIndex,
-          question: q.question,
-          totalResponses: row?.total ?? 0,
-          correctRate: row?.correctRate ?? 0,
-          avgResponseMs: row?.avgMs ?? 0,
-        };
+      const aggsByGame = new Map<number, Map<number, InsightAgg>>();
+      respAggRows.forEach((r) => {
+        let byIndex = aggsByGame.get(r.gameId);
+        if (!byIndex) {
+          byIndex = new Map();
+          aggsByGame.set(r.gameId, byIndex);
+        }
+        byIndex.set(r.questionIndex, { total: r.total, correct: r.correct, msSum: r.msSum });
       });
+
+      // Question TEXT only — never answer keys.
+      const currentTexts = ((quiz.questions as any[]) || []).map((q) => String(q?.question ?? ""));
+      const perGame: GameQuestionData[] = snapshotRows.map((g) => ({
+        snapshotTexts: Array.isArray(g.questionsSnapshot)
+          ? (g.questionsSnapshot as any[]).map((q) => String(q?.question ?? ""))
+          : null,
+        byIndex: aggsByGame.get(g.id) ?? new Map<number, InsightAgg>(),
+      }));
+      const questions = mergeInsightQuestions(currentTexts, perGame);
 
       const recentGames = gameRows.slice(0, 20).map((r) => ({
         id: r.id,
