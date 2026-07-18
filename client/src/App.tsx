@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { Switch, Route } from "wouter";
 import * as Sentry from "@sentry/react";
+import { useTranslation } from "react-i18next";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -53,6 +54,7 @@ function Router() {
 }
 
 function App() {
+  const { t } = useTranslation();
   return (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
@@ -67,6 +69,12 @@ function App() {
 
             {/* Content */}
             <div className="relative z-10">
+              <a
+                href="#main-content"
+                className="sr-only focus:not-sr-only focus:absolute focus:top-2 focus:start-2 focus:z-50 focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+              >
+                {t("common.skipToContent")}
+              </a>
               <Navigation />
               {/*
                 Root error boundary: outside Suspense (so a render error inside
@@ -91,7 +99,9 @@ function App() {
                   </div>
                 }
               >
-                <Router />
+                <main id="main-content">
+                  <Router />
+                </main>
               </Sentry.ErrorBoundary>
             </div>
             <Toaster />

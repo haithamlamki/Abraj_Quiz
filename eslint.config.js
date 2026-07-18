@@ -64,11 +64,11 @@ export default tseslint.config(
       ...reactHooks.configs.recommended.rules,
       ...jsxA11y.flatConfigs.recommended.rules,
       "react-refresh/only-export-components": "off",
-      // Demote a11y to warnings for now; Wave 3 promotes and fixes them.
-      "jsx-a11y/no-autofocus": "warn",
-      "jsx-a11y/click-events-have-key-events": "warn",
-      "jsx-a11y/no-static-element-interactions": "warn",
-      "jsx-a11y/label-has-associated-control": "warn",
+      // a11y baseline fixed in Wave 2 Task 4; enforced at error so it can't regress.
+      "jsx-a11y/no-autofocus": "error",
+      "jsx-a11y/click-events-have-key-events": "error",
+      "jsx-a11y/no-static-element-interactions": "error",
+      "jsx-a11y/label-has-associated-control": "error",
     },
   },
 

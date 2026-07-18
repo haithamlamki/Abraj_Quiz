@@ -514,7 +514,19 @@ export default function QuizEditor() {
             structure (question line, media placeholder, answer bars) */}
         <aside className={`${EDITOR_LEFT_RAIL} order-2 lg:order-1 shrink-0 bg-white border-t lg:border-t-0 lg:border-e p-2 flex flex-row lg:flex-col gap-2 overflow-x-auto lg:overflow-x-visible lg:overflow-y-auto`}>
           {quiz.questions.map((q, i) => (
-            <div key={i} onClick={() => setCurrentIndex(i)} className="cursor-pointer shrink-0 w-40 lg:w-auto">
+            <div
+              key={i}
+              onClick={() => setCurrentIndex(i)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setCurrentIndex(i);
+                }
+              }}
+              className="cursor-pointer shrink-0 w-40 lg:w-auto"
+            >
               <div className="flex items-center justify-between px-1 mb-0.5 text-[11px] text-gray-500">
                 <span>{i + 1} · {q.type === "true_false" ? t("editor.question.railTypeTrueFalse") : q.type === "poll" ? t("editor.question.typePoll") : t("editor.question.typeQuiz")}</span>
                 <div className="flex gap-1">

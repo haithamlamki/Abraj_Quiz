@@ -212,7 +212,11 @@ export default function Home() {
                             </DialogTitle>
                           </DialogHeader>
                           <div className="flex flex-col items-center space-y-4 p-4">
-                            <div className="relative bg-black rounded-lg overflow-hidden cursor-pointer" onClick={handleVideoClick}>
+                            <button
+                              type="button"
+                              onClick={handleVideoClick}
+                              className="relative block p-0 border-0 bg-black rounded-lg overflow-hidden cursor-pointer"
+                            >
                               <video
                                 ref={videoRef}
                                 className="w-64 h-64 object-cover"
@@ -233,7 +237,7 @@ export default function Home() {
                               <div className="absolute bottom-2 start-2 end-2 bg-black/70 text-white text-xs px-2 py-1 rounded pointer-events-none">
                                 {t("home.tapToScanDemo")}
                               </div>
-                            </div>
+                            </button>
                             <div className="text-center">
                               <p className="text-sm text-gray-600 mb-2">{t("home.scanHintPoint")}</p>
                               <p className="text-xs text-gray-500">{t("home.scanHintAuto")}</p>

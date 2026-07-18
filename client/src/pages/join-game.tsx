@@ -140,6 +140,7 @@ export default function JoinGame() {
                   placeholder={t("join.gamePinPlaceholder")}
                   className="text-center text-2xl font-bold shimmer"
                   onKeyPress={(e) => e.key === 'Enter' && handlePinSubmit()}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- sole input on this dedicated PIN-entry step
                   autoFocus
                   data-testid="input-game-pin"
                 />
@@ -195,6 +196,7 @@ export default function JoinGame() {
                   className="text-center text-xl font-medium shimmer"
                   maxLength={20}
                   onKeyPress={(e) => e.key === 'Enter' && handleNameSubmit()}
+                  // eslint-disable-next-line jsx-a11y/no-autofocus -- sole input on this dedicated name-entry step
                   autoFocus
                   data-testid="input-player-name"
                 />

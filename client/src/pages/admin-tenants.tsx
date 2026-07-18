@@ -87,7 +87,7 @@ function readFileAsDataUrl(file: File): Promise<string> {
 }
 
 function TenantForm({
-  form, setForm, onSubmit, submitLabel, disableSlug, submitDisabled,
+  form, setForm, onSubmit, submitLabel, disableSlug, submitDisabled, idPrefix,
 }: {
   form: TenantFormState;
   setForm: (f: TenantFormState) => void;
@@ -95,28 +95,29 @@ function TenantForm({
   submitLabel: string;
   disableSlug?: boolean;
   submitDisabled?: boolean;
+  idPrefix: string;
 }) {
   return (
     <div className="grid gap-3">
-      <label className="text-sm font-medium">Slug
-        <Input value={form.slug} disabled={disableSlug}
+      <label className="text-sm font-medium" htmlFor={`${idPrefix}-slug`}>Slug
+        <Input id={`${idPrefix}-slug`} value={form.slug} disabled={disableSlug}
           onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="acme" />
       </label>
-      <label className="text-sm font-medium">Company name
-        <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Acme Inc" />
+      <label className="text-sm font-medium" htmlFor={`${idPrefix}-name`}>Company name
+        <Input id={`${idPrefix}-name`} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Acme Inc" />
       </label>
-      <label className="text-sm font-medium">Domains (comma-separated hostnames)
-        <Input value={form.domains} onChange={(e) => setForm({ ...form, domains: e.target.value })} placeholder="acmequiz.com, www.acmequiz.com" />
+      <label className="text-sm font-medium" htmlFor={`${idPrefix}-domains`}>Domains (comma-separated hostnames)
+        <Input id={`${idPrefix}-domains`} value={form.domains} onChange={(e) => setForm({ ...form, domains: e.target.value })} placeholder="acmequiz.com, www.acmequiz.com" />
       </label>
-      <label className="text-sm font-medium">App name (shown in nav, title, PDFs)
-        <Input value={form.appName} onChange={(e) => setForm({ ...form, appName: e.target.value })} placeholder="Acme Quiz" />
+      <label className="text-sm font-medium" htmlFor={`${idPrefix}-app-name`}>App name (shown in nav, title, PDFs)
+        <Input id={`${idPrefix}-app-name`} value={form.appName} onChange={(e) => setForm({ ...form, appName: e.target.value })} placeholder="Acme Quiz" />
       </label>
       <div className="grid grid-cols-2 gap-3">
-        <label className="text-sm font-medium">Primary color (CSS value)
-          <Input value={form.primaryColor} onChange={(e) => setForm({ ...form, primaryColor: e.target.value })} placeholder="hsl(184, 100%, 47%)" />
+        <label className="text-sm font-medium" htmlFor={`${idPrefix}-primary-color`}>Primary color (CSS value)
+          <Input id={`${idPrefix}-primary-color`} value={form.primaryColor} onChange={(e) => setForm({ ...form, primaryColor: e.target.value })} placeholder="hsl(184, 100%, 47%)" />
         </label>
-        <label className="text-sm font-medium">Secondary color
-          <Input value={form.secondaryColor} onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })} placeholder="hsl(184, 85%, 35%)" />
+        <label className="text-sm font-medium" htmlFor={`${idPrefix}-secondary-color`}>Secondary color
+          <Input id={`${idPrefix}-secondary-color`} value={form.secondaryColor} onChange={(e) => setForm({ ...form, secondaryColor: e.target.value })} placeholder="hsl(184, 85%, 35%)" />
         </label>
       </div>
       <label className="text-sm font-medium">Logo (stored as data URL)
@@ -127,8 +128,8 @@ function TenantForm({
           }} />
         {form.logoUrl && <img src={form.logoUrl} alt="logo preview" className="h-10 mt-1" />}
       </label>
-      <label className="text-sm font-medium">Favicon (stored as data URL)
-        <Input type="file" accept="image/png,image/x-icon,image/svg+xml"
+      <label className="text-sm font-medium" htmlFor={`${idPrefix}-favicon`}>Favicon (stored as data URL)
+        <Input id={`${idPrefix}-favicon`} type="file" accept="image/png,image/x-icon,image/svg+xml"
           onChange={async (e) => {
             const file = e.target.files?.[0];
             if (file) setForm({ ...form, faviconUrl: await readFileAsDataUrl(file) });
@@ -213,6 +214,7 @@ export default function AdminTenants() {
             <p className="text-sm text-gray-600 mb-3">Domains: {(t.domains ?? []).join(", ") || "—"}</p>
             {editing?.id === t.id && (
               <TenantForm
+                idPrefix={`tenant-edit-${t.id}`}
                 form={editing.form}
                 setForm={(form) => setEditing({ id: t.id, form })}
                 disableSlug
@@ -229,6 +231,7 @@ export default function AdminTenants() {
         <CardHeader><CardTitle>Create tenant</CardTitle></CardHeader>
         <CardContent>
           <TenantForm
+            idPrefix="tenant-create"
             form={createForm}
             setForm={setCreateForm}
             submitLabel={createMutation.isPending ? "Creating…" : "Create tenant"}
