@@ -268,6 +268,13 @@ const questionObjectSchema = z
       .default(20),
     // Score multiplier: standard = 1x, double = 2x on the time-based score.
     points: questionPointsSchema.default("standard"),
+    // Optional metadata (additive, like sourceQuestionId). Set by AI generation
+    // and editable in the bank/editor; ignored by gameplay/scoring.
+    // NOTE: `explanation` typically states the correct answer, so it is
+    // answer-key-equivalent — server strips it wherever it strips correctAnswers
+    // (see sanitizeQuizForCaller). `difficulty` is safe to expose.
+    difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+    explanation: z.string().trim().max(500).optional(),
     // Provenance: id of the bank_questions row this question was copied from
     // ("add from bank"). Optional, additive, ignored by gameplay/scoring.
     // Must be an explicit field — Zod strips unknown keys on parse.
@@ -348,6 +355,18 @@ export const insertBankQuestionSchema = z.object({
     .transform((s) => (s ? s : undefined)),
   tags: z.array(z.string().max(50)).max(20).default([]).transform(normalizeTags),
 });
+
+// Validated shape for AI-generated quizzes. Questions are the canonical
+// questionSchema (mixed types, correctAnswers[], optional difficulty/explanation);
+// the generator emits this directly and the server rejects anything else.
+export const generatedQuizSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(500).default(""),
+  subject: z.string().trim().max(100).optional().transform((s) => (s ? s : undefined)),
+  tags: z.array(z.string().max(50)).max(8).default([]).transform(normalizeTags),
+  questions: z.array(questionSchema).min(1).max(12),
+});
+export type GeneratedQuiz = z.infer<typeof generatedQuizSchema>;
 
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
