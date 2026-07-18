@@ -121,6 +121,10 @@ export interface BankQuestionFilters {
   archived?: boolean;   // true → archived-only; false/undefined → live-only
 }
 
+// Update payload for bank questions. subject: null means "clear"; a field
+// left undefined is untouched.
+export type UpdateBankQuestionData = Partial<Omit<InsertBankQuestion, "subject">> & { subject?: string | null };
+
 export interface IStorage {
   // Users
   getUser(ctx: StorageCtx, id: number): Promise<User | undefined>;
@@ -144,7 +148,7 @@ export interface IStorage {
   getBankQuestions(ctx: StorageCtx, filters?: BankQuestionFilters): Promise<BankQuestion[]>;    // newest-updated first
   getBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined>;
   createBankQuestion(ctx: StorageCtx, data: InsertBankQuestion & { createdBy: number }): Promise<BankQuestion>;
-  updateBankQuestion(ctx: StorageCtx, id: number, updates: Partial<InsertBankQuestion>): Promise<BankQuestion | undefined>;
+  updateBankQuestion(ctx: StorageCtx, id: number, updates: UpdateBankQuestionData): Promise<BankQuestion | undefined>;
   archiveBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined>;
   restoreBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined>;
   getBankSubjectsAndTags(ctx: StorageCtx): Promise<{ subjects: string[]; tags: string[] }>;     // distinct, live rows only
@@ -346,7 +350,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async updateBankQuestion(ctx: StorageCtx, id: number, updates: Partial<InsertBankQuestion>): Promise<BankQuestion | undefined> {
+  async updateBankQuestion(ctx: StorageCtx, id: number, updates: UpdateBankQuestionData): Promise<BankQuestion | undefined> {
     return withCtx(ctx, async (tx) => {
       const [row] = await tx.update(bankQuestions).set({
         ...(updates.question !== undefined ? { question: updates.question } : {}),
@@ -1001,7 +1005,7 @@ export class MemStorage implements IStorage {
     return row;
   }
 
-  async updateBankQuestion(ctx: StorageCtx, id: number, updates: Partial<InsertBankQuestion>): Promise<BankQuestion | undefined> {
+  async updateBankQuestion(ctx: StorageCtx, id: number, updates: UpdateBankQuestionData): Promise<BankQuestion | undefined> {
     const existing = this.bankQuestions.get(id);
     if (!existing || !this.inTenant(ctx, existing)) return undefined;
     const updated: BankQuestion = {
