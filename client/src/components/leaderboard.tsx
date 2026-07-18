@@ -105,7 +105,7 @@ export default function Leaderboard({ players, showPodium = false, title }: Lead
               <span className="font-medium text-[#0a0a0a]">{player.name}</span>
             </div>
             <span className={`font-bold ${
-              index === 0 ? 'text-success' :
+              index === 0 ? 'text-abraj-green' :
               index === 1 ? 'text-gray-300' :
               index === 2 ? 'text-orange-300' :
               'text-white'

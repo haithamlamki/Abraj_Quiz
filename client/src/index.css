@@ -33,7 +33,7 @@
   --abraj-yellow: hsl(45, 100%, 50%);
   --abraj-pink: hsl(330, 81%, 60%);
   --abraj-orange: hsl(25, 95%, 53%);
-  --success: hsl(142, 72%, 34%);
+  --success: hsl(142, 72%, 30%);
   --success-foreground: hsl(0, 0%, 100%);
 }
 
@@ -62,7 +62,7 @@ html[lang="ar"] body {
   --destructive-foreground: hsl(0, 0%, 98%);
   --ring: var(--abraj-primary);
   --radius: 0.5rem;
-  --success: hsl(142, 72%, 34%);
+  --success: hsl(142, 72%, 30%);
   --success-foreground: hsl(0, 0%, 100%);
 }
 
