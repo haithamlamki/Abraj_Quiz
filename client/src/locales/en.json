@@ -275,7 +275,6 @@
   "history": {
     "authRequiredTitle": "Authentication Required",
     "authRequiredDescription": "Please login to view your quiz history.",
-    "loadingQuizzes": "Loading your quizzes...",
     "title": "My Quiz History",
     "subtitle": "Manage all the quizzes you've created",
     "backToMyQuizzes": "Back to My Quizzes",

@@ -342,7 +342,8 @@ export default function HostQuizSetup() {
                     {/* Start Hosting */}
                     <Button
                       onClick={() => setLocation(`/host/${createdGame.gamePin}`)}
-                      className="w-full abraj-green hover:bg-green-600 text-white font-medium py-3 text-lg"
+                      variant="success"
+                      className="w-full font-medium py-3 text-lg"
                       data-testid="button-start-hosting"
                     >
                       <Play className="w-5 h-5 me-2" />

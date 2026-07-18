@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -73,9 +73,9 @@ export default function Home() {
   }, [isAuthenticated, user, playerName]);
 
   // Camera access and QR scanning
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' } // Use back camera if available
       });
       if (videoRef.current) {
@@ -89,19 +89,19 @@ export default function Home() {
         variant: "destructive",
       });
     }
-  };
+  }, [toast, t]);
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
-  };
+  }, []);
 
   // Simple QR code detection function
   // In production, you would use a proper QR library like jsQR
-  const scanQRCode = () => {
+  const scanQRCode = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
@@ -116,7 +116,7 @@ export default function Home() {
 
     // For demonstration, we'll check if user clicks the video area to simulate scanning
     // In a real app, you'd integrate with jsQR or similar library
-  };
+  }, []);
 
   const handleVideoClick = () => {
     // Simulate QR code detection when user taps the video area
@@ -143,7 +143,7 @@ export default function Home() {
         stopCamera();
       };
     }
-  }, [showScanner]);
+  }, [showScanner, startCamera, stopCamera, scanQRCode]);
 
   const handleScanClick = () => {
     setShowScanner(true);
@@ -190,7 +190,7 @@ export default function Home() {
                         placeholder={t("home.gamePinPlaceholder")}
                         value={gamePin}
                         onChange={(e) => setGamePin(e.target.value)}
-                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d shimmer"
+                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d"
                         onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                       />
                       <Dialog open={showScanner} onOpenChange={setShowScanner}>
@@ -260,7 +260,7 @@ export default function Home() {
                         placeholder={isAuthenticated && user ? user.username : t("home.playerNamePlaceholder")}
                         value={playerName}
                         onChange={(e) => setPlayerName(e.target.value)}
-                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d shimmer"
+                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d"
                         maxLength={20}
                         onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                       />
@@ -420,7 +420,7 @@ export default function Home() {
                       <div className="abraj-blue text-white p-4 rounded-lg text-center font-bold">
                         B
                       </div>
-                      <div className="abraj-green text-white p-4 rounded-lg text-center font-bold">
+                      <div className="bg-success text-success-foreground p-4 rounded-lg text-center font-bold">
                         C
                       </div>
                       <div className="abraj-yellow text-white p-4 rounded-lg text-center font-bold">

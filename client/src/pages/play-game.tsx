@@ -271,25 +271,24 @@ export default function PlayGame() {
   }, [game?.status, runtimeState.status, pin, playerName, setLocation]);
 
   // Warn before leaving if player is in an active game
+  const shouldWarnBeforeUnload =
+    !!playerName && (game?.status === "waiting" || game?.status === "active");
+
   useEffect(() => {
-    if (!game || !playerName) return;
-    
-    const shouldWarn = game.status === "waiting" || game.status === "active";
-    
-    if (shouldWarn) {
-      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-        e.preventDefault();
-        e.returnValue = "";
-        return "";
-      };
-      
-      window.addEventListener("beforeunload", handleBeforeUnload);
-      
-      return () => {
-        window.removeEventListener("beforeunload", handleBeforeUnload);
-      };
-    }
-  }, [game?.status, playerName]);
+    if (!shouldWarnBeforeUnload) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [shouldWarnBeforeUnload]);
 
   // Sound effects
   const playClickSound = () => {

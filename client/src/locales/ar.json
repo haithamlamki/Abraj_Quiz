@@ -315,7 +315,6 @@
   "history": {
     "authRequiredTitle": "التسجيل مطلوب",
     "authRequiredDescription": "يرجى تسجيل الدخول لعرض سجل اختباراتك.",
-    "loadingQuizzes": "جارٍ تحميل اختباراتك...",
     "title": "سجل اختباراتي",
     "subtitle": "إدارة جميع الاختبارات التي أنشأتها",
     "backToMyQuizzes": "العودة إلى اختباراتي",

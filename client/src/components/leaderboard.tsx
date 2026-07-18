@@ -95,7 +95,7 @@ export default function Leaderboard({ players, showPodium = false, title }: Lead
           <div key={player.name} className="flex items-center justify-between bg-white/10 rounded-lg p-3">
             <div className="flex items-center space-x-3 rtl:space-x-reverse">
               <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                index === 0 ? 'abraj-green text-white' :
+                index === 0 ? 'bg-success text-success-foreground' :
                 index === 1 ? 'bg-gray-400 text-white' :
                 index === 2 ? 'bg-orange-500 text-white' :
                 'bg-primary text-primary-foreground'

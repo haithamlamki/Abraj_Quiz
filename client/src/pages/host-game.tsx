@@ -237,25 +237,23 @@ export default function HostGame() {
   }, [showResults, game, quiz, soundPlayed]);
 
   // Warn before leaving if game is active
+  const shouldWarnBeforeUnload = game?.status === "waiting" || game?.status === "active";
+
   useEffect(() => {
-    if (!game) return;
-    
-    const shouldWarn = game.status === "waiting" || game.status === "active";
-    
-    if (shouldWarn) {
-      const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-        e.preventDefault();
-        e.returnValue = "";
-        return "";
-      };
-      
-      window.addEventListener("beforeunload", handleBeforeUnload);
-      
-      return () => {
-        window.removeEventListener("beforeunload", handleBeforeUnload);
-      };
-    }
-  }, [game?.status]);
+    if (!shouldWarnBeforeUnload) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+      return "";
+    };
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [shouldWarnBeforeUnload]);
 
   if (gameLoading) {
     return <PageLoader label={t("play.loadingGame")} />;
@@ -396,7 +394,8 @@ export default function HostGame() {
                       setGameStartCountdown(3);
                     }}
                     disabled={players.length === 0 || startGameMutation.isPending || isStartingGame}
-                    className="w-full abraj-green hover:bg-green-600 text-white font-bold text-base py-2"
+                    variant="success"
+                    className="w-full font-bold text-base py-2"
                   >
                     <Play className="w-4 h-4 me-2" />
                     {isStartingGame ? t("host.startingInCountdown", { count: gameStartCountdown }) : t("host.startGame")}

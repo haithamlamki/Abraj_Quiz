@@ -111,7 +111,6 @@ export default function Signup() {
                 onChange={handleInputChange}
                 placeholder={t("auth.chooseUsernamePlaceholder")}
                 disabled={signupMutation.isPending}
-                className="shimmer"
                 data-testid="input-username"
               />
             </div>
@@ -125,7 +124,6 @@ export default function Signup() {
                 onChange={handleInputChange}
                 placeholder={t("auth.passwordMinPlaceholder")}
                 disabled={signupMutation.isPending}
-                className="shimmer"
                 data-testid="input-password"
               />
             </div>
@@ -139,7 +137,6 @@ export default function Signup() {
                 onChange={handleInputChange}
                 placeholder={t("auth.confirmPasswordPlaceholder")}
                 disabled={signupMutation.isPending}
-                className="shimmer"
                 data-testid="input-confirm-password"
               />
             </div>
