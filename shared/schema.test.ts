@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { questionSchema, insertQuizSchema } from "./schema";
+import { questionSchema, insertQuizSchema, insertBankQuestionSchema, normalizeTags } from "./schema";
 
 test("points defaults to standard for legacy questions", () => {
   const q = questionSchema.parse({ question: "Q", answers: ["a", "b", "c", "d"], correctAnswer: 1 });
@@ -45,4 +45,46 @@ test("questionSchema: poll type requires empty correctAnswers; quiz still requir
   assert.ok(questionSchema.safeParse({ ...base, type: "poll", answerType: "single", correctAnswers: [] }).success);
   assert.ok(!questionSchema.safeParse({ ...base, type: "poll", answerType: "single", correctAnswers: [0] }).success);
   assert.ok(!questionSchema.safeParse({ ...base, type: "quiz", answerType: "single", correctAnswers: [] }).success);
+});
+
+test("questionSchema round-trips sourceQuestionId (provenance survives Zod)", () => {
+  const q = {
+    question: "Q?",
+    type: "quiz",
+    answerType: "single",
+    answers: ["a", "b"],
+    correctAnswers: [0],
+    timeLimit: 20,
+    points: "standard",
+    sourceQuestionId: 42,
+  };
+  const parsed = questionSchema.parse(q) as any;
+  assert.equal(parsed.sourceQuestionId, 42);
+  // And absent stays absent (not null / not 0).
+  const { sourceQuestionId: _omit, ...bare } = q;
+  assert.equal((questionSchema.parse(bare) as any).sourceQuestionId, undefined);
+});
+
+test("normalizeTags trims, drops empties, collapses case-insensitive duplicates keeping first casing", () => {
+  assert.deepEqual(normalizeTags([" Safety ", "safety", "", "  ", "HR", "hr", "Fire"]), ["Safety", "HR", "Fire"]);
+});
+
+test("insertBankQuestionSchema: valid payload, tag caps, poll-with-correct rejected", () => {
+  const question = {
+    question: "Q?", type: "quiz", answerType: "single",
+    answers: ["a", "b"], correctAnswers: [0], timeLimit: 20, points: "standard",
+  };
+  const ok = insertBankQuestionSchema.parse({ question, subject: " Safety ", tags: ["fire", "Fire", " hr "] });
+  assert.equal(ok.subject, "Safety");
+  assert.deepEqual(ok.tags, ["fire", "hr"]);
+  // defaults
+  const min = insertBankQuestionSchema.parse({ question });
+  assert.equal(min.subject, undefined);
+  assert.deepEqual(min.tags, []);
+  // > 20 tags rejected
+  assert.throws(() => insertBankQuestionSchema.parse({ question, tags: Array.from({ length: 21 }, (_, i) => `t${i}`) }));
+  // tag longer than 50 chars rejected
+  assert.throws(() => insertBankQuestionSchema.parse({ question, tags: ["x".repeat(51)] }));
+  // poll with correctAnswers rejected (questionSchema reuse)
+  assert.throws(() => insertBankQuestionSchema.parse({ question: { ...question, type: "poll" } }));
 });

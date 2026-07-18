@@ -17,6 +17,7 @@ import { signToken, verifyToken } from "./token";
 import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
 import { getAllowedOrigins } from "./origins";
 import { registerAdminRoutes } from "./admin-routes";
+import { registerBankRoutes } from "./bank-routes";
 import { uploadQuizImage } from "./supabase-storage";
 import { captureError } from "./instrument";
 import { buildRateLimiters } from "./rate-limits";
@@ -668,6 +669,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to restore quiz" });
     }
   });
+
+  // Question Bank (per-tenant reusable question library). Routes live in
+  // server/bank-routes.ts with injected deps so they're testable sans DB.
+  registerBankRoutes(app, { storage, requireAuth, tctx });
 
   app.get("/api/quizzes/:id/insights", requireAuth, async (req, res) => {
     try {

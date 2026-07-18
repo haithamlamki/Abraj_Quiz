@@ -141,6 +141,27 @@ export const gameResponses = pgTable("game_responses", {
   pointsEarned: integer("points_earned").notNull(),
 });
 
+// Per-tenant reusable question library ("Question Bank"). `question` holds the
+// SAME canonical shape as quizzes.questions entries (validated by
+// questionSchema), so copying bank → quiz is a structural copy. Soft delete
+// mirrors quizzes.deleted_at: archived rows leave listings/picker but stay
+// resolvable so quiz provenance (sourceQuestionId) never dangles.
+export const bankQuestions = pgTable(
+  "bank_questions",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+    createdBy: integer("created_by").notNull(), // users.id — attribution only, not an edit gate
+    question: jsonb("question").notNull(),
+    subject: text("subject"),
+    tags: jsonb("tags").$type<string[]>().notNull().default([]),
+    deletedAt: timestamp("deleted_at"),
+    createdAt: timestamp("created_at").defaultNow(),
+    updatedAt: timestamp("updated_at").defaultNow(),
+  },
+  (t) => [index("bank_questions_tenant_idx").on(t.tenantId)],
+);
+
 export const sessions = pgTable("session", {
   sid: text("sid").primaryKey(),
   sess: jsonb("sess").notNull(),
@@ -240,6 +261,10 @@ const questionObjectSchema = z
       .default(20),
     // Score multiplier: standard = 1x, double = 2x on the time-based score.
     points: questionPointsSchema.default("standard"),
+    // Provenance: id of the bank_questions row this question was copied from
+    // ("add from bank"). Optional, additive, ignored by gameplay/scoring.
+    // Must be an explicit field — Zod strips unknown keys on parse.
+    sourceQuestionId: z.number().int().positive().optional(),
   })
   .superRefine((q, ctx) => {
     const n = q.answers.length;
@@ -292,6 +317,31 @@ export const questionSchema = z.preprocess(normalizeLegacyQuestion, questionObje
 
 export const quizQuestionsSchema = z.array(questionSchema);
 
+// Tag hygiene: trim, drop empties, collapse case-insensitive duplicates
+// (first casing wins). Applied by insertBankQuestionSchema so both storage
+// implementations always see normalized tags.
+export function normalizeTags(tags: string[]): string[] {
+  const seen = new Map<string, string>();
+  for (const raw of tags) {
+    const t = raw.trim();
+    if (!t) continue;
+    const key = t.toLowerCase();
+    if (!seen.has(key)) seen.set(key, t);
+  }
+  return Array.from(seen.values());
+}
+
+export const insertBankQuestionSchema = z.object({
+  question: questionSchema,
+  subject: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .transform((s) => (s ? s : undefined)),
+  tags: z.array(z.string().max(50)).max(20).default([]).transform(normalizeTags),
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -310,3 +360,6 @@ export type GamePlayer = typeof gamePlayers.$inferSelect;
 
 export type Question = z.infer<typeof questionSchema>;
 export type QuizQuestions = z.infer<typeof quizQuestionsSchema>;
+
+export type BankQuestion = typeof bankQuestions.$inferSelect;
+export type InsertBankQuestion = z.infer<typeof insertBankQuestionSchema>;

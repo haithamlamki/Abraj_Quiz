@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
 
-const { MemStorage, SYSTEM_CTX, requireTenantId, isTransientDbError } = await import("./storage");
+const { MemStorage, SYSTEM_CTX, requireTenantId, isTransientDbError, escapeLike } = await import("./storage");
 
 const T1 = { tenantId: 1 } as const;
 const T2 = { tenantId: 2 } as const;
@@ -307,4 +307,88 @@ test("quizHasLiveGame: true for waiting/active games, false for completed/none/w
 
   assert.equal(await s.quizHasLiveGame(T2, quiz.id), false);
   assert.equal(await s.quizHasLiveGame(T1, 999999), false);
+});
+
+const BANK_Q = {
+  question: "What is the boiling point of water?",
+  type: "quiz" as const,
+  answerType: "single" as const,
+  answers: ["90C", "100C"],
+  correctAnswers: [1],
+  timeLimit: 20,
+  points: "standard" as const,
+};
+
+test("bank questions: CRUD, tenant isolation, archive/restore", async () => {
+  const s = new MemStorage();
+  const created = await s.createBankQuestion(T1, { question: BANK_Q, subject: "Science", tags: ["water"], createdBy: 1 });
+  assert.equal(created.tenantId, 1);
+  assert.equal(created.createdBy, 1);
+  assert.equal(created.subject, "Science");
+  assert.equal(created.deletedAt, null);
+
+  // Tenant isolation on read.
+  assert.equal(await s.getBankQuestion(T2, created.id), undefined);
+  assert.equal((await s.getBankQuestion(T1, created.id))?.id, created.id);
+  assert.equal((await s.getBankQuestions(T2)).length, 0);
+
+  // Update stamps updatedAt and merges fields.
+  const before = created.updatedAt!.getTime();
+  await new Promise((r) => setTimeout(r, 5));
+  const updated = await s.updateBankQuestion(T1, created.id, { subject: "Physics" });
+  assert.equal(updated?.subject, "Physics");
+  assert.ok(updated!.updatedAt!.getTime() >= before);
+  // Cross-tenant update refused.
+  assert.equal(await s.updateBankQuestion(T2, created.id, { subject: "X" }), undefined);
+
+  // Archive: leaves listings, stays resolvable by id, restore reverses.
+  await s.archiveBankQuestion(T1, created.id);
+  assert.equal((await s.getBankQuestions(T1)).length, 0);
+  assert.equal((await s.getBankQuestions(T1, { archived: true })).length, 1);
+  assert.ok((await s.getBankQuestion(T1, created.id))?.deletedAt);
+  await s.restoreBankQuestion(T1, created.id);
+  assert.equal((await s.getBankQuestions(T1)).length, 1);
+});
+
+test("bank questions: search / subject / tags filters and newest-updated ordering", async () => {
+  const s = new MemStorage();
+  const a = await s.createBankQuestion(T1, { question: { ...BANK_Q, question: "Fire extinguisher types?" }, subject: "Safety", tags: ["fire", "ppe"], createdBy: 1 });
+  await new Promise((r) => setTimeout(r, 5));
+  const b = await s.createBankQuestion(T1, { question: { ...BANK_Q, question: "Boiling point of water?" }, subject: "Science", tags: ["water"], createdBy: 1 });
+
+  // Default order: newest updated first.
+  assert.deepEqual((await s.getBankQuestions(T1)).map((r) => r.id), [b.id, a.id]);
+  // Search is case-insensitive substring over question text.
+  assert.deepEqual((await s.getBankQuestions(T1, { search: "FIRE" })).map((r) => r.id), [a.id]);
+  // Subject exact match.
+  assert.deepEqual((await s.getBankQuestions(T1, { subject: "Science" })).map((r) => r.id), [b.id]);
+  // Tags: row must contain ALL requested tags.
+  assert.deepEqual((await s.getBankQuestions(T1, { tags: ["fire", "ppe"] })).map((r) => r.id), [a.id]);
+  assert.equal((await s.getBankQuestions(T1, { tags: ["fire", "water"] })).length, 0);
+});
+
+test("getBankSubjectsAndTags: distinct over live rows only, tenant-scoped", async () => {
+  const s = new MemStorage();
+  await s.createBankQuestion(T1, { question: BANK_Q, subject: "Safety", tags: ["fire", "ppe"], createdBy: 1 });
+  const dead = await s.createBankQuestion(T1, { question: BANK_Q, subject: "Ghost", tags: ["ghost"], createdBy: 1 });
+  await s.archiveBankQuestion(T1, dead.id);
+  await s.createBankQuestion(T1, { question: BANK_Q, subject: "Safety", tags: ["fire"], createdBy: 1 });
+  await s.createBankQuestion(T2, { question: BANK_Q, subject: "OtherTenant", tags: ["other"], createdBy: 9 });
+
+  const meta = await s.getBankSubjectsAndTags(T1);
+  assert.deepEqual(meta.subjects.sort(), ["Safety"]);
+  assert.deepEqual(meta.tags.sort(), ["fire", "ppe"]);
+});
+
+test("escapeLike escapes LIKE wildcards so ilike search matches literally", () => {
+  assert.equal(escapeLike("50%_done\\"), "50\\%\\_done\\\\");
+  assert.equal(escapeLike("plain text"), "plain text");
+});
+
+test("bank search treats % and _ as literal characters (MemStorage semantics)", async () => {
+  const s = new MemStorage();
+  await s.createBankQuestion(T1, { question: { ...BANK_Q, question: "Is 50% enough?" }, tags: [], createdBy: 1 });
+  await s.createBankQuestion(T1, { question: { ...BANK_Q, question: "Is half enough?" }, tags: [], createdBy: 1 });
+  assert.equal((await s.getBankQuestions(T1, { search: "50%" })).length, 1);
+  assert.equal((await s.getBankQuestions(T1, { search: "%" })).length, 1);
 });
