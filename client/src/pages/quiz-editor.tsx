@@ -443,25 +443,25 @@ export default function QuizEditor() {
                 </TabsList>
                 <TabsContent value="topics" className="space-y-2">
                   <Textarea value={aiTopics} onChange={(e) => setAiTopics(e.target.value)} placeholder={t("editor.ai.topicsPlaceholder")} rows={3} />
-                  <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("topics")}>
+                  <Button className="w-full" disabled={aiBusy} onClick={() => runGeneration("topics")}>
                     {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="text" className="space-y-2">
                   <Textarea value={aiText} onChange={(e) => setAiText(e.target.value)} placeholder={t("editor.ai.textPlaceholder")} rows={5} />
-                  <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("text")}>
+                  <Button className="w-full" disabled={aiBusy} onClick={() => runGeneration("text")}>
                     {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="url" className="space-y-2">
                   <Input value={aiUrl} onChange={(e) => setAiUrl(e.target.value)} placeholder={t("editor.ai.urlPlaceholder")} />
-                  <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("url")}>
+                  <Button className="w-full" disabled={aiBusy} onClick={() => runGeneration("url")}>
                     {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
                 <TabsContent value="pdf" className="space-y-2">
                   <Input type="file" accept="application/pdf" onChange={(e) => setAiFile(e.target.files?.[0] ?? null)} />
-                  <Button className="w-full abraj-primary text-white" disabled={aiBusy} onClick={() => runGeneration("pdf")}>
+                  <Button className="w-full" disabled={aiBusy} onClick={() => runGeneration("pdf")}>
                     {aiBusy ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null} {t("editor.ai.generateButton")}
                   </Button>
                 </TabsContent>
@@ -472,7 +472,7 @@ export default function QuizEditor() {
           <Button variant="outline" onClick={() => { setPreviewIdx(currentIndex); setPreviewOpen(true); }}>
             <Eye className="w-4 h-4 me-1" /> {t("editor.topbar.preview")}
           </Button>
-          <Button className="abraj-primary text-white" onClick={handleSave} disabled={saveMutation.isPending}>
+          <Button onClick={handleSave} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null}
             {isEditMode ? t("editor.topbar.saveChanges") : t("editor.topbar.save")}
           </Button>

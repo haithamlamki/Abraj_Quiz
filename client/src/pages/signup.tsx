@@ -145,7 +145,7 @@ export default function Signup() {
             </div>
             <Button
               type="submit"
-              className="w-full abraj-primary hover:abraj-secondary btn-glow"
+              className="w-full"
               disabled={signupMutation.isPending}
               data-testid="button-create-account"
             >
@@ -157,7 +157,7 @@ export default function Signup() {
               {t("auth.alreadyHaveAccount")}{" "}
               <button
                 onClick={() => setLocation("/login")}
-                className="text-abraj-primary hover:underline"
+                className="text-primary hover:underline"
               >
                 {t("auth.signInHere")}
               </button>

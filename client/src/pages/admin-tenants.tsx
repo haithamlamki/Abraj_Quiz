@@ -149,7 +149,7 @@ function TenantForm({
           <option value="suspended">suspended</option>
         </select>
       </label>
-      <Button className="abraj-primary text-white" disabled={submitDisabled} onClick={onSubmit}>{submitLabel}</Button>
+      <Button disabled={submitDisabled} onClick={onSubmit}>{submitLabel}</Button>
     </div>
   );
 }

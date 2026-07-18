@@ -72,7 +72,7 @@ export default function Leaderboard({ players, showPodium = false, title }: Lead
             {rest.map((player, index) => (
               <div key={player.name} className="flex items-center justify-between bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition-colors">
                 <div className="flex items-center space-x-3 rtl:space-x-reverse">
-                  <span className="w-8 h-8 abraj-primary text-white rounded-full flex items-center justify-center font-bold text-sm">
+                  <span className="w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm">
                     {index + 4}
                   </span>
                   <span className="font-medium">{player.name}</span>
@@ -98,7 +98,7 @@ export default function Leaderboard({ players, showPodium = false, title }: Lead
                 index === 0 ? 'abraj-green text-white' :
                 index === 1 ? 'bg-gray-400 text-white' :
                 index === 2 ? 'bg-orange-500 text-white' :
-                'abraj-primary text-white'
+                'bg-primary text-primary-foreground'
               }`}>
                 {index + 1}
               </div>

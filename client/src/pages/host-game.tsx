@@ -267,7 +267,7 @@ export default function HostGame() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">{t("play.gameNotFound")}</p>
-            <Button onClick={() => setLocation("/")} className="abraj-primary">
+            <Button onClick={() => setLocation("/")}>
               {t("play.goHome")}
             </Button>
           </CardContent>
@@ -365,7 +365,7 @@ export default function HostGame() {
                   <Button
                     variant="outline"
                     onClick={() => copyToClipboard(game.gamePin, t("host.gamePinLabel"))}
-                    className="w-full btn-glow py-2"
+                    className="w-full py-2"
                   >
                     <Copy className="w-4 h-4 me-2" />
                     {t("host.copyPinWithValue", { pin: game.gamePin })}
@@ -374,7 +374,7 @@ export default function HostGame() {
                   <Button
                     variant="outline"
                     onClick={() => copyToClipboard(`${window.location.origin}/join/${game.gamePin}`, t("host.joinLinkLabel"))}
-                    className="w-full btn-glow py-2"
+                    className="w-full py-2"
                   >
                     <Share2 className="w-4 h-4 me-2" />
                     {t("host.copyJoinLink")}
@@ -396,7 +396,7 @@ export default function HostGame() {
                       setGameStartCountdown(3);
                     }}
                     disabled={players.length === 0 || startGameMutation.isPending || isStartingGame}
-                    className="w-full abraj-green hover:bg-green-600 text-white font-bold text-base py-2 btn-glow shimmer"
+                    className="w-full abraj-green hover:bg-green-600 text-white font-bold text-base py-2"
                   >
                     <Play className="w-4 h-4 me-2" />
                     {isStartingGame ? t("host.startingInCountdown", { count: gameStartCountdown }) : t("host.startGame")}
@@ -489,7 +489,7 @@ export default function HostGame() {
                   playCountdownSound(3);
                 }}
                 disabled={nextQuestionMutation.isPending}
-                className="abraj-primary hover:abraj-secondary text-white px-6 py-2 font-bold btn-glow shimmer shadow-lg"
+                className="px-6 py-2 font-bold shadow-lg"
               >
                 <SkipForward className="w-4 h-4 me-2 rtl:rotate-180" />
                 {(game.currentQuestion || 0) + 1 >= questions.length ? t("host.finishGame") : t("host.nextQuestion")}

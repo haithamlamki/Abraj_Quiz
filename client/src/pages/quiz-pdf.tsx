@@ -78,7 +78,7 @@ export default function QuizPDF() {
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">Quiz not found</p>
-            <Button onClick={() => setLocation("/")} className="abraj-primary">
+            <Button onClick={() => setLocation("/")}>
               Go Home
             </Button>
           </CardContent>
@@ -261,7 +261,7 @@ export default function QuizPDF() {
               <Button
                 onClick={handleGeneratePDF}
                 disabled={isGenerating}
-                className="w-full h-12 text-lg font-bold abraj-primary hover:abraj-secondary"
+                className="w-full h-12 text-lg font-bold"
               >
                 {isGenerating ? (
                   <div className="flex items-center gap-2">

@@ -97,7 +97,7 @@ export default function Navigation() {
                 </span>
                 <Button
                   variant="outline"
-                  className="text-abraj-primary border-abraj-primary hover:abraj-primary hover:text-white font-medium"
+                  className="font-medium"
                   onClick={() => {
                     logout();
                     toast({
@@ -113,14 +113,14 @@ export default function Navigation() {
             ) : (
               <>
                 <Link href="/signup">
-                  <Button className="abraj-primary hover:abraj-secondary text-white font-medium">
+                  <Button className="font-medium">
                     {t("nav.signup")}
                   </Button>
                 </Link>
                 <Link href="/login">
                   <Button
                     variant="outline"
-                    className="text-abraj-primary border-abraj-primary hover:abraj-primary hover:text-white font-medium"
+                    className="font-medium"
                   >
                     {t("nav.login")}
                   </Button>

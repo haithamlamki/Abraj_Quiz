@@ -392,30 +392,6 @@ html[lang="ar"] body {
     content: none;
   }
 
-  /* Button Glow Effect */
-  .btn-glow {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-glow::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.3);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s, height 0.6s;
-  }
-
-  .btn-glow:hover::before {
-    width: 300px;
-    height: 300px;
-  }
-
   /* Floating Player Cards */
   .player-card-float {
     animation: float-slow 3s ease-in-out infinite;

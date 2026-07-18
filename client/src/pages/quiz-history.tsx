@@ -129,7 +129,7 @@ export default function QuizHistory() {
               action={
                 showArchived ? undefined : (
                   <Link href="/create">
-                    <Button className="abraj-primary hover:abraj-secondary text-white font-medium btn-glow">
+                    <Button className="font-medium">
                       {t("history.createFirstQuiz")}
                     </Button>
                   </Link>
@@ -200,7 +200,7 @@ export default function QuizHistory() {
                             </Button>
                           </Link>
                           <Link href={`/host-quiz/${quiz.id}`}>
-                            <Button size="sm" className="abraj-primary hover:abraj-secondary text-white flex-1 min-w-[80px] btn-glow">
+                            <Button size="sm" className="flex-1 min-w-[80px]">
                               {t("history.hostGame")}
                             </Button>
                           </Link>
@@ -244,7 +244,7 @@ export default function QuizHistory() {
 
           <div className="text-center mt-12">
             <Link href="/create">
-              <Button className="abraj-primary hover:abraj-secondary text-white font-medium px-8 py-3 btn-glow">
+              <Button className="font-medium px-8 py-3">
                 {t("history.createNewQuiz")}
               </Button>
             </Link>

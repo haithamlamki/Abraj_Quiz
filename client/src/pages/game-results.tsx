@@ -121,7 +121,7 @@ export default function GameResults() {
         <Card className="w-full max-w-md mx-4 card-3d-enhanced glass">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">{t("results.resultsNotFound")}</p>
-            <Button onClick={() => setLocation("/")} className="abraj-primary btn-glow">
+            <Button onClick={() => setLocation("/")}>
               {t("results.goHome")}
             </Button>
           </CardContent>
@@ -256,7 +256,7 @@ export default function GameResults() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
-              <Button onClick={downloadPDF} className="abraj-primary btn-glow py-2">
+              <Button onClick={downloadPDF} className="py-2">
                 <Download className="me-2 h-4 w-4" />
                 {t("results.downloadPdfReport")}
               </Button>
