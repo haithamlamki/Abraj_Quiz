@@ -178,9 +178,13 @@ export default function QuizEditor() {
   const addFromBank = (picked: Question[]) => {
     if (!picked.length) return;
     setQuiz((prev) => {
-      // If the quiz still only has the initial blank question, replace it.
-      const onlyBlank = prev.questions.length === 1 && !prev.questions[0].question.trim()
-        && prev.questions[0].answers.every((a) => !a.trim());
+      // Replace the starter card only if it is truly pristine — no text, no
+      // answers, no uploaded image, default type. Otherwise append, never destroy.
+      const onlyBlank = prev.questions.length === 1
+        && !prev.questions[0].question.trim()
+        && prev.questions[0].answers.every((a) => !a.trim())
+        && !prev.questions[0].imageUrl
+        && prev.questions[0].type === "quiz";
       const questions = onlyBlank ? picked : [...prev.questions, ...picked];
       return { ...prev, questions };
     });
