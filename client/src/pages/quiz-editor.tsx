@@ -5,6 +5,7 @@ import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -310,6 +311,7 @@ export default function QuizEditor() {
   const [aiText, setAiText] = useState("");
   const [aiUrl, setAiUrl] = useState("");
   const [aiFile, setAiFile] = useState<File | null>(null);
+  const [aiSaveToBank, setAiSaveToBank] = useState(true);
 
   const applyGenerated = (generated: any) => {
     const questions = normalizeGeneratedQuestions(generated?.questions);
@@ -323,6 +325,21 @@ export default function QuizEditor() {
       questions,
     }));
     setCurrentIndex(0);
+
+    if (aiSaveToBank && Array.isArray(generated.questions) && generated.questions.length > 0) {
+      const items = normalizeGeneratedQuestions(generated.questions).map((q) => ({
+        question: q,
+        subject: generated.subject || undefined,
+        tags: Array.isArray(generated.tags) ? generated.tags : [],
+      }));
+      if (items.length > 0) {
+        apiRequest("POST", "/api/bank/questions/bulk", { items })
+          .then((res) => res.json())
+          .then((data) => toast({ title: t("editor.ai.savedToBankToast", { count: data.created ?? items.length }) }))
+          .catch(() => toast({ title: t("editor.ai.saveToBankFailed"), variant: "destructive" }));
+      }
+    }
+
     setAiOpen(false);
     toast({ title: t("editor.toasts.quizGeneratedTitle"), description: t("editor.toasts.quizGeneratedDescription", { count: questions.length }) });
   };
@@ -413,6 +430,10 @@ export default function QuizEditor() {
                   </Button>
                 </TabsContent>
               </Tabs>
+              <label className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+                <Checkbox checked={aiSaveToBank} onCheckedChange={(v) => setAiSaveToBank(v === true)} />
+                {t("editor.ai.saveToBank")}
+              </label>
               <p className="text-xs text-gray-400">{t("editor.ai.footerNote")}</p>
             </DialogContent>
           </Dialog>

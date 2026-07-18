@@ -535,7 +535,15 @@
       "urlPlaceholder": "https://example.com/المقالة",
       "generateButton": "توليد",
       "footerNote": "ستحل الأسئلة المولّدة محل الأسئلة الحالية — راجعها وعدّلها قبل الحفظ.",
-      "generatedQuizDefaultTitle": "اختبار مولّد"
+      "generatedQuizDefaultTitle": "اختبار مولّد",
+      "saveToBank": "احفظ هذه الأسئلة أيضًا في بنك الأسئلة",
+      "savedToBankToast_zero": "تم حفظ {{count}} سؤال في البنك",
+      "savedToBankToast_one": "تم حفظ سؤال واحد في البنك",
+      "savedToBankToast_two": "تم حفظ سؤالين في البنك",
+      "savedToBankToast_few": "تم حفظ {{count}} أسئلة في البنك",
+      "savedToBankToast_many": "تم حفظ {{count}} سؤالًا في البنك",
+      "savedToBankToast_other": "تم حفظ {{count}} سؤال في البنك",
+      "saveToBankFailed": "تعذّر الحفظ في بنك الأسئلة"
     },
     "toasts": {
       "authRequiredTitle": "التسجيل مطلوب",
