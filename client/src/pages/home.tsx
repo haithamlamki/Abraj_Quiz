@@ -190,7 +190,7 @@ export default function Home() {
                         placeholder={t("home.gamePinPlaceholder")}
                         value={gamePin}
                         onChange={(e) => setGamePin(e.target.value)}
-                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d shimmer"
+                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d"
                         onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                       />
                       <Dialog open={showScanner} onOpenChange={setShowScanner}>
@@ -260,7 +260,7 @@ export default function Home() {
                         placeholder={isAuthenticated && user ? user.username : t("home.playerNamePlaceholder")}
                         value={playerName}
                         onChange={(e) => setPlayerName(e.target.value)}
-                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d shimmer"
+                        className="flex-1 px-4 py-3 rounded-xl text-lg font-medium text-center input-3d"
                         maxLength={20}
                         onKeyPress={(e) => e.key === 'Enter' && handleJoinGame()}
                       />
