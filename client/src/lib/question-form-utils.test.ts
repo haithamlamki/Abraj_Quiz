@@ -68,3 +68,12 @@ test("validateQuestion returns the first violated rule's key, null when valid", 
   const poll = { ...withType(valid, "poll"), question: "P?" };
   assert.equal(validateQuestion(poll), null);
 });
+
+test("sourceQuestionId provenance survives type switches (incl. true_false)", () => {
+  const q = { ...blankQuestion(), question: "Q?", sourceQuestionId: 42 };
+  assert.equal(withType(q, "true_false").sourceQuestionId, 42);
+  assert.equal(withType(withType(q, "true_false"), "quiz").sourceQuestionId, 42);
+  assert.equal(withType(q, "poll").sourceQuestionId, 42);
+  // Absent stays absent — no undefined-to-null drift.
+  assert.equal(withType(blankQuestion(), "true_false").sourceQuestionId, undefined);
+});

@@ -22,6 +22,9 @@ export function trueFalseQuestion(existing?: Partial<Question>): Question {
     correctAnswers: [0],
     timeLimit: existing?.timeLimit ?? 20,
     points: existing?.points ?? "standard",
+    // Preserve bank provenance across type switches (old patchQuestion-merge
+    // behavior); dropping it would sever the copied-from-bank link.
+    sourceQuestionId: existing?.sourceQuestionId,
   };
 }
 
