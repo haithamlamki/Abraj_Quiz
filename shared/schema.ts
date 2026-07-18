@@ -104,6 +104,13 @@ export const games = pgTable("games", {
   // reintroduce reads/writes here — that would recreate the dual-source
   // inconsistency 0006 removed.
   players: jsonb("players").default([]),
+  // Frozen copy of the quiz's questions captured ONCE at first runtime-room
+  // hydration — the exact set this game's players saw. Insights attribute
+  // historical responses against THIS, not the live (editable) quiz row, and
+  // room rehydration after a restart replays it so a mid-game quiz edit can't
+  // swap questions under an in-flight game. NULL for games played before
+  // migration 0010 (insights fall back to current-quiz index attribution).
+  questionsSnapshot: jsonb("questions_snapshot").$type<Question[] | null>(),
   createdAt: timestamp("created_at").defaultNow(),
 });
 

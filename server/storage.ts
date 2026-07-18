@@ -1120,6 +1120,7 @@ export class MemStorage implements IStorage {
       tenantId: requireTenantId(ctx),
       currentQuestion: 0,
       players: [],
+      questionsSnapshot: null,
       createdAt: new Date()
     };
     this.games.set(id, game);
