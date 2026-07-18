@@ -385,7 +385,14 @@
     "emptyTitle": "بنك الأسئلة فارغ",
     "emptyDescription": "احفظ أسئلة من أي اختبار، أو أنشئ سؤالًا هنا لإعادة استخدامه لاحقًا.",
     "emptyArchivedTitle": "لا توجد أسئلة مؤرشفة",
-    "authRequiredTitle": "يرجى تسجيل الدخول لاستخدام بنك الأسئلة"
+    "authRequiredTitle": "يرجى تسجيل الدخول لاستخدام بنك الأسئلة",
+    "difficultyLabel": "الصعوبة",
+    "difficultyNone": "بدون",
+    "difficultyEasy": "سهل",
+    "difficultyMedium": "متوسط",
+    "difficultyHard": "صعب",
+    "explanationLabel": "التفسير",
+    "explanationPlaceholder": "سبب صحة الإجابة الصحيحة (اختياري)"
   },
   "insights": {
     "loading": "جارٍ تحميل التحليلات…",

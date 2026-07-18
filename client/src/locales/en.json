@@ -337,7 +337,14 @@
     "emptyTitle": "Your bank is empty",
     "emptyDescription": "Save questions from any quiz, or create one here to reuse later.",
     "emptyArchivedTitle": "No archived questions",
-    "authRequiredTitle": "Please log in to use the Question Bank"
+    "authRequiredTitle": "Please log in to use the Question Bank",
+    "difficultyLabel": "Difficulty",
+    "difficultyNone": "None",
+    "difficultyEasy": "Easy",
+    "difficultyMedium": "Medium",
+    "difficultyHard": "Hard",
+    "explanationLabel": "Explanation",
+    "explanationPlaceholder": "Why the correct answer is right (optional)"
   },
   "insights": {
     "loading": "Loading insights…",

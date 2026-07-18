@@ -131,6 +131,34 @@ export function QuestionForm({ value, onChange, uploading, onUploadImage }: Ques
         )}
       </div>
 
+      <div className="grid grid-cols-1 gap-3">
+        <div>
+          <label className="text-xs text-gray-500">{t("bank.difficultyLabel")}</label>
+          <Select
+            value={value.difficulty ?? "none"}
+            onValueChange={(v) => onChange({ ...value, difficulty: v === "none" ? undefined : (v as "easy" | "medium" | "hard") })}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">{t("bank.difficultyNone")}</SelectItem>
+              <SelectItem value="easy">{t("bank.difficultyEasy")}</SelectItem>
+              <SelectItem value="medium">{t("bank.difficultyMedium")}</SelectItem>
+              <SelectItem value="hard">{t("bank.difficultyHard")}</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-500">{t("bank.explanationLabel")}</label>
+          <Textarea
+            value={value.explanation ?? ""}
+            onChange={(e) => onChange({ ...value, explanation: e.target.value ? e.target.value : undefined })}
+            placeholder={t("bank.explanationPlaceholder")}
+            rows={2}
+            maxLength={500}
+          />
+        </div>
+      </div>
+
       {onUploadImage && (
         <div>
           {value.imageUrl ? (

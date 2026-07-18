@@ -149,7 +149,12 @@ export default function QuestionBank() {
               <Card key={row.id}>
                 <CardHeader className="pb-2">
                   <div className="flex items-start justify-between gap-2">
-                    <Badge variant="secondary">{t(typeBadgeKey(row))}</Badge>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <Badge variant="secondary">{t(typeBadgeKey(row))}</Badge>
+                      {row.question.difficulty && (
+                        <Badge variant="outline">{t(`bank.difficulty${row.question.difficulty.charAt(0).toUpperCase() + row.question.difficulty.slice(1)}`)}</Badge>
+                      )}
+                    </div>
                     <span className="text-xs text-gray-500">{formatQuizDate(row.updatedAt, i18n.language)}</span>
                   </div>
                   <CardTitle className="text-base line-clamp-2">{row.question.question}</CardTitle>
