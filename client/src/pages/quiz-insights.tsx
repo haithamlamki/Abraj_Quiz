@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
+import { ErrorState } from "@/components/error-state";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, LabelList, ResponsiveContainer,
 } from "recharts";
@@ -34,7 +35,7 @@ export default function QuizInsightsPage() {
   const { t, i18n } = useTranslation();
   const [, params] = useRoute("/quiz-insights/:id");
   const quizId = params?.id;
-  const { data, isLoading, isError } = useQuery<QuizInsights>({
+  const { data, isLoading, isError, refetch } = useQuery<QuizInsights>({
     queryKey: [`/api/quizzes/${quizId}/insights`],
     enabled: !!quizId,
   });
@@ -49,10 +50,7 @@ export default function QuizInsightsPage() {
   if (isError || !data) {
     return (
       <div className="min-h-screen bg-gray-50">
-        <div className="flex flex-col items-center justify-center py-24 gap-4">
-          <p className="text-gray-600">{t("insights.loadError")}</p>
-          <Link href="/my-quizzes"><Button variant="outline"><ArrowLeft className="w-4 h-4 me-1 rtl:rotate-180" />{t("insights.backToMyQuizzes")}</Button></Link>
-        </div>
+        <ErrorState description={t("insights.loadError")} onRetry={() => refetch()} />
       </div>
     );
   }
