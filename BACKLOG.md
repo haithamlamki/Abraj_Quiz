@@ -59,6 +59,10 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
 - [ ] Whitelist Vercel preview deployments in `CLIENT_ORIGIN` (currently only production URLs).
 - [ ] Add length limits on quiz `title` / `description` / `answers` at the API boundary — DB columns are unbounded `TEXT`, no Zod `.max()` clamp today. A pathological payload could blow up later renders.
 
+## Accessibility — contrast (Wave 3)
+
+- [ ] **Per-tenant brand contrast**: `--primary`/`--ring` follow each tenant's `branding.colors.primary` (set at runtime by tenant.tsx). White is the primary-foreground, so a tenant's brand must be ≥3:1 vs white (UI/large text) — ideally ≥4.5:1. Wave 3 fixed the static default; audit the Abraj + PDO tenant brand colors in the DB and, if any fail, update tenant config (or add a runtime luminance-based foreground). Full AA-normal (4.5:1) for brand-on-white is a follow-up.
+
 ## Dependency security (surfaced by Wave 0 final review, 2026-07-18)
 
 - [ ] **Production-dependency advisories**: `npm audit --omit=dev` reports 10 vulnerabilities (1 critical, 5 high) in the production tree, including `ws` (GHSA-96hv-2xvq-fx4p). These pre-date Wave 0 (which added only devDependencies and bumped no prod dep). Triage + upgrade the affected prod deps in a dedicated security PR (fits Wave 9 / security pass). Until then, do NOT describe `npm audit --omit=dev` as "clean" in any PR.
