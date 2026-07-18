@@ -5,7 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { useTenant } from "@/lib/tenant";
 import { applyLanguage } from "@/lib/language";
-import { PlusCircle, BookOpen, Gamepad2 } from "lucide-react";
+import { PlusCircle, BookOpen, Gamepad2, Library } from "lucide-react";
 import abrajLogo from "@assets/ABRJ.OM - Copy_1753085299475.png";
 
 export default function Navigation() {
@@ -57,16 +57,28 @@ export default function Navigation() {
                 </span>
               </Link>
               {isAuthenticated && (
-                <Link href="/my-quizzes">
-                  <span className={`px-4 py-3 rounded-md text-lg font-medium transition-colors cursor-pointer flex items-center space-x-2 ${
-                    location === '/my-quizzes'
-                      ? 'text-abraj-primary bg-teal-50'
-                      : 'text-gray-700 hover:text-abraj-primary'
-                  }`}>
-                    <BookOpen className="w-8 h-8" />
-                    <span>{t("nav.myQuizzes")}</span>
-                  </span>
-                </Link>
+                <>
+                  <Link href="/my-quizzes">
+                    <span className={`px-4 py-3 rounded-md text-lg font-medium transition-colors cursor-pointer flex items-center space-x-2 ${
+                      location === '/my-quizzes'
+                        ? 'text-abraj-primary bg-teal-50'
+                        : 'text-gray-700 hover:text-abraj-primary'
+                    }`}>
+                      <BookOpen className="w-8 h-8" />
+                      <span>{t("nav.myQuizzes")}</span>
+                    </span>
+                  </Link>
+                  <Link href="/question-bank">
+                    <span className={`px-4 py-3 rounded-md text-lg font-medium transition-colors cursor-pointer flex items-center space-x-2 ${
+                      location === '/question-bank'
+                        ? 'text-abraj-primary bg-teal-50'
+                        : 'text-gray-700 hover:text-abraj-primary'
+                    }`}>
+                      <Library className="w-8 h-8" />
+                      <span>{t("nav.questionBank")}</span>
+                    </span>
+                  </Link>
+                </>
               )}
               <Link href="/join">
                 <span className={`px-4 py-3 rounded-md text-lg font-medium transition-colors cursor-pointer flex items-center space-x-2 ${

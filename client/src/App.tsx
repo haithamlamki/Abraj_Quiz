@@ -22,6 +22,7 @@ const GameResults = lazy(() => import("@/pages/game-results"));
 const Login = lazy(() => import("@/pages/login"));
 const Signup = lazy(() => import("@/pages/signup"));
 const QuizHistory = lazy(() => import("@/pages/quiz-history"));
+const QuestionBank = lazy(() => import("@/pages/question-bank"));
 const HostQuizSetup = lazy(() => import("./pages/host-quiz-setup"));
 const QuizPDF = lazy(() => import("@/pages/quiz-pdf"));
 const QuizInsights = lazy(() => import("@/pages/quiz-insights"));
@@ -37,6 +38,7 @@ function Router() {
         <Route path="/signup" component={Signup} />
         <Route path="/create" component={QuizEditor} />
         <Route path="/my-quizzes" component={QuizHistory} />
+        <Route path="/question-bank" component={QuestionBank} />
         <Route path="/quiz-insights/:id" component={QuizInsights} />
         <Route path="/host/:pin" component={HostGame} />
         <Route path="/host-quiz/:quizId" component={HostQuizSetup} />
