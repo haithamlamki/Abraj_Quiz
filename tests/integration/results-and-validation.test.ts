@@ -31,10 +31,10 @@ describe("GET /api/games/:pin/results — correctAnswer is not leaked mid-game",
     // below; it is closed once in that block's afterAll (the file's last hook).
   });
 
-  it("strips correctAnswer while the game is still in progress, and includes it once completed", async () => {
+  it("strips answer keys while the game is still in progress, and includes correctAnswers once completed", async () => {
     const { agent, prefix } = await createTestUser("resultsleak");
     usedPrefixes.push(prefix);
-    const quiz = await createTestQuiz(agent); // 3 questions with correctAnswer
+    const quiz = await createTestQuiz(agent); // 3 questions (stored in canonical correctAnswers[] shape)
     const { pin } = await createTestGame(agent, quiz.id);
 
     // While the game is in the lobby (status "waiting"), any caller could poll
@@ -45,7 +45,9 @@ describe("GET /api/games/:pin/results — correctAnswer is not leaked mid-game",
     const waitingQuestions = waitingBody.game?.quiz?.questions ?? [];
     expect(waitingQuestions.length).toBeGreaterThan(0);
     for (const q of waitingQuestions) {
+      // Both the legacy field and the canonical correct-set must be stripped.
       expect(q.correctAnswer).toBeUndefined();
+      expect(q.correctAnswers).toBeUndefined();
     }
 
     // Host drives the game to completion over HTTP.
@@ -67,7 +69,9 @@ describe("GET /api/games/:pin/results — correctAnswer is not leaked mid-game",
     const doneQuestions = doneBody.game?.quiz?.questions ?? [];
     expect(doneQuestions.length).toBeGreaterThan(0);
     for (const q of doneQuestions) {
-      expect(typeof q.correctAnswer).toBe("number");
+      // Canonical shape: the completed-game review exposes correctAnswers[].
+      expect(Array.isArray(q.correctAnswers)).toBe(true);
+      expect(typeof q.correctAnswers[0]).toBe("number");
     }
   });
 });

@@ -40,7 +40,9 @@ describe("GET /api/quizzes/:id — correctAnswer disclosure", () => {
     expect(Array.isArray(body.questions)).toBe(true);
     expect(body.questions.length).toBeGreaterThan(0);
     for (const question of body.questions) {
+      // Both the legacy field and the canonical correct-set must be stripped.
       expect(question.correctAnswer).toBeUndefined();
+      expect(question.correctAnswers).toBeUndefined();
     }
   });
 
@@ -57,10 +59,11 @@ describe("GET /api/quizzes/:id — correctAnswer disclosure", () => {
     const body = await res.json();
     for (const question of body.questions) {
       expect(question.correctAnswer).toBeUndefined();
+      expect(question.correctAnswers).toBeUndefined();
     }
   });
 
-  it("DOES include correctAnswer when the creator fetches their own quiz", async () => {
+  it("DOES include correctAnswers when the creator fetches their own quiz", async () => {
     const { agent, prefix } = await createTestUser("authleak");
     usedPrefixes.push(prefix);
     const quiz = await createTestQuiz(agent);
@@ -70,7 +73,13 @@ describe("GET /api/quizzes/:id — correctAnswer disclosure", () => {
     const body = await res.json();
     expect(body.questions.length).toBeGreaterThan(0);
     for (const question of body.questions) {
-      expect(typeof question.correctAnswer).toBe("number");
+      // Canonical shape (normalized on write): correctAnswers[] carries the
+      // key; the legacy correctAnswer field no longer exists on stored quizzes.
+      expect(Array.isArray(question.correctAnswers)).toBe(true);
+      expect(question.correctAnswers.length).toBeGreaterThan(0);
+      for (const idx of question.correctAnswers) {
+        expect(typeof idx).toBe("number");
+      }
     }
   });
 });

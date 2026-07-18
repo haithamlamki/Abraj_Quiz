@@ -88,6 +88,9 @@ export async function createTestUser(
   };
 }
 
+// REQUEST payload shape — deliberately the LEGACY single-correct form. The
+// server normalizes questions on write (Kahoot revamp), so posting this shape
+// also exercises the legacy-normalization path.
 export interface TestQuestion {
   question: string;
   answers: string[];
@@ -95,10 +98,21 @@ export interface TestQuestion {
   timeLimit: number;
 }
 
+// RESPONSE shape — the canonical form the API returns after normalization:
+// correctAnswers[] replaces the legacy correctAnswer, plus type/answerType.
+export interface CanonicalTestQuestion {
+  question: string;
+  answers: string[];
+  correctAnswers: number[];
+  timeLimit: number;
+  type: string;
+  answerType: string;
+}
+
 export interface TestQuiz {
   id: number;
   title: string;
-  questions: TestQuestion[];
+  questions: CanonicalTestQuestion[];
   createdBy: number;
   isPublic: boolean;
 }

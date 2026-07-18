@@ -163,11 +163,12 @@ describe("GET /api/quizzes/:id — private quizzes are owner-only", () => {
     usedPrefixes.push(ownerPrefix);
     const priv = await createTestQuiz(owner, { isPublic: false });
 
-    // Owner can read their own private quiz (with correctAnswer).
+    // Owner can read their own private quiz (with the canonical correctAnswers).
     const ownerRes = await owner.fetch(`/api/quizzes/${priv.id}`);
     expect(ownerRes.status).toBe(200);
     const ownerBody = await ownerRes.json();
-    expect(typeof ownerBody.questions[0].correctAnswer).toBe("number");
+    expect(Array.isArray(ownerBody.questions[0].correctAnswers)).toBe(true);
+    expect(typeof ownerBody.questions[0].correctAnswers[0]).toBe("number");
 
     // A different authenticated user in the same tenant gets 404, not the quiz.
     const { agent: other, prefix: otherPrefix } = await createTestUser("privother");
@@ -179,12 +180,13 @@ describe("GET /api/quizzes/:id — private quizzes are owner-only", () => {
     const anonRes = await fetch(`${BASE_URL}/api/quizzes/${priv.id}`, { headers: { origin: ORIGIN } });
     expect(anonRes.status).toBe(404);
 
-    // A public quiz remains readable by others (correctAnswer stripped).
+    // A public quiz remains readable by others (both answer-key fields stripped).
     const pub = await createTestQuiz(owner, { isPublic: true });
     const pubRes = await other.fetch(`/api/quizzes/${pub.id}`);
     expect(pubRes.status).toBe(200);
     const pubBody = await pubRes.json();
     expect(pubBody.questions[0].correctAnswer).toBeUndefined();
+    expect(pubBody.questions[0].correctAnswers).toBeUndefined();
   });
 
   it("prevents a non-owner from hosting (creating a game from) a private quiz", async () => {
