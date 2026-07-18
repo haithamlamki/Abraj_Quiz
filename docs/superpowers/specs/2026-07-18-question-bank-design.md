@@ -88,7 +88,7 @@ Filtering in SQL for Drizzle (ILIKE, `tags @> jsonb`, subject equality), in JS f
 
 ### `QuestionForm` extraction (the one targeted refactor)
 
-Extract the per-question form UI from `quiz-editor.tsx` (~766 lines) into a shared component consumed by both the editor and the bank dialog. Behavior-preserving; keeps the two surfaces in sync by construction.
+Extract the shared question-editing **logic** from `quiz-editor.tsx` (~766 lines) — factories, answer/type/correct-mark mutators, validation — into `client/src/lib/question-form-utils.ts`, consumed by both the editor and a new compact dialog-friendly `QuestionForm` component. (Refined from "extract the form UI": the editor's question UI is a full-canvas stage tied to editor layout state; moving that JSX into a dialog would be high-risk. Logic-level sharing keeps the two surfaces in sync by construction with a behavior-preserving editor diff.)
 
 ### Editor integration (`quiz-editor.tsx`)
 
