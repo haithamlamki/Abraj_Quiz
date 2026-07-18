@@ -555,3 +555,50 @@ test("poll close broadcasts correctAnswer -1, empty correctAnswers, and a normal
   // validate against the shared WS protocol schema (correctAnswer: -1 for polls).
   assert.doesNotThrow(() => wsServerMessageSchema.parse(pollClosed));
 });
+
+test("room hydration freezes a questions snapshot; rehydration replays it after a quiz edit", async () => {
+  const [{ GameRoomManager }, { MemStorage }] = await Promise.all([
+    import("./game-room-manager"),
+    import("./storage"),
+  ]);
+  const storage = new MemStorage();
+  await storage.createGame({ tenantId: 1 }, { quizId: 1, gamePin: "778899", hostId: 1, status: "waiting" });
+  await storage.joinGame({ tenantId: 1 }, "778899", "Alice");
+
+  // First hydration persists the snapshot exactly once.
+  const manager1 = new GameRoomManager(storage);
+  await manager1.registerClient({ ws: new FakeSocket() as any, gamePin: "778899", userId: 1, wantsHostRole: true });
+  const gameAfter = await storage.getGameByPin({ tenantId: 1 }, "778899");
+  assert.ok(Array.isArray(gameAfter!.questionsSnapshot));
+  const snapshot = gameAfter!.questionsSnapshot as any[];
+  assert.ok(snapshot.length > 0);
+  const originalFirstText = snapshot[0].question;
+
+  // Edit the quiz out from under the game.
+  await storage.updateQuiz({ tenantId: 1 }, 1, {
+    questions: [{
+      question: "EDITED-QUESTION", type: "quiz", answerType: "single",
+      answers: ["a", "b"], correctAnswers: [0], timeLimit: 10, points: "standard",
+    }] as any,
+  });
+
+  // Simulate a restart: a fresh manager (empty room map) rehydrates from storage.
+  const manager2 = new GameRoomManager(storage);
+  const hostSocket = new FakeSocket();
+  // The WS `question_started` broadcast never carries question text (see
+  // shared/ws-protocol.ts) — only questionIndex/timing. So verify the frozen
+  // snapshot via the RuntimeRoom that registerClient hands back, which carries
+  // `room.questions: Question[]` (the exact set the game engine will play).
+  const { room } = await manager2.registerClient({ ws: hostSocket as any, gamePin: "778899", userId: 1, wantsHostRole: true });
+  assert.equal(room.questions[0].question, originalFirstText);
+  assert.notEqual(room.questions[0].question, "EDITED-QUESTION");
+
+  await manager2.startGame("778899", 1);
+  const started = hostSocket.sent.find((m: any) => m.type === "question_started");
+  assert.ok(started, "expected a question_started broadcast");
+  assert.equal(started.questionIndex, 0);
+
+  // And the stored snapshot was not overwritten by the second hydration.
+  const gameFinal = await storage.getGameByPin({ tenantId: 1 }, "778899");
+  assert.equal((gameFinal!.questionsSnapshot as any[])[0].question, originalFirstText);
+});

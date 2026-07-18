@@ -368,15 +368,26 @@ export class GameRoomManager {
       throw new RoomError("ROOM_NOT_FOUND", "Game not found", 404);
     }
 
-    const quiz = await this.storage.getQuiz(SYSTEM_CTX, game.quizId);
-    if (!quiz || !Array.isArray(quiz.questions)) {
-      throw new RoomError("ROOM_NOT_FOUND", "Quiz not found", 404);
+    // Prefer the frozen per-game snapshot (the questions this game's players
+    // actually saw) over the live quiz row: a quiz edit combined with a
+    // server restart must not swap questions under an in-flight game, and
+    // insights attribute historical responses against this exact set.
+    let normalizedQuestions: Question[];
+    if (Array.isArray(game.questionsSnapshot) && game.questionsSnapshot.length > 0) {
+      normalizedQuestions = quizQuestionsSchema.parse(game.questionsSnapshot);
+    } else {
+      const quiz = await this.storage.getQuiz(SYSTEM_CTX, game.quizId);
+      if (!quiz || !Array.isArray(quiz.questions)) {
+        throw new RoomError("ROOM_NOT_FOUND", "Quiz not found", 404);
+      }
+      // Normalize stored questions to the canonical shape (correctAnswers /
+      // type / answerType). Legacy quizzes hold only `correctAnswer` — the
+      // engine's scoring reads `correctAnswers`, so this must run before play.
+      normalizedQuestions = quizQuestionsSchema.parse(quiz.questions);
+      // Freeze the played set ONCE. One write per game at hydration — never
+      // on timer ticks (hard rule).
+      await this.storage.updateGame(SYSTEM_CTX, game.id, { questionsSnapshot: normalizedQuestions });
     }
-
-    // Normalize stored questions to the canonical shape (correctAnswers / type /
-    // answerType). Legacy quizzes hold only `correctAnswer` — the engine's
-    // scoring reads `correctAnswers`, so this must run before play.
-    const normalizedQuestions = quizQuestionsSchema.parse(quiz.questions);
 
     // Roster is sourced from the authoritative game_players table (SYSTEM_CTX —
     // the engine keys rooms by globally-unique pin), not the legacy JSON array.
