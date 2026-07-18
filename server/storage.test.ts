@@ -290,6 +290,64 @@ test("getQuizInsights: quiz with zero completed games returns zeroed shape with 
   assert.deepEqual(ins!.recentGames, []);
 });
 
+const SNAP_Q = (text: string, correct: number): any => ({
+  question: text,
+  type: "quiz",
+  answerType: "single",
+  answers: ["1", "2"],
+  correctAnswers: [correct],
+  timeLimit: 10,
+  points: "standard",
+});
+
+test("insights: snapshot attribution survives quiz reorder/edit/delete", async () => {
+  const s = new MemStorage();
+  const quiz = await s.createQuiz(T1, {
+    title: "Snap", description: "", background: "classroom", isPublic: true, createdBy: 1,
+    questions: [SNAP_Q("Q-A", 0), SNAP_Q("Q-B", 1)],
+  });
+  const game = await s.createGame(T1, { quizId: quiz.id, gamePin: "424242", hostId: 1, status: "waiting" });
+  // Freeze the played set (what room hydration does) and complete the game.
+  await s.updateGame(T1, game.id, { questionsSnapshot: quiz.questions as any, status: "completed" });
+  // One response per question: Q-A answered correctly, Q-B incorrectly.
+  await s.createGameResponses(T1, [
+    { tenantId: 1, gameId: game.id, playerName: "P", questionIndex: 0, selectedAnswer: 0, responseTime: 1000, isCorrect: true, pointsEarned: 100 },
+    { tenantId: 1, gameId: game.id, playerName: "P", questionIndex: 1, selectedAnswer: 0, responseTime: 2000, isCorrect: false, pointsEarned: 0 },
+  ]);
+  // Now REORDER + EDIT the quiz: B moves first, A's text is edited away, new C added.
+  await s.updateQuiz(T1, quiz.id, { questions: [SNAP_Q("Q-B", 1), SNAP_Q("Q-C", 0)] });
+
+  const insights = await s.getQuizInsights(T1, quiz.id);
+  const rows = insights!.questions;
+  // Current-quiz order first (Q-B, Q-C), then the historical Q-A row.
+  assert.deepEqual(rows.map((r) => r.question), ["Q-B", "Q-C", "Q-A"]);
+  const byText = Object.fromEntries(rows.map((r) => [r.question, r]));
+  assert.equal(byText["Q-B"].totalResponses, 1);   // via snapshot index 1 — did NOT follow the reorder
+  assert.equal(byText["Q-B"].correctRate, 0);
+  assert.equal(byText["Q-A"].totalResponses, 1);   // edited-away text keeps its history
+  assert.equal(byText["Q-A"].correctRate, 1);
+  assert.equal(byText["Q-A"].avgResponseMs, 1000);
+  assert.equal(byText["Q-C"].totalResponses, 0);   // new question, no plays yet
+});
+
+test("insights: NULL-snapshot legacy game falls back to current-index attribution", async () => {
+  const s = new MemStorage();
+  const quiz = await s.createQuiz(T1, {
+    title: "Legacy", description: "", background: "classroom", isPublic: true, createdBy: 1,
+    questions: [SNAP_Q("L-1", 0), SNAP_Q("L-2", 1)],
+  });
+  const game = await s.createGame(T1, { quizId: quiz.id, gamePin: "434343", hostId: 1, status: "waiting" });
+  await s.updateGame(T1, game.id, { status: "completed" }); // questionsSnapshot stays null
+  await s.createGameResponses(T1, [
+    { tenantId: 1, gameId: game.id, playerName: "P", questionIndex: 0, selectedAnswer: 0, responseTime: 500, isCorrect: true, pointsEarned: 100 },
+  ]);
+  const rows = (await s.getQuizInsights(T1, quiz.id))!.questions;
+  assert.deepEqual(rows.map((r) => r.question), ["L-1", "L-2"]);
+  assert.equal(rows[0].totalResponses, 1); // index 0 → current first question (old behavior)
+  assert.equal(rows[0].correctRate, 1);
+  assert.equal(rows[1].totalResponses, 0);
+});
+
 test("quizHasLiveGame: true for waiting/active games, false for completed/none/wrong tenant", async () => {
   const s = new MemStorage();
   const quiz = await s.createQuiz(T1, {

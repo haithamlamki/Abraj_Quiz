@@ -81,6 +81,17 @@ interface SubmitAnswerInput {
   selectedAnswer: number;
 }
 
+// The games row carries questions_snapshot — the FULL question set including
+// answer keys — for the engine and insights. It must NEVER reach a client.
+// Every path that returns or broadcasts a game object strips it here.
+export function toClientGame<T extends { questionsSnapshot?: unknown }>(game: T): Omit<T, "questionsSnapshot"> {
+  const { questionsSnapshot: _omit, ...rest } = game;
+  return rest;
+}
+
+// Shape returned to callers/broadcasts once questionsSnapshot has been stripped.
+export type ClientGame = Omit<Game, "questionsSnapshot">;
+
 export class RoomError extends Error {
   constructor(
     public readonly code: WsErrorCode,
@@ -217,7 +228,7 @@ export class GameRoomManager {
     this.broadcast(room, { type: "game_updated", game: this.applyRuntimeState(game) });
   }
 
-  async startGame(gamePin: string, hostId: number): Promise<Game> {
+  async startGame(gamePin: string, hostId: number): Promise<ClientGame> {
     const room = await this.getOrCreateRoom(gamePin);
     this.assertHost(room, hostId);
 
@@ -310,7 +321,7 @@ export class GameRoomManager {
     return { success: true, streak };
   }
 
-  async advanceQuestion(gamePin: string, hostId: number): Promise<{ gameComplete: boolean; game: Game }> {
+  async advanceQuestion(gamePin: string, hostId: number): Promise<{ gameComplete: boolean; game: ClientGame }> {
     const room = await this.getOrCreateRoom(gamePin);
     this.assertHost(room, hostId);
     this.touch(room);
@@ -341,9 +352,9 @@ export class GameRoomManager {
     return { gameComplete: false, game };
   }
 
-  async getGameSnapshot(gamePin: string, game: Game): Promise<Game> {
+  async getGameSnapshot(gamePin: string, game: Game): Promise<ClientGame> {
     const room = this.rooms.get(gamePin);
-    if (!room) return game;
+    if (!room) return toClientGame(game);
     return this.applyRuntimeState(game);
   }
 
@@ -368,15 +379,26 @@ export class GameRoomManager {
       throw new RoomError("ROOM_NOT_FOUND", "Game not found", 404);
     }
 
-    const quiz = await this.storage.getQuiz(SYSTEM_CTX, game.quizId);
-    if (!quiz || !Array.isArray(quiz.questions)) {
-      throw new RoomError("ROOM_NOT_FOUND", "Quiz not found", 404);
+    // Prefer the frozen per-game snapshot (the questions this game's players
+    // actually saw) over the live quiz row: a quiz edit combined with a
+    // server restart must not swap questions under an in-flight game, and
+    // insights attribute historical responses against this exact set.
+    let normalizedQuestions: Question[];
+    if (Array.isArray(game.questionsSnapshot) && game.questionsSnapshot.length > 0) {
+      normalizedQuestions = quizQuestionsSchema.parse(game.questionsSnapshot);
+    } else {
+      const quiz = await this.storage.getQuiz(SYSTEM_CTX, game.quizId);
+      if (!quiz || !Array.isArray(quiz.questions)) {
+        throw new RoomError("ROOM_NOT_FOUND", "Quiz not found", 404);
+      }
+      // Normalize stored questions to the canonical shape (correctAnswers /
+      // type / answerType). Legacy quizzes hold only `correctAnswer` — the
+      // engine's scoring reads `correctAnswers`, so this must run before play.
+      normalizedQuestions = quizQuestionsSchema.parse(quiz.questions);
+      // Freeze the played set ONCE. One write per game at hydration — never
+      // on timer ticks (hard rule).
+      await this.storage.updateGame(SYSTEM_CTX, game.id, { questionsSnapshot: normalizedQuestions });
     }
-
-    // Normalize stored questions to the canonical shape (correctAnswers / type /
-    // answerType). Legacy quizzes hold only `correctAnswer` — the engine's
-    // scoring reads `correctAnswers`, so this must run before play.
-    const normalizedQuestions = quizQuestionsSchema.parse(quiz.questions);
 
     // Roster is sourced from the authoritative game_players table (SYSTEM_CTX —
     // the engine keys rooms by globally-unique pin), not the legacy JSON array.
@@ -413,7 +435,7 @@ export class GameRoomManager {
     return room;
   }
 
-  private startQuestion(room: RuntimeRoom, questionIndex: number, game: Game) {
+  private startQuestion(room: RuntimeRoom, questionIndex: number, game: ClientGame) {
     const question = room.questions[questionIndex];
     if (!question) return;
 
@@ -545,7 +567,7 @@ export class GameRoomManager {
     return result;
   }
 
-  private async completeGame(room: RuntimeRoom): Promise<Game> {
+  private async completeGame(room: RuntimeRoom): Promise<ClientGame> {
     room.status = "completed";
     room.questionOpen = false;
     this.clearQuestionTimers(room);
@@ -634,20 +656,20 @@ export class GameRoomManager {
     }
   }
 
-  private applyRuntimeState(game?: Game): Game {
+  private applyRuntimeState(game?: Game): ClientGame {
     if (!game) {
       throw new RoomError("ROOM_NOT_FOUND", "Game not found", 404);
     }
 
     const room = this.rooms.get(game.gamePin);
-    if (!room) return game;
+    if (!room) return toClientGame(game);
 
-    return {
+    return toClientGame({
       ...game,
       status: room.status,
       currentQuestion: room.currentQuestion,
       players: this.runtimePlayers(room),
-    };
+    });
   }
 
   private runtimePlayers(room: RuntimeRoom): RuntimePlayer[] {

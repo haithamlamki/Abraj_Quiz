@@ -10,6 +10,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
+import { mergeInsightQuestions, type GameQuestionData, type InsightAgg } from "./insights";
 
 // Safety cap on active participants per game. Configurable via env; the default
 // leaves headroom over the 400-player target. This is a bound, not an exact
@@ -74,7 +75,7 @@ export interface QuizInsights {
   lastPlayedAt: Date | null;      // latest completed game's createdAt
   questions: Array<{
     questionIndex: number;
-    question: string;             // text from quizzes.questions (never answer keys)
+    question: string;             // text from the game's frozen snapshot (current quiz for pre-0010 games) — never answer keys
     totalResponses: number;
     correctRate: number;          // 0..1, correct responses / total, 0 when none
     avgResponseMs: number;        // mean responseTime, 0 when none
@@ -435,34 +436,58 @@ export class DatabaseStorage implements IStorage {
       const lastPlayedAt = gamesPlayed > 0 ? gameRows[0].createdAt : null;
 
       const gameIds = gameRows.map((r) => r.id);
-      const questionAggRows = gameIds.length > 0
+      // Per-(game, question) SUMS (not rates) so cross-game merging stays
+      // weighted correctly, plus each game's frozen snapshot. Attribution and
+      // text-keyed merging live in mergeInsightQuestions (shared with
+      // MemStorage so the two backends cannot drift).
+      const snapshotRows = gameIds.length > 0
+        ? await tx
+            .select({ id: games.id, questionsSnapshot: games.questionsSnapshot })
+            .from(games)
+            .where(and(inArray(games.id, gameIds), tenantFilter(ctx, games.tenantId)))
+        : [];
+      const respAggRows = gameIds.length > 0
         ? await tx
             .select({
+              gameId: gameResponses.gameId,
               questionIndex: gameResponses.questionIndex,
               total: sql<number>`count(*)::int`,
-              correctRate: sql<number>`avg(case when ${gameResponses.isCorrect} then 1.0 else 0.0 end)::float`,
-              avgMs: sql<number>`coalesce(avg(${gameResponses.responseTime}), 0)::float`,
+              correct: sql<number>`count(*) filter (where ${gameResponses.isCorrect})::int`,
+              msSum: sql<number>`coalesce(sum(${gameResponses.responseTime}), 0)::float`,
             })
             .from(gameResponses)
             .where(and(
               inArray(gameResponses.gameId, gameIds),
               tenantFilter(ctx, gameResponses.tenantId),
             ))
-            .groupBy(gameResponses.questionIndex)
+            .groupBy(gameResponses.gameId, gameResponses.questionIndex)
         : [];
 
+      const aggsByGame = new Map<number, Map<number, InsightAgg>>();
+      respAggRows.forEach((r) => {
+        let byIndex = aggsByGame.get(r.gameId);
+        if (!byIndex) {
+          byIndex = new Map();
+          aggsByGame.set(r.gameId, byIndex);
+        }
+        byIndex.set(r.questionIndex, { total: r.total, correct: r.correct, msSum: r.msSum });
+      });
+
       // Question TEXT only — never answer keys.
-      const rawQuestions = (quiz.questions as any[]) || [];
-      const questions = rawQuestions.map((q, questionIndex) => {
-        const row = questionAggRows.find((r) => r.questionIndex === questionIndex);
+      const currentTexts = ((quiz.questions as any[]) || []).map((q) => String(q?.question ?? ""));
+      // snapshotRows has no ORDER BY of its own — build perGame by walking
+      // gameRows (already ordered desc createdAt, desc id) and looking up each
+      // game's snapshot, so first-seen order of historical texts is deterministic.
+      const snapshotsById = new Map<number, unknown>();
+      snapshotRows.forEach((g) => snapshotsById.set(g.id, g.questionsSnapshot));
+      const perGame: GameQuestionData[] = gameRows.map((g) => {
+        const snap = snapshotsById.get(g.id);
         return {
-          questionIndex,
-          question: q.question,
-          totalResponses: row?.total ?? 0,
-          correctRate: row?.correctRate ?? 0,
-          avgResponseMs: row?.avgMs ?? 0,
+          snapshotTexts: Array.isArray(snap) ? (snap as any[]).map((q) => String(q?.question ?? "")) : null,
+          byIndex: aggsByGame.get(g.id) ?? new Map<number, InsightAgg>(),
         };
       });
+      const questions = mergeInsightQuestions(currentTexts, perGame);
 
       const recentGames = gameRows.slice(0, 20).map((r) => ({
         id: r.id,
@@ -1074,19 +1099,26 @@ export class MemStorage implements IStorage {
     const responses = Array.from(this.gameResponses.values())
       .filter((r) => gameIds.has(r.gameId) && this.inTenant(ctx, r));
 
-    // Question TEXT only — never answer keys.
-    const rawQuestions = (quiz.questions as any[]) || [];
-    const questions = rawQuestions.map((q, questionIndex) => {
-      const matching = responses.filter((r) => r.questionIndex === questionIndex);
-      const totalResponses = matching.length;
-      const correctRate = totalResponses > 0
-        ? matching.filter((r) => r.isCorrect).length / totalResponses
-        : 0;
-      const avgResponseMs = totalResponses > 0
-        ? matching.reduce((sum, r) => sum + r.responseTime, 0) / totalResponses
-        : 0;
-      return { questionIndex, question: q.question, totalResponses, correctRate, avgResponseMs };
+    // Attribute each game's responses to the question texts its players
+    // actually saw (frozen snapshot; current quiz for pre-0010 games), then
+    // merge across games by trimmed text. Question TEXT only — never keys.
+    const currentTexts = ((quiz.questions as any[]) || []).map((q) => String(q?.question ?? ""));
+    const perGame: GameQuestionData[] = completedGames.map((g) => {
+      const snapshotTexts = Array.isArray(g.questionsSnapshot)
+        ? (g.questionsSnapshot as any[]).map((q) => String(q?.question ?? ""))
+        : null;
+      const byIndex = new Map<number, InsightAgg>();
+      for (const r of responses) {
+        if (r.gameId !== g.id) continue;
+        const agg = byIndex.get(r.questionIndex) ?? { total: 0, correct: 0, msSum: 0 };
+        agg.total += 1;
+        if (r.isCorrect) agg.correct += 1;
+        agg.msSum += r.responseTime;
+        byIndex.set(r.questionIndex, agg);
+      }
+      return { snapshotTexts, byIndex };
     });
+    const questions = mergeInsightQuestions(currentTexts, perGame);
 
     const recentGames = completedGames.slice(0, 20).map((g) => {
       const gamePlayersForGame = players.filter((p) => p.gameId === g.id);
@@ -1120,6 +1152,7 @@ export class MemStorage implements IStorage {
       tenantId: requireTenantId(ctx),
       currentQuestion: 0,
       players: [],
+      questionsSnapshot: null,
       createdAt: new Date()
     };
     this.games.set(id, game);

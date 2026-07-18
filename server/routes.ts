@@ -11,7 +11,7 @@ import { pool } from "./db";
 import multer from "multer";
 import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText, generateBackgroundImage } from "./openai-service";
 import { gameWS } from "./websocket";
-import { gameRoomManager, RoomError } from "./game-room-manager";
+import { gameRoomManager, RoomError, toClientGame } from "./game-room-manager";
 import { tenantMiddleware, requireFeature } from "./tenant";
 import { signToken, verifyToken } from "./token";
 import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
@@ -744,7 +744,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const game = await storage.createGame(tctx(req), gameData);
-      res.status(201).json(game);
+      res.status(201).json(toClientGame(game));
     } catch (error) {
       captureError(error, { scope: "http.game-create" });
       res.status(500).json({ message: "Failed to create game" });
@@ -811,7 +811,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Broadcast player joined to active runtime room clients.
       await gameRoomManager.broadcastGameUpdated(pin, updatedGame);
 
-      res.json({ success: true, game: updatedGame, playerCount: result.playerCount });
+      res.json({ success: true, game: toClientGame(updatedGame), playerCount: result.playerCount });
     } catch (error) {
       // joinGame maps transient DB contention to GAME_BUSY before it gets
       // here, so anything landing in this catch is unexpected — a silent 500
@@ -946,7 +946,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Attach quiz data to game object for PDF generation
       const gameWithQuiz = {
-        ...game,
+        ...toClientGame(game),
         quiz
       };
 
