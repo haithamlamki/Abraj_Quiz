@@ -138,7 +138,7 @@ export default function JoinGame() {
                   value={gamePin}
                   onChange={(e) => setGamePin(e.target.value)}
                   placeholder={t("join.gamePinPlaceholder")}
-                  className="text-center text-2xl font-bold shimmer"
+                  className="text-center text-2xl font-bold"
                   onKeyPress={(e) => e.key === 'Enter' && handlePinSubmit()}
                   // eslint-disable-next-line jsx-a11y/no-autofocus -- sole input on this dedicated PIN-entry step
                   autoFocus
@@ -193,7 +193,7 @@ export default function JoinGame() {
                   value={playerName}
                   onChange={(e) => setPlayerName(e.target.value)}
                   placeholder={isAuthenticated && user ? user.username : t("join.namePlaceholder")}
-                  className="text-center text-xl font-medium shimmer"
+                  className="text-center text-xl font-medium"
                   maxLength={20}
                   onKeyPress={(e) => e.key === 'Enter' && handleNameSubmit()}
                   // eslint-disable-next-line jsx-a11y/no-autofocus -- sole input on this dedicated name-entry step

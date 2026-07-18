@@ -88,7 +88,6 @@ export default function Login() {
                 onChange={handleInputChange}
                 placeholder={t("auth.usernamePlaceholder")}
                 disabled={loginMutation.isPending}
-                className="shimmer"
                 data-testid="input-username"
               />
             </div>
@@ -102,7 +101,6 @@ export default function Login() {
                 onChange={handleInputChange}
                 placeholder={t("auth.passwordPlaceholder")}
                 disabled={loginMutation.isPending}
-                className="shimmer"
                 data-testid="input-password"
               />
             </div>
