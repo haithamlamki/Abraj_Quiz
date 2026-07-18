@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useLocation } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -73,9 +73,9 @@ export default function Home() {
   }, [isAuthenticated, user, playerName]);
 
   // Camera access and QR scanning
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
+      const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: 'environment' } // Use back camera if available
       });
       if (videoRef.current) {
@@ -89,19 +89,19 @@ export default function Home() {
         variant: "destructive",
       });
     }
-  };
+  }, [toast, t]);
 
-  const stopCamera = () => {
+  const stopCamera = useCallback(() => {
     if (videoRef.current && videoRef.current.srcObject) {
       const stream = videoRef.current.srcObject as MediaStream;
       stream.getTracks().forEach(track => track.stop());
       videoRef.current.srcObject = null;
     }
-  };
+  }, []);
 
   // Simple QR code detection function
   // In production, you would use a proper QR library like jsQR
-  const scanQRCode = () => {
+  const scanQRCode = useCallback(() => {
     if (!videoRef.current || !canvasRef.current) return;
 
     const video = videoRef.current;
@@ -116,7 +116,7 @@ export default function Home() {
 
     // For demonstration, we'll check if user clicks the video area to simulate scanning
     // In a real app, you'd integrate with jsQR or similar library
-  };
+  }, []);
 
   const handleVideoClick = () => {
     // Simulate QR code detection when user taps the video area
@@ -143,7 +143,7 @@ export default function Home() {
         stopCamera();
       };
     }
-  }, [showScanner]);
+  }, [showScanner, startCamera, stopCamera, scanQRCode]);
 
   const handleScanClick = () => {
     setShowScanner(true);
