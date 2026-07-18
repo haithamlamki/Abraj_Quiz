@@ -150,3 +150,48 @@ test("bank routes: PUT subject clear semantics — empty string clears, absent k
     assert.equal((await cleared.json()).subject, null);
   });
 });
+
+test("bulk: 401 anon, 201 happy path, createdBy stamped", async () => {
+  await withServer(makeApp(new MemStorage()), async (base) => {
+    const anon = await fetch(`${base}/api/bank/questions/bulk`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ items: [] }) });
+    assert.equal(anon.status, 401);
+
+    const res = await fetch(`${base}/api/bank/questions/bulk`, {
+      method: "POST", headers: AUTH,
+      body: JSON.stringify({ items: [
+        { question: VALID_QUESTION, subject: "Math", tags: ["a"] },
+        { question: VALID_QUESTION, tags: [] },
+      ] }),
+    });
+    assert.equal(res.status, 201);
+    assert.deepEqual(await res.json(), { created: 2 });
+    const list = await (await fetch(`${base}/api/bank/questions`, { headers: AUTH })).json();
+    assert.equal(list.length, 2);
+    assert.equal(list[0].createdBy, 1);
+  });
+});
+
+test("bulk: one invalid item → 400 with its index, nothing inserted (atomic)", async () => {
+  await withServer(makeApp(new MemStorage()), async (base) => {
+    const res = await fetch(`${base}/api/bank/questions/bulk`, {
+      method: "POST", headers: AUTH,
+      body: JSON.stringify({ items: [
+        { question: VALID_QUESTION },
+        { question: { ...VALID_QUESTION, type: "poll" } }, // poll-with-correct → invalid
+      ] }),
+    });
+    assert.equal(res.status, 400);
+    const body = await res.json();
+    assert.equal(body.index, 1);
+    assert.equal((await (await fetch(`${base}/api/bank/questions`, { headers: AUTH })).json()).length, 0);
+  });
+});
+
+test("bulk: empty items and over-cap both 400", async () => {
+  await withServer(makeApp(new MemStorage()), async (base) => {
+    const empty = await fetch(`${base}/api/bank/questions/bulk`, { method: "POST", headers: AUTH, body: JSON.stringify({ items: [] }) });
+    assert.equal(empty.status, 400);
+    const tooMany = await fetch(`${base}/api/bank/questions/bulk`, { method: "POST", headers: AUTH, body: JSON.stringify({ items: Array.from({ length: 51 }, () => ({ question: VALID_QUESTION })) }) });
+    assert.equal(tooMany.status, 400);
+  });
+});

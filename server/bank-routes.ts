@@ -84,6 +84,30 @@ export function registerBankRoutes(app: Express, { storage, requireAuth, tctx }:
     }
   });
 
+  app.post("/api/bank/questions/bulk", requireAuth, async (req, res) => {
+    try {
+      const items = (req.body as { items?: unknown })?.items;
+      if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
+        return res.status(400).json({ message: "items must be an array of 1..50 bank questions" });
+      }
+      // All-or-nothing: validate every item BEFORE inserting any.
+      const validated: Array<z.infer<typeof insertBankQuestionSchema>> = [];
+      for (let i = 0; i < items.length; i++) {
+        const parsed = insertBankQuestionSchema.safeParse(items[i]);
+        if (!parsed.success) {
+          return res.status(400).json({ message: "Invalid bank question", index: i, errors: parsed.error.errors });
+        }
+        validated.push(parsed.data);
+      }
+      const createdBy = (req as any).authUserId as number;
+      const rows = await storage.createBankQuestions(tctx(req), validated.map((v) => ({ ...v, createdBy })));
+      res.status(201).json({ created: rows.length });
+    } catch (error) {
+      captureError(error, { scope: "http.bank-bulk-create" });
+      res.status(500).json({ message: "Failed to create bank questions" });
+    }
+  });
+
   app.put("/api/bank/questions/:id", requireAuth, async (req, res) => {
     try {
       const id = parseId(req.params.id);
