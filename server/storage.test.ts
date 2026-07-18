@@ -450,3 +450,19 @@ test("bank search treats % and _ as literal characters (MemStorage semantics)", 
   assert.equal((await s.getBankQuestions(T1, { search: "50%" })).length, 1);
   assert.equal((await s.getBankQuestions(T1, { search: "%" })).length, 1);
 });
+
+test("createBankQuestions inserts many rows, stamps tenant + createdBy, tenant-isolated", async () => {
+  const s = new MemStorage();
+  const q = (text: string): any => ({ question: text, type: "quiz", answerType: "single", answers: ["a", "b"], correctAnswers: [0], timeLimit: 10, points: "standard" });
+  const rows = await s.createBankQuestions(T1, [
+    { question: q("bulk-1"), subject: "S", tags: ["t"], createdBy: 7 },
+    { question: q("bulk-2"), subject: undefined, tags: [], createdBy: 7 },
+  ]);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].tenantId, 1);
+  assert.equal(rows[0].createdBy, 7);
+  assert.equal((await s.getBankQuestions(T1)).length, 2);
+  assert.equal((await s.getBankQuestions(T2)).length, 0);
+  // empty input is a no-op
+  assert.deepEqual(await s.createBankQuestions(T1, []), []);
+});
