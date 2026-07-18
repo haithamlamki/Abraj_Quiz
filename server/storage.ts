@@ -1,11 +1,12 @@
 import {
-  users, quizzes, games, gameResponses, gamePlayers, tenants,
+  users, quizzes, games, gameResponses, gamePlayers, tenants, bankQuestions,
   type User, type InsertUser,
   type Quiz, type InsertQuiz,
   type Game, type InsertGame,
   type GameResponse, type InsertGameResponse,
   type GamePlayer,
-  type Tenant, type InsertTenant
+  type Tenant, type InsertTenant,
+  type BankQuestion, type InsertBankQuestion
 } from "@shared/schema";
 import { db } from "./db";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
@@ -100,8 +101,17 @@ function requireSystem(ctx: StorageCtx): void {
   }
 }
 
-function tenantFilter(ctx: StorageCtx, column: typeof users.tenantId | typeof quizzes.tenantId | typeof games.tenantId | typeof gameResponses.tenantId | typeof gamePlayers.tenantId): SQL | undefined {
+function tenantFilter(ctx: StorageCtx, column: typeof users.tenantId | typeof quizzes.tenantId | typeof games.tenantId | typeof gameResponses.tenantId | typeof gamePlayers.tenantId | typeof bankQuestions.tenantId): SQL | undefined {
   return "system" in ctx ? undefined : eq(column, ctx.tenantId);
+}
+
+// Bank question list/search filters (mirrors getUserQuizzes' archived-only
+// semantics for the `archived` flag rather than an "includeArchived" toggle).
+export interface BankQuestionFilters {
+  search?: string;      // case-insensitive substring on question text
+  subject?: string;     // exact match (values come from getBankSubjectsAndTags)
+  tags?: string[];      // row must contain ALL of these (exact strings)
+  archived?: boolean;   // true → archived-only; false/undefined → live-only
 }
 
 export interface IStorage {
@@ -122,6 +132,15 @@ export interface IStorage {
   // Aggregated analytics over this quiz's completed games. undefined when the
   // quiz is not visible in ctx (same tenant-visibility rule as getQuiz).
   getQuizInsights(ctx: StorageCtx, quizId: number): Promise<QuizInsights | undefined>;
+
+  // Bank questions (reusable question library, separate from any one quiz)
+  getBankQuestions(ctx: StorageCtx, filters?: BankQuestionFilters): Promise<BankQuestion[]>;    // newest-updated first
+  getBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined>;
+  createBankQuestion(ctx: StorageCtx, data: InsertBankQuestion & { createdBy: number }): Promise<BankQuestion>;
+  updateBankQuestion(ctx: StorageCtx, id: number, updates: Partial<InsertBankQuestion>): Promise<BankQuestion | undefined>;
+  archiveBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined>;
+  restoreBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined>;
+  getBankSubjectsAndTags(ctx: StorageCtx): Promise<{ subjects: string[]; tags: string[] }>;     // distinct, live rows only
 
   // Games
   getGame(ctx: StorageCtx, id: number): Promise<Game | undefined>;
@@ -273,6 +292,99 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)))
         .returning();
       return row;
+    });
+  }
+
+  // Bank questions
+  async getBankQuestions(ctx: StorageCtx, filters?: BankQuestionFilters): Promise<BankQuestion[]> {
+    return withCtx(ctx, async (tx) => {
+      const conds: (SQL | undefined)[] = [
+        tenantFilter(ctx, bankQuestions.tenantId),
+        filters?.archived ? isNotNull(bankQuestions.deletedAt) : isNull(bankQuestions.deletedAt),
+      ];
+      if (filters?.subject) conds.push(eq(bankQuestions.subject, filters.subject));
+      if (filters?.tags?.length) {
+        // Row must contain ALL requested tags (jsonb containment; GIN-indexed).
+        conds.push(sql`${bankQuestions.tags} @> ${JSON.stringify(filters.tags)}::jsonb`);
+      }
+      const search = filters?.search?.trim();
+      if (search) {
+        conds.push(sql`${bankQuestions.question}->>'question' ilike ${"%" + search + "%"}`);
+      }
+      return tx.select().from(bankQuestions)
+        .where(and(...conds))
+        .orderBy(desc(bankQuestions.updatedAt), desc(bankQuestions.id));
+    });
+  }
+
+  async getBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [row] = await tx.select().from(bankQuestions)
+        .where(and(eq(bankQuestions.id, id), tenantFilter(ctx, bankQuestions.tenantId)));
+      return row || undefined;
+    });
+  }
+
+  async createBankQuestion(ctx: StorageCtx, data: InsertBankQuestion & { createdBy: number }): Promise<BankQuestion> {
+    const tenantId = requireTenantId(ctx);
+    return withCtx(ctx, async (tx) => {
+      const [row] = await tx.insert(bankQuestions).values({
+        tenantId,
+        createdBy: data.createdBy,
+        question: data.question,
+        subject: data.subject ?? null,
+        tags: data.tags ?? [],
+      }).returning();
+      return row;
+    });
+  }
+
+  async updateBankQuestion(ctx: StorageCtx, id: number, updates: Partial<InsertBankQuestion>): Promise<BankQuestion | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [row] = await tx.update(bankQuestions).set({
+        ...(updates.question !== undefined ? { question: updates.question } : {}),
+        ...(updates.subject !== undefined ? { subject: updates.subject ?? null } : {}),
+        ...(updates.tags !== undefined ? { tags: updates.tags } : {}),
+        updatedAt: sql`now()`,
+      })
+        .where(and(eq(bankQuestions.id, id), tenantFilter(ctx, bankQuestions.tenantId)))
+        .returning();
+      return row || undefined;
+    });
+  }
+
+  async archiveBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [row] = await tx.update(bankQuestions).set({ deletedAt: sql`now()`, updatedAt: sql`now()` })
+        .where(and(eq(bankQuestions.id, id), tenantFilter(ctx, bankQuestions.tenantId)))
+        .returning();
+      return row || undefined;
+    });
+  }
+
+  async restoreBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [row] = await tx.update(bankQuestions).set({ deletedAt: null, updatedAt: sql`now()` })
+        .where(and(eq(bankQuestions.id, id), tenantFilter(ctx, bankQuestions.tenantId)))
+        .returning();
+      return row || undefined;
+    });
+  }
+
+  async getBankSubjectsAndTags(ctx: StorageCtx): Promise<{ subjects: string[]; tags: string[] }> {
+    return withCtx(ctx, async (tx) => {
+      // One narrow scan of live rows; dedupe in JS so semantics are identical
+      // to MemStorage. Bank sizes are small; revisit if that changes.
+      const rows = await tx.select({ subject: bankQuestions.subject, tags: bankQuestions.tags })
+        .from(bankQuestions)
+        .where(and(isNull(bankQuestions.deletedAt), tenantFilter(ctx, bankQuestions.tenantId)));
+      const subjects = new Set<string>();
+      const tags = new Set<string>();
+      for (const row of rows) {
+        if (row.subject) subjects.add(row.subject);
+        for (const t of (row.tags as string[]) ?? []) tags.add(t);
+      }
+      return { subjects: Array.from(subjects), tags: Array.from(tags) };
     });
   }
 
@@ -618,12 +730,14 @@ export class MemStorage implements IStorage {
   private gameResponses: Map<number, GameResponse>;
   private gamePlayers: Map<number, GamePlayer>;
   private tenants: Map<number, Tenant> = new Map();
+  private bankQuestions: Map<number, BankQuestion>;
   private currentUserId: number;
   private currentQuizId: number;
   private currentGameId: number;
   private currentResponseId: number;
   private currentGamePlayerId: number;
   private currentTenantId = 1;
+  private currentBankQuestionId: number;
 
   constructor() {
     this.users = new Map();
@@ -631,11 +745,13 @@ export class MemStorage implements IStorage {
     this.games = new Map();
     this.gameResponses = new Map();
     this.gamePlayers = new Map();
+    this.bankQuestions = new Map();
     this.currentUserId = 1;
     this.currentQuizId = 1;
     this.currentGameId = 1;
     this.currentResponseId = 1;
     this.currentGamePlayerId = 1;
+    this.currentBankQuestionId = 1;
 
     // Add some sample quizzes
     this.initializeSampleData();
@@ -841,6 +957,82 @@ export class MemStorage implements IStorage {
     const updated: Quiz = { ...existing, deletedAt: null };
     this.quizzes.set(id, updated);
     return updated;
+  }
+
+  // Bank questions
+  async getBankQuestions(ctx: StorageCtx, filters?: BankQuestionFilters): Promise<BankQuestion[]> {
+    const search = filters?.search?.trim().toLowerCase();
+    return Array.from(this.bankQuestions.values())
+      .filter((row) => this.inTenant(ctx, row))
+      .filter((row) => (filters?.archived ? !!row.deletedAt : !row.deletedAt))
+      .filter((row) => !filters?.subject || row.subject === filters.subject)
+      .filter((row) => !filters?.tags?.length || filters.tags.every((t) => (row.tags as string[]).includes(t)))
+      .filter((row) => !search || String((row.question as any)?.question ?? "").toLowerCase().includes(search))
+      .sort((a, b) => (b.updatedAt?.getTime() ?? 0) - (a.updatedAt?.getTime() ?? 0) || b.id - a.id);
+  }
+
+  async getBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined> {
+    const row = this.bankQuestions.get(id);
+    return row && this.inTenant(ctx, row) ? row : undefined;
+  }
+
+  async createBankQuestion(ctx: StorageCtx, data: InsertBankQuestion & { createdBy: number }): Promise<BankQuestion> {
+    const id = this.currentBankQuestionId++;
+    const now = new Date();
+    const row: BankQuestion = {
+      id,
+      tenantId: requireTenantId(ctx),
+      createdBy: data.createdBy,
+      question: data.question,
+      subject: data.subject ?? null,
+      tags: data.tags ?? [],
+      deletedAt: null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    this.bankQuestions.set(id, row);
+    return row;
+  }
+
+  async updateBankQuestion(ctx: StorageCtx, id: number, updates: Partial<InsertBankQuestion>): Promise<BankQuestion | undefined> {
+    const existing = this.bankQuestions.get(id);
+    if (!existing || !this.inTenant(ctx, existing)) return undefined;
+    const updated: BankQuestion = {
+      ...existing,
+      ...(updates.question !== undefined ? { question: updates.question } : {}),
+      ...(updates.subject !== undefined ? { subject: updates.subject ?? null } : {}),
+      ...(updates.tags !== undefined ? { tags: updates.tags } : {}),
+      updatedAt: new Date(),
+    };
+    this.bankQuestions.set(id, updated);
+    return updated;
+  }
+
+  async archiveBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined> {
+    const existing = this.bankQuestions.get(id);
+    if (!existing || !this.inTenant(ctx, existing)) return undefined;
+    const updated: BankQuestion = { ...existing, deletedAt: new Date(), updatedAt: new Date() };
+    this.bankQuestions.set(id, updated);
+    return updated;
+  }
+
+  async restoreBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined> {
+    const existing = this.bankQuestions.get(id);
+    if (!existing || !this.inTenant(ctx, existing)) return undefined;
+    const updated: BankQuestion = { ...existing, deletedAt: null, updatedAt: new Date() };
+    this.bankQuestions.set(id, updated);
+    return updated;
+  }
+
+  async getBankSubjectsAndTags(ctx: StorageCtx): Promise<{ subjects: string[]; tags: string[] }> {
+    const live = await this.getBankQuestions(ctx);
+    const subjects = new Set<string>();
+    const tags = new Set<string>();
+    for (const row of live) {
+      if (row.subject) subjects.add(row.subject);
+      for (const t of (row.tags as string[]) ?? []) tags.add(t);
+    }
+    return { subjects: Array.from(subjects), tags: Array.from(tags) };
   }
 
   async getQuizInsights(ctx: StorageCtx, quizId: number): Promise<QuizInsights | undefined> {
