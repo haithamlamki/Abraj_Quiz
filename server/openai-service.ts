@@ -2,6 +2,7 @@ import OpenAI from "openai";
 // Dynamic import for pdf-parse to avoid file loading issues at startup
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { generatedQuizSchema, type GeneratedQuiz } from "@shared/schema";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 //
@@ -21,17 +22,108 @@ function getOpenAI(): OpenAI {
   return _openai;
 }
 
-export interface QuizQuestion {
-  question: string;
-  answers: string[];
-  correctAnswer: number;
-  timeLimit: number;
+// A compact JSON example the model must match. Kept in one place so the prompt
+// and the validator never drift.
+const CANONICAL_EXAMPLE = `{
+  "title": "Quiz title",
+  "description": "One-sentence description",
+  "subject": "Subject area (optional)",
+  "tags": ["2-4", "topic", "tags"],
+  "questions": [
+    {
+      "question": "A single-select question?",
+      "type": "quiz",
+      "answerType": "single",
+      "answers": ["A", "B", "C", "D"],
+      "correctAnswers": [0],
+      "timeLimit": 20,
+      "points": "standard",
+      "difficulty": "easy",
+      "explanation": "Why A is correct, in 1-2 sentences."
+    },
+    {
+      "question": "A true/false question?",
+      "type": "true_false",
+      "answerType": "single",
+      "answers": ["True", "False"],
+      "correctAnswers": [0],
+      "timeLimit": 15,
+      "points": "standard",
+      "difficulty": "medium",
+      "explanation": "Why it is true."
+    }
+  ]
+}`;
+
+export function buildGenerationPrompt(kind: "topics" | "content", input: string, sourceTitle?: string): string {
+  const head =
+    kind === "topics"
+      ? `Create a comprehensive educational quiz based on these topics: "${input.trim()}"`
+      : `Based on the following content, create a comprehensive educational quiz.\n\nContent Title: ${sourceTitle ?? "Content"}\nContent: ${input}`;
+  return `${head}
+
+Requirements:
+1. Generate 8-12 questions.
+2. MOST questions are single-select (type "quiz", answerType "single", 4 answers, exactly one index in correctAnswers).
+3. Include 1-3 true/false questions (type "true_false", answers exactly ["True","False"]).
+4. Include 0-2 multi-select questions (answerType "multiple", 2+ indexes in correctAnswers).
+5. NEVER produce poll questions.
+6. Each question needs a timeLimit (10-30), a "difficulty" of "easy"|"medium"|"hard", and a 1-2 sentence "explanation" of the correct answer.
+7. Add a quiz-level "subject" and 2-4 "tags".
+8. Answers are unambiguous and accurate; correctAnswers indexes are 0-based and in range.
+
+Respond with ONLY valid JSON in exactly this shape:
+${CANONICAL_EXAMPLE}`;
 }
 
-export interface GeneratedQuiz {
-  title: string;
-  description: string;
-  questions: QuizQuestion[];
+export function parseGeneratedQuiz(raw: unknown):
+  | { ok: true; data: GeneratedQuiz }
+  | { ok: false; errors: string } {
+  const result = generatedQuizSchema.safeParse(raw);
+  if (result.success) return { ok: true, data: result.data };
+  const errors = result.error.errors
+    .map((e) => `${e.path.join(".") || "(root)"}: ${e.message}`)
+    .join("; ");
+  return { ok: false, errors };
+}
+
+// Shared generation core: prompt → OpenAI → validate → one error-fed retry.
+async function generateValidated(kind: "topics" | "content", input: string, sourceTitle?: string): Promise<GeneratedQuiz> {
+  const basePrompt = buildGenerationPrompt(kind, input, sourceTitle);
+  let lastErrors = "";
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const prompt = attempt === 0
+      ? basePrompt
+      : `${basePrompt}\n\nYour previous response failed validation: ${lastErrors}\nReturn corrected JSON only.`;
+    const response = await getOpenAI().chat.completions.create({
+      model: "gpt-4o",
+      messages: [
+        { role: "system", content: "You are an expert educator and quiz creator. Always respond with valid JSON matching the exact schema requested." },
+        { role: "user", content: prompt },
+      ],
+      response_format: { type: "json_object" },
+      temperature: 0.7,
+      max_tokens: 3500,
+    });
+    const content = response.choices[0].message.content;
+    if (!content) { lastErrors = "empty response"; continue; }
+    let raw: unknown;
+    try { raw = JSON.parse(content); } catch { lastErrors = "response was not valid JSON"; continue; }
+    const parsed = parseGeneratedQuiz(raw);
+    if (parsed.ok) return parsed.data;
+    lastErrors = parsed.errors;
+  }
+  throw new Error("Failed to generate a properly formatted quiz. Please try again.");
+}
+
+function mapOpenAiError(error: any, fallbackMessage: string): Error {
+  if (error?.status === 401) return new Error("OpenAI API authentication failed. Please check API key configuration.");
+  if (error?.status === 429) return new Error("OpenAI API rate limit exceeded. Please try again in a few minutes.");
+  if (error?.status === 500) return new Error("OpenAI API service is temporarily unavailable. Please try again later.");
+  if (error?.code === "insufficient_quota") return new Error("OpenAI API quota exceeded. Please check your account usage.");
+  // Preserve already-user-facing messages thrown by our own guards/validator.
+  if (typeof error?.message === "string" && /too short|Failed to generate a properly formatted quiz/.test(error.message)) return error;
+  return new Error(fallbackMessage);
 }
 
 export async function generateQuizFromPDF(pdfBuffer: Buffer): Promise<GeneratedQuiz> {
@@ -50,7 +142,7 @@ export async function generateQuizFromPDF(pdfBuffer: Buffer): Promise<GeneratedQ
     return await generateQuizFromContent(content, "PDF Document");
   } catch (error: any) {
     console.error("PDF processing error:", error);
-    throw new Error(`Failed to process PDF: ${error.message}`);
+    throw mapOpenAiError(error, `Failed to process PDF: ${error.message}`);
   }
 }
 
@@ -101,7 +193,7 @@ export async function generateQuizFromURL(url: string): Promise<GeneratedQuiz> {
     if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
       throw new Error("Unable to access the URL. Please check if the URL is correct and accessible.");
     }
-    throw new Error(`Failed to process URL: ${error.message}`);
+    throw mapOpenAiError(error, `Failed to process URL: ${error.message}`);
   }
 }
 
@@ -110,218 +202,17 @@ export async function generateQuizFromTopics(topics: string): Promise<GeneratedQ
     if (!topics || topics.trim().length < 3) {
       throw new Error("Topics input is too short. Please provide specific topics or subjects.");
     }
-
-    const prompt = `Create a comprehensive educational quiz based on the following topics or subjects: "${topics.trim()}"
-
-Requirements:
-1. Generate 8-12 multiple choice questions covering the specified topics
-2. Each question should have exactly 4 answer options with only one correct answer
-3. Include a mix of difficulty levels (easy, medium, hard) appropriate for the subject matter
-4. Questions should test various aspects: definitions, concepts, applications, and factual knowledge
-5. Ensure questions are educationally valuable and accurate
-6. Generate an appropriate quiz title and description based on the topics
-7. Questions should be clear, unambiguous, and well-formatted
-8. Cover different subtopics within the main topic area when possible
-
-Respond with JSON in this exact format:
-{
-  "title": "Quiz title based on the topics",
-  "description": "Brief description of what this quiz covers",
-  "questions": [
-    {
-      "question": "Question text here?",
-      "answers": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": 0,
-      "timeLimit": 10
-    }
-  ]
-}`;
-
-    const response = await getOpenAI().chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert educator and quiz creator. Create engaging, educational quizzes on any topic with accurate information and well-structured questions. Always respond with valid JSON matching the exact format requested."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 3000
-    });
-
-    const generatedContent = response.choices[0].message.content;
-    if (!generatedContent) {
-      throw new Error("AI service returned an empty response");
-    }
-
-    const parsedQuiz = JSON.parse(generatedContent);
-
-    // Validate the response structure
-    if (!parsedQuiz.questions || !Array.isArray(parsedQuiz.questions) || parsedQuiz.questions.length === 0) {
-      throw new Error("Generated quiz has invalid structure - no questions found");
-    }
-
-    // Validate each question
-    for (const question of parsedQuiz.questions) {
-      if (!question.question ||
-          !question.answers ||
-          !Array.isArray(question.answers) ||
-          question.answers.length < 2 || question.answers.length > 6 ||
-          typeof question.correctAnswer !== 'number' ||
-          question.correctAnswer < 0 ||
-          question.correctAnswer >= question.answers.length) {
-        throw new Error("Generated quiz has invalid question structure");
-      }
-    }
-
-    return {
-      title: parsedQuiz.title || `Quiz: ${topics}`,
-      description: parsedQuiz.description || `Educational quiz covering: ${topics}`,
-      questions: parsedQuiz.questions.map((q: any) => ({
-        question: q.question,
-        answers: q.answers,
-        correctAnswer: q.correctAnswer,
-        timeLimit: q.timeLimit || 10
-      }))
-    };
-
+    return await generateValidated("topics", topics.trim());
   } catch (error: any) {
     console.error("Topics quiz generation error:", error);
-    
-    // Handle specific OpenAI API errors
-    if (error.status === 401) {
-      throw new Error("OpenAI API authentication failed. Please check API key configuration.");
-    }
-    if (error.status === 429) {
-      throw new Error("OpenAI API rate limit exceeded. Please try again in a few minutes.");
-    }
-    if (error.status === 500) {
-      throw new Error("OpenAI API service is temporarily unavailable. Please try again later.");
-    }
-    if (error.code === 'insufficient_quota') {
-      throw new Error("OpenAI API quota exceeded. Please check your account usage.");
-    }
-    
-    if (error.message?.includes('JSON')) {
-      throw new Error("Failed to generate properly formatted quiz. Please try again with more specific topics.");
-    }
-    throw new Error(`Failed to generate quiz from topics: ${error.message}`);
+    throw mapOpenAiError(error, `Failed to generate quiz from topics: ${error.message}`);
   }
 }
 
 async function generateQuizFromContent(content: string, sourceTitle: string): Promise<GeneratedQuiz> {
-  try {
-    // Limit content length to avoid token limits
-    const maxContentLength = 8000;
-    const truncatedContent = content.length > maxContentLength 
-      ? content.substring(0, maxContentLength) + "..."
-      : content;
-
-    const prompt = `Based on the following content, create a comprehensive quiz with 8-12 multiple choice questions. Each question should have exactly 4 answer options with only one correct answer.
-
-Content Title: ${sourceTitle}
-Content: ${truncatedContent}
-
-Requirements:
-1. Questions should test understanding of key concepts, facts, and details from the content
-2. Include a mix of difficulty levels (easy, medium, hard)
-3. Each question must have exactly 4 answer choices
-4. Mark the correct answer clearly
-5. Questions should be clear and unambiguous
-6. Avoid trick questions or overly complex wording
-7. Generate an appropriate quiz title and description
-
-Respond with JSON in this exact format:
-{
-  "title": "Quiz title based on content",
-  "description": "Brief description of what this quiz covers",
-  "questions": [
-    {
-      "question": "Question text here?",
-      "answers": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": 0,
-      "timeLimit": 10
-    }
-  ]
-}`;
-
-    const response = await getOpenAI().chat.completions.create({
-      model: "gpt-4o",
-      messages: [
-        {
-          role: "system",
-          content: "You are an expert quiz creator. Create engaging, educational quizzes based on provided content. Always respond with valid JSON matching the exact format requested."
-        },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 3000
-    });
-
-    const generatedContent = response.choices[0].message.content;
-    if (!generatedContent) {
-      throw new Error("AI service returned an empty response");
-    }
-
-    const result = JSON.parse(generatedContent);
-
-    // Validate the response structure
-    if (!result.title || !result.description || !Array.isArray(result.questions)) {
-      throw new Error("Invalid response format from AI service");
-    }
-
-    // Validate each question
-    for (const question of result.questions) {
-      if (!question.question || !Array.isArray(question.answers) ||
-          question.answers.length < 2 || question.answers.length > 6 ||
-          typeof question.correctAnswer !== 'number' ||
-          question.correctAnswer < 0 || question.correctAnswer >= question.answers.length) {
-        throw new Error("Invalid question format in AI response");
-      }
-      
-      // Set default time limit if not provided
-      if (!question.timeLimit) {
-        question.timeLimit = 10;
-      }
-    }
-
-    // Limit to 12 questions maximum
-    if (result.questions.length > 12) {
-      result.questions = result.questions.slice(0, 12);
-    }
-
-    return result as GeneratedQuiz;
-  } catch (error: any) {
-    console.error("Content quiz generation error:", error);
-    
-    // Handle specific OpenAI API errors
-    if (error.status === 401) {
-      throw new Error("OpenAI API authentication failed. Please check API key configuration.");
-    }
-    if (error.status === 429) {
-      throw new Error("OpenAI API rate limit exceeded. Please try again in a few minutes.");
-    }
-    if (error.status === 500) {
-      throw new Error("OpenAI API service is temporarily unavailable. Please try again later.");
-    }
-    if (error.code === 'insufficient_quota') {
-      throw new Error("OpenAI API quota exceeded. Please check your account usage.");
-    }
-    
-    if (error.message.includes("Invalid response format") || error.message.includes("Invalid question format")) {
-      throw error;
-    }
-    throw new Error(`Failed to generate quiz using AI: ${error.message}`);
-  }
+  const maxContentLength = 8000;
+  const truncated = content.length > maxContentLength ? content.substring(0, maxContentLength) + "..." : content;
+  return await generateValidated("content", truncated, sourceTitle);
 }
 
 export async function generateQuizFromText(text: string): Promise<GeneratedQuiz> {
@@ -333,25 +224,7 @@ export async function generateQuizFromText(text: string): Promise<GeneratedQuiz>
     return await generateQuizFromContent(text, "Text Content");
   } catch (error: any) {
     console.error("Text quiz generation error:", error);
-    
-    // Handle specific OpenAI API errors
-    if (error.status === 401) {
-      throw new Error("OpenAI API authentication failed. Please check API key configuration.");
-    }
-    if (error.status === 429) {
-      throw new Error("OpenAI API rate limit exceeded. Please try again in a few minutes.");
-    }
-    if (error.status === 500) {
-      throw new Error("OpenAI API service is temporarily unavailable. Please try again later.");
-    }
-    if (error.code === 'insufficient_quota') {
-      throw new Error("OpenAI API quota exceeded. Please check your account usage.");
-    }
-    
-    if (error.message?.includes('Text content is too short') || error.message?.includes('Invalid response format') || error.message?.includes('Invalid question format')) {
-      throw error;
-    }
-    throw new Error(`Failed to generate quiz from text: ${error.message}`);
+    throw mapOpenAiError(error, `Failed to generate quiz from text: ${error.message}`);
   }
 }
 
