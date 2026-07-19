@@ -92,7 +92,7 @@ export function ImportDialog({ open, onOpenChange, meta, onImported }: ImportDia
     const id = ++flight.current;
     setImporting(true);
     try {
-      await apiRequest("POST", "/api/bank/questions/bulk", { items: preview.valid });
+      await apiRequest("POST", "/api/bank/questions/bulk", { items: preview.valid, source: "import" });
       if (id !== flight.current) return;
       toast({ title: t("bank.import.importedToast", { count: preview.valid.length }) });
       onImported();

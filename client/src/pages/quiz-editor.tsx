@@ -483,7 +483,7 @@ export default function QuizEditor() {
         tags: Array.isArray(generated.tags) ? generated.tags : [],
       }));
       if (items.length > 0) {
-        apiRequest("POST", "/api/bank/questions/bulk", { items })
+        apiRequest("POST", "/api/bank/questions/bulk", { items, source: "ai" })
           .then((res) => res.json())
           .then((data) => toast({ title: t("editor.ai.savedToBankToast", { count: data.created ?? items.length }) }))
           .catch(() => toast({ title: t("editor.ai.saveToBankFailed"), variant: "destructive" }));
