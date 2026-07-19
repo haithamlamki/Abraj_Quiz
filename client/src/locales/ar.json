@@ -571,7 +571,10 @@
         "grape": "العنب",
         "ember": "الجمر",
         "midnight": "منتصف الليل",
-        "classroom": "الفصل الدراسي"
+        "classroom": "الفصل الدراسي",
+        "classroom-cartoon": "فصل كرتوني",
+        "classroom-board": "السبورة",
+        "classroom-bright": "فصل ملوّن"
       },
       "customBackgroundLabel": "صورة خلفية مخصصة",
       "uploading": "جارٍ الرفع…",
