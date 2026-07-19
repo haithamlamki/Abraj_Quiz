@@ -314,11 +314,11 @@ export async function generateBackgroundImage(input: BackgroundImageInput): Prom
     console.log("Generating background image with DALL-E");
 
     const response = await getOpenAI().images.generate({
-      model: "dall-e-3",
+      model: "gpt-image-1",
       prompt,
       n: 1,
-      size: "1792x1024",
-      quality: "standard",
+      size: "1536x1024",
+      quality: "medium",
     });
 
     const first = response.data?.[0];

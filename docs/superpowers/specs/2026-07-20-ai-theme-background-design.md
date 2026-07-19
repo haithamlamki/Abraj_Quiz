@@ -52,8 +52,11 @@ yield ≥3 usable chars):
 
 - New signature: `generateBackgroundImage(input: { prompt?: string; title?: string; description?: string }): Promise<Buffer>` —
   returns the PNG buffer; the route owns upload/fallback encoding.
-- Size: `1792x1024` (landscape — backgrounds are widescreen; square 1024
-  crops badly on the stage).
+- Model `gpt-image-1`, size `1536x1024` (landscape — backgrounds are
+  widescreen). Originally specced as dall-e-3 @ 1792x1024; live QA found
+  dall-e-3 retired on this org and `response_format` removed from the
+  Images API, so the implementation targets gpt-image-1 (quality "medium",
+  b64 or URL response both handled).
 - Prompt template (fixed wrapper around user text — injection posture
   unchanged: user text is truncated and embedded, never replaces the
   instruction frame):
