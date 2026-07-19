@@ -24,6 +24,7 @@
 - games.game_pin stays globally unique across tenants (runtime rooms are keyed by pin).
 - Never hardcode tenant branding in the client; use useTenant() from client/src/lib/tenant.tsx.
 - New business tables MUST have tenant_id + the tenant_isolation RLS policy pair.
+- New mutating routes must record an audit event via `logAudit` (server/audit.ts) after the mutation succeeds — details are scalars only, never question content or answer keys. Hot game paths (join/answer) stay unaudited by design.
 
 ## Error codes (from shared/ws-protocol.ts)
 - `ROOM_NOT_FOUND`
