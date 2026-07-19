@@ -279,3 +279,19 @@ export function buildTemplateCsv(): string {
   const lines = [[...TEMPLATE_HEADERS], ...EXAMPLE_ROWS].map((r) => r.map(csvEscape).join(","));
   return "\uFEFF" + lines.join("\r\n") + "\r\n";
 }
+
+// docx \u2192 trimmed raw text. Dynamic import mirrors the pdf-parse pattern in
+// openai-service.ts (avoids load cost at boot).
+export async function extractDocxText(buffer: Buffer): Promise<string> {
+  // Resolve the module OUTSIDE the try/catch below: an interop problem
+  // (default vs namespace export) must surface as a crash, not be silently
+  // misreported as an unreadable user file.
+  const mod: any = await import("mammoth");
+  const mammoth = mod.default ?? mod;
+  try {
+    const result = await mammoth.extractRawText({ buffer });
+    return (result.value ?? "").trim();
+  } catch {
+    throw new UnreadableFileError("Could not read this Word document");
+  }
+}

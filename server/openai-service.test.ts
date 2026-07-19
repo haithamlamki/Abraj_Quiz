@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseGeneratedQuiz, buildGenerationPrompt } from "./openai-service";
+import { parseGeneratedQuiz, buildGenerationPrompt, buildExtractionPrompt, parseExtractedQuiz } from "./openai-service";
 
 test("parseGeneratedQuiz accepts a valid canonical mixed-type payload", () => {
   const raw = {
@@ -43,4 +43,22 @@ test("buildGenerationPrompt embeds the input and asks for canonical mixed-type J
   const c = buildGenerationPrompt("content", "some text", "My Source");
   assert.match(c, /My Source/);
   assert.match(c, /some text/);
+});
+
+test("buildExtractionPrompt embeds the document and the extraction rules", () => {
+  const p = buildExtractionPrompt("The capital of Oman is Muscat.");
+  assert.match(p, /The capital of Oman is Muscat\./);
+  assert.match(p, /NEVER invent/i);
+  assert.match(p, /original language/i);
+  assert.match(p, /SKIP that question/i);
+  assert.match(p, /correctAnswers/);
+});
+
+test("parseExtractedQuiz accepts 40 questions (beyond the generation cap) and rejects junk", () => {
+  const q = { question: "q?", type: "quiz", answerType: "single", answers: ["a", "b"], correctAnswers: [0], timeLimit: 20, points: "standard" };
+  const ok = parseExtractedQuiz({ title: "T", description: "", questions: Array.from({ length: 40 }, () => ({ ...q })) });
+  assert.equal(ok.ok, true);
+  const bad = parseExtractedQuiz({ title: "", questions: [] });
+  assert.equal(bad.ok, false);
+  if (!bad.ok) assert.ok(bad.errors.length > 0);
 });

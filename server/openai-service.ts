@@ -2,7 +2,7 @@ import OpenAI from "openai";
 // Dynamic import for pdf-parse to avoid file loading issues at startup
 import axios from "axios";
 import * as cheerio from "cheerio";
-import { generatedQuizSchema, type GeneratedQuiz } from "@shared/schema";
+import { generatedQuizSchema, extractedQuizSchema, type GeneratedQuiz, type ExtractedQuiz } from "@shared/schema";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
 //
@@ -87,9 +87,47 @@ export function parseGeneratedQuiz(raw: unknown):
   return { ok: false, errors };
 }
 
-// Shared generation core: prompt → OpenAI → validate → one error-fed retry.
-async function generateValidated(kind: "topics" | "content", input: string, sourceTitle?: string): Promise<GeneratedQuiz> {
-  const basePrompt = buildGenerationPrompt(kind, input, sourceTitle);
+export function parseExtractedQuiz(raw: unknown):
+  | { ok: true; data: ExtractedQuiz }
+  | { ok: false; errors: string } {
+  const result = extractedQuizSchema.safeParse(raw);
+  if (result.success) return { ok: true, data: result.data };
+  const errors = result.error.errors
+    .map((e) => `${e.path.join(".") || "(root)"}: ${e.message}`)
+    .join("; ");
+  return { ok: false, errors };
+}
+
+export function buildExtractionPrompt(documentText: string): string {
+  return `Extract the quiz questions that appear in the following document.
+
+STRICT RULES:
+1. Extract ONLY questions that actually exist in the document. NEVER invent new questions.
+2. Keep the document's original language (Arabic stays Arabic, English stays English) for questions, answers, and explanations.
+3. If the document marks the correct answer (answer key, bold, asterisk, "Answer: B", etc.), use it.
+4. If the correct answer is not marked but is unambiguous from the document content, infer it.
+5. If a question's correct answer cannot be determined, SKIP that question entirely.
+6. NEVER produce poll questions; every question needs at least one correct answer.
+7. Set "difficulty" and "explanation" only when the document itself supports them; otherwise omit those fields.
+8. Set a quiz-level "subject" and up to 8 "tags" from the document's topic.
+9. Each question has 2-6 answers; correctAnswers are 0-based indexes; questions with several correct answers use answerType "multiple".
+10. Title the quiz from the document's title or main topic.
+
+Document:
+${documentText}
+
+Respond with ONLY valid JSON in exactly this shape:
+${CANONICAL_EXAMPLE}`;
+}
+
+// Shared core: prompt → OpenAI → validate → one error-fed retry. Used by both
+// quiz GENERATION (create questions about a topic) and quiz EXTRACTION (pull
+// existing questions out of an uploaded document).
+async function completeValidated<T>(
+  basePrompt: string,
+  parse: (raw: unknown) => { ok: true; data: T } | { ok: false; errors: string },
+  opts: { temperature: number; maxTokens: number },
+): Promise<T> {
   let lastErrors = "";
   for (let attempt = 0; attempt < 2; attempt++) {
     const prompt = attempt === 0
@@ -102,18 +140,39 @@ async function generateValidated(kind: "topics" | "content", input: string, sour
         { role: "user", content: prompt },
       ],
       response_format: { type: "json_object" },
-      temperature: 0.7,
-      max_tokens: 3500,
+      temperature: opts.temperature,
+      max_tokens: opts.maxTokens,
     });
     const content = response.choices[0].message.content;
     if (!content) { lastErrors = "empty response"; continue; }
     let raw: unknown;
     try { raw = JSON.parse(content); } catch { lastErrors = "response was not valid JSON"; continue; }
-    const parsed = parseGeneratedQuiz(raw);
+    const parsed = parse(raw);
     if (parsed.ok) return parsed.data;
     lastErrors = parsed.errors;
   }
   throw new Error("Failed to generate a properly formatted quiz. Please try again.");
+}
+
+async function generateValidated(kind: "topics" | "content", input: string, sourceTitle?: string): Promise<GeneratedQuiz> {
+  return completeValidated(buildGenerationPrompt(kind, input, sourceTitle), parseGeneratedQuiz, {
+    temperature: 0.7,
+    maxTokens: 3500,
+  });
+}
+
+// Low temperature: extraction is transcription, not creativity. High token
+// cap: a document can hold up to 100 questions (extractedQuizSchema's max).
+export async function extractQuizFromText(documentText: string): Promise<ExtractedQuiz> {
+  try {
+    return await completeValidated(buildExtractionPrompt(documentText), parseExtractedQuiz, {
+      temperature: 0.2,
+      maxTokens: 16000,
+    });
+  } catch (error: any) {
+    console.error("Quiz extraction error:", error);
+    throw mapOpenAiError(error, `Failed to extract questions from the document: ${error.message}`);
+  }
 }
 
 function mapOpenAiError(error: any, fallbackMessage: string): Error {
