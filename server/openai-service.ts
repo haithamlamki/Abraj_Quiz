@@ -319,14 +319,20 @@ export async function generateBackgroundImage(input: BackgroundImageInput): Prom
       n: 1,
       size: "1792x1024",
       quality: "standard",
-      response_format: "b64_json",
     });
 
-    const b64 = response.data?.[0]?.b64_json;
-    if (!b64) {
-      throw new Error("Invalid response from image generation API");
+    const first = response.data?.[0];
+    if (first?.b64_json) {
+      return Buffer.from(first.b64_json, "base64");
     }
-    return Buffer.from(b64, "base64");
+    if (first?.url) {
+      const imageRes = await fetch(first.url);
+      if (!imageRes.ok) {
+        throw new Error("Invalid response from image generation API");
+      }
+      return Buffer.from(await imageRes.arrayBuffer());
+    }
+    throw new Error("Invalid response from image generation API");
   } catch (error: any) {
     console.error("Background image generation error:", error);
 
