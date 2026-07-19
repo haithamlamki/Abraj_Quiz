@@ -508,6 +508,15 @@
         "classroom-board": "Chalkboard",
         "classroom-bright": "Bright Classroom"
       },
+      "overlayLabel": "Background dimming",
+      "ai": {
+        "sectionLabel": "Generate with AI",
+        "promptPlaceholder": "Describe your background — e.g. space adventure for kids",
+        "generateButton": "Generate",
+        "generatingTitle": "✨ Creating your background…",
+        "generatingHint": "This usually takes 10–20 seconds.",
+        "failedTitle": "Background generation failed"
+      },
       "customBackgroundLabel": "Custom background image",
       "uploading": "Uploading…",
       "accentLabel": "Accent",

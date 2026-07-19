@@ -576,6 +576,15 @@
         "classroom-board": "السبورة",
         "classroom-bright": "فصل ملوّن"
       },
+      "overlayLabel": "تعتيم الخلفية",
+      "ai": {
+        "sectionLabel": "إنشاء بالذكاء الاصطناعي",
+        "promptPlaceholder": "صف الخلفية — مثال: مغامرة فضائية للأطفال",
+        "generateButton": "إنشاء",
+        "generatingTitle": "✨ جارٍ إنشاء الخلفية…",
+        "generatingHint": "يستغرق ذلك عادةً من 10 إلى 20 ثانية.",
+        "failedTitle": "فشل إنشاء الخلفية"
+      },
       "customBackgroundLabel": "صورة خلفية مخصصة",
       "uploading": "جارٍ الرفع…",
       "accentLabel": "اللون المميز",
