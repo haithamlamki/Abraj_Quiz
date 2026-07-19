@@ -35,6 +35,7 @@ export function ImportDialog({ open, onOpenChange, meta, onImported }: ImportDia
   const { t } = useTranslation();
   const { toast } = useToast();
   const fileInput = useRef<HTMLInputElement>(null);
+  const flight = useRef(0);
 
   const [file, setFile] = useState<File | null>(null);
   const [defaultSubject, setDefaultSubject] = useState("");
@@ -46,7 +47,9 @@ export function ImportDialog({ open, onOpenChange, meta, onImported }: ImportDia
   const isDocx = !!file && file.name.toLowerCase().endsWith(".docx");
 
   const reset = () => {
+    flight.current++;
     setFile(null); setDefaultSubject(""); setDefaultTags([]); setPreview(null);
+    setParsing(false); setImporting(false);
   };
   const close = (next: boolean) => {
     if (!next) reset();
@@ -54,21 +57,23 @@ export function ImportDialog({ open, onOpenChange, meta, onImported }: ImportDia
   };
 
   const downloadTemplate = async (kind: "xlsx" | "csv") => {
-    const res = await fetch(buildApiUrl(`/api/import/template.${kind}`), { credentials: "include" });
-    if (!res.ok) {
+    try {
+      const res = await fetch(buildApiUrl(`/api/import/template.${kind}`), { credentials: "include" });
+      if (!res.ok) throw new Error();
+      const url = URL.createObjectURL(await res.blob());
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `question-import-template.${kind}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
       toast({ title: t("bank.import.parseFailedTitle"), variant: "destructive" });
-      return;
     }
-    const url = URL.createObjectURL(await res.blob());
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `question-import-template.${kind}`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const runParse = async () => {
     if (!file) return;
+    const id = ++flight.current;
     setParsing(true);
     try {
       const form = new FormData();
@@ -76,19 +81,24 @@ export function ImportDialog({ open, onOpenChange, meta, onImported }: ImportDia
       if (defaultSubject.trim()) form.append("defaultSubject", defaultSubject.trim());
       if (defaultTags.length) form.append("defaultTags", defaultTags.join(";"));
       const res = await fetch(buildApiUrl("/api/import/parse"), { method: "POST", body: form, credentials: "include" });
+      if (id !== flight.current) return;
       if (!res.ok) {
         throw new Error((await res.json().catch(() => ({}))).message || t("bank.import.parseFailedTitle"));
       }
-      setPreview(await res.json());
+      const body = await res.json();
+      if (id !== flight.current) return;
+      setPreview(body);
     } catch (e: any) {
+      if (id !== flight.current) return;
       toast({ title: t("bank.import.parseFailedTitle"), description: e?.message, variant: "destructive" });
     } finally {
-      setParsing(false);
+      if (id === flight.current) setParsing(false);
     }
   };
 
   const runImport = async () => {
     if (!preview || preview.valid.length === 0) return;
+    const id = ++flight.current;
     setImporting(true);
     try {
       await apiRequest("POST", "/api/bank/questions/bulk", { items: preview.valid });
@@ -96,9 +106,10 @@ export function ImportDialog({ open, onOpenChange, meta, onImported }: ImportDia
       onImported();
       close(false);
     } catch (e: any) {
+      if (id !== flight.current) return;
       toast({ title: t("bank.import.importFailedTitle"), description: e?.message, variant: "destructive" });
     } finally {
-      setImporting(false);
+      if (id === flight.current) setImporting(false);
     }
   };
 
@@ -128,13 +139,22 @@ export function ImportDialog({ open, onOpenChange, meta, onImported }: ImportDia
             </div>
 
             <div
-              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-slate-50"
+              className="border-2 border-dashed rounded-lg p-6 text-center cursor-pointer hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               onClick={() => fileInput.current?.click()}
               onDragOver={(e) => e.preventDefault()}
               onDrop={(e) => {
                 e.preventDefault();
                 const f = e.dataTransfer.files?.[0];
                 if (f) setFile(f);
+              }}
+              role="button"
+              tabIndex={0}
+              aria-label={t("bank.import.chooseFile")}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  fileInput.current?.click();
+                }
               }}
               data-testid="import-dropzone"
             >
