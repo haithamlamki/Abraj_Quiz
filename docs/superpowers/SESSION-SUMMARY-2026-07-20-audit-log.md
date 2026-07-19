@@ -2,14 +2,14 @@
 
 Enterprise wave slice 2 (versioning+autosave → **audit log** → RBAC/sharing).
 
-**Branch:** `feat/audit-log` (from main @ a5dd5bc), 11 commits incl. one
-FOREIGN commit (see below). **Gate at tip:** tsc clean, **209/209** unit,
-build OK. **Integration:** 4 new tests, suite 38 pass / 1 skip.
-**Migration 0012 APPLIED + verified on Supabase prod** — including an
-explicit `revoke update, delete` because **0005's ALTER DEFAULT PRIVILEGES
-auto-grants ALL to quiz_app on new tables**, which silently defeated the
-append-only grants (caught by post-apply verification; grants now
-{INSERT,SELECT}; migration file patched, commit 406c6b8).
+**Branch:** `feat/audit-log`, rebased onto origin/main (post PR #35), 12
+commits: spec + plan + 10 implementation/docs. **Gate:** tsc clean,
+**209/209** unit, build OK. **Integration:** 4 new tests, suite 38 pass /
+1 skip. **Migration 0012 APPLIED + verified on Supabase prod** — including
+an explicit `revoke update, delete` because **0005's ALTER DEFAULT
+PRIVILEGES auto-grants ALL to quiz_app on new tables**, silently defeating
+append-only grants (caught by post-apply verification; prod grants now
+{INSERT,SELECT}; migration file carries the revoke).
 
 ## What shipped
 
@@ -22,14 +22,14 @@ append-only grants (caught by post-apply verification; grants now
   logout; quiz CRUD; game create/start), engine `completeGame`
   (ctx `{tenantId: room.tenantId}`), bank ×5 with bulk `source`
   discriminator (`manual|ai|import`, junk→manual; client sends it from the
-  editor AI save and ImportDialog), admin tenant create/update (fields
-  NAMES only). `requireAuth` now stashes `req.authUser`.
+  editor AI save and ImportDialog), admin tenant create/update (field NAMES
+  only). `requireAuth` now stashes `req.authUser`.
 - **Storage**: `insertAuditEvent` (tenant-ctx only) / `listAuditEvents`
   (newest-first by id, keyset `before`, limit clamp 100; system-context
   reads REQUIRE explicit tenantId) on both backends.
 - **Read surface**: `GET /api/admin/audit` (super-admin only) + AuditLogPanel
   on admin-tenants (English-only; filter + Load more).
-- **CLAUDE.md hard rule**: new mutating routes must call logAudit.
+- **CLAUDE.md**: audit hard rule + the git-worktree session workflow.
 - Hot paths (join/answer/next-question/AI/upload/draft autosave) deliberately
   unaudited; failed actions never logged.
 
@@ -51,16 +51,17 @@ Audit log panel renders the real abraj trail (register/create/save rows with
 questionCount details, correct actors/labels), Load more 50→100 (keyset),
 quiz.save filter 50/50 correct, console clean (only Vite HMR noise).
 
-## Cross-session interference (IMPORTANT for future sessions)
+## Cross-session interference (resolved; workflow changed)
 
-A PARALLEL Claude session shared this working directory during execution:
-committed `3d83822 feat(theme)` onto `feat/audit-log` (assessed by final
-review: sane, self-contained, cleanly splittable), SWITCHED the checkout to
-`feat/classroom-themes` mid-task (Task 7's implementer detected and
-recovered), and owned the :5000 dev server (mine died EADDRINUSE; theirs
-served current code, verified before use). No damage — but two sessions in
-one working directory is a standing hazard; prefer git worktrees if running
-parallel sessions again.
+A parallel Claude session shared the primary checkout during execution:
+duplicated its classroom-theme commit onto this branch (their own PR #35
+merged first; the duplicate was dropped cleanly during the rebase —
+"patch contents already upstream"), switched the checkout mid-task twice
+(one stray docs commit landed under their `fix/first-question-sync`, now
+baked into that pushed branch — harmless duplicate-content docs file), and
+owned the :5000 dev server. Resolution per user decision: **one worktree
+per session/branch is now the standard workflow**, documented in CLAUDE.md;
+this branch finished in its own worktree (`Abraj_Quiz-audit`).
 
 ## Backlog added (BACKLOG.md "Audit log follow-ups")
 
@@ -71,7 +72,6 @@ design; game.complete mirrors pre-existing next-question race).
 
 ## Status / next
 
-Branch complete @ 6de2676. PUSH + PR PENDING the user's decision on the
-foreign theme commit: (a) ship it in this PR, (b) split it out, (c)
-investigate. Roadmap next: RBAC/sharing (needs requireResourceRole
-consolidation), or integration-CI wiring / dep-bump.
+PR opened from `feat/audit-log`; **merge awaits user review/approval** (per
+instruction — no auto-merge). Roadmap next: RBAC/sharing (needs
+requireResourceRole consolidation), or integration-CI wiring / dep-bump.

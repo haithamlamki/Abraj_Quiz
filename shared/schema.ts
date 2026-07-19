@@ -216,6 +216,31 @@ export const quizDrafts = pgTable(
   ],
 );
 
+// ── Audit log (Enterprise wave slice 2) ──────────────────────────
+// Append-only accountability trail. details is scalars-only by contract
+// (see server/audit.ts) — never content, never answer keys. Read surface is
+// super-admin only until the RBAC slice ships a tenant-facing viewer.
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: serial("id").primaryKey(), // insert-order monotonic; the keyset cursor
+    tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+    actorId: integer("actor_id").notNull(),
+    actorName: text("actor_name").notNull(), // username snapshot
+    action: text("action").notNull(),
+    targetType: text("target_type"), // 'quiz'|'bank_question'|'game'|'user'|'tenant'
+    targetId: integer("target_id"),
+    targetLabel: text("target_label"), // title / PIN / username snapshot
+    details: jsonb("details").notNull().default({}),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [
+    index("audit_log_tenant_id_idx").on(t.tenantId, t.id),
+    index("audit_log_tenant_target_idx").on(t.tenantId, t.targetType, t.targetId),
+  ],
+);
+export type AuditEvent = typeof auditLog.$inferSelect;
+
 export const sessions = pgTable("session", {
   sid: text("sid").primaryKey(),
   sess: jsonb("sess").notNull(),

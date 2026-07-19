@@ -24,6 +24,7 @@ import { registerVersionRoutes } from "./version-routes";
 import { uploadQuizImage } from "./supabase-storage";
 import { captureError } from "./instrument";
 import { buildRateLimiters } from "./rate-limits";
+import { logAudit, AUDIT_ACTIONS } from "./audit";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -156,6 +157,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Identity belongs to a user from another tenant (shared backend).
         return res.status(401).json({ message: "Not authenticated" });
       }
+      // Stash the resolved user so handlers (and audit logging) can snapshot
+      // the username without a second lookup.
+      (req as any).authUser = user;
       next();
     } catch (error) {
       captureError(error, { scope: "http.auth-check" });
@@ -216,6 +220,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (req as any).session.username = user.username;
       const token = signToken({ userId: user.id, tenantId: (req.tenant as Tenant).id });
 
+      logAudit(storage, tctx(req), {
+        action: AUDIT_ACTIONS.AUTH_REGISTER, actorId: user.id, actorName: user.username,
+        targetType: "user", targetId: user.id, targetLabel: user.username,
+      });
+
       res.status(201).json({
         id: user.id,
         username: user.username,
@@ -255,6 +264,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       (req as any).session.username = user.username;
       const token = signToken({ userId: user.id, tenantId: (req.tenant as Tenant).id });
 
+      logAudit(storage, tctx(req), {
+        action: AUDIT_ACTIONS.AUTH_LOGIN, actorId: user.id, actorName: user.username,
+        targetType: "user", targetId: user.id, targetLabel: user.username,
+      });
+
       res.json({
         id: user.id,
         username: user.username,
@@ -268,11 +282,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/logout", (req, res) => {
-    (req as any).session.destroy((err: any) => {
+  app.post("/api/logout", (req: any, res) => {
+    // Snapshot identity before destroy() wipes the session.
+    const actorId = req.authUserId as number | undefined;
+    const actorName = (req.session?.username as string | undefined) ?? (actorId ? `user#${actorId}` : undefined);
+    req.session.destroy((err: any) => {
       if (err) {
         captureError(err, { scope: "http.logout" });
         return res.status(500).json({ message: "Failed to logout" });
+      }
+      if (actorId && actorName) {
+        logAudit(storage, tctx(req), {
+          action: AUDIT_ACTIONS.AUTH_LOGOUT, actorId, actorName,
+          targetType: "user", targetId: actorId, targetLabel: actorName,
+        });
       }
       res.json({ message: "Logout successful" });
     });
@@ -571,6 +594,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPublic: validation.data.isPublic,
         createdBy: (req as any).authUserId
       });
+
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), {
+        action: AUDIT_ACTIONS.QUIZ_CREATE, actorId: actor.id, actorName: actor.username,
+        targetType: "quiz", targetId: quiz.id, targetLabel: quiz.title,
+        details: { questionCount: (quiz.questions as unknown[]).length },
+      });
+
       res.status(201).json(quiz);
     } catch (error) {
       captureError(error, { scope: "http.quiz-create" });
@@ -619,6 +650,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         isPublic: validation.data.isPublic
       });
 
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), {
+        action: AUDIT_ACTIONS.QUIZ_SAVE, actorId: actor.id, actorName: actor.username,
+        targetType: "quiz", targetId: updatedQuiz.id, targetLabel: updatedQuiz.title,
+        details: { questionCount: questionsValidation.data.length },
+      });
+
       res.json(updatedQuiz);
     } catch (error) {
       captureError(error, { scope: "http.quiz-update" });
@@ -644,6 +682,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!archived) {
         return res.status(404).json({ message: "Quiz not found" });
       }
+
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), {
+        action: AUDIT_ACTIONS.QUIZ_ARCHIVE, actorId: actor.id, actorName: actor.username,
+        targetType: "quiz", targetId: archived.id, targetLabel: archived.title,
+      });
+
       res.status(204).end();
     } catch (error) {
       captureError(error, { scope: "http.quiz-delete" });
@@ -669,6 +714,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!restored) {
         return res.status(404).json({ message: "Quiz not found" });
       }
+
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), {
+        action: AUDIT_ACTIONS.QUIZ_RESTORE, actorId: actor.id, actorName: actor.username,
+        targetType: "quiz", targetId: restored.id, targetLabel: restored.title,
+      });
+
       res.json(restored);
     } catch (error) {
       captureError(error, { scope: "http.quiz-restore" });
@@ -769,6 +821,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
 
       const game = await storage.createGame(tctx(req), gameData);
+
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), {
+        action: AUDIT_ACTIONS.GAME_CREATE, actorId: actor.id, actorName: actor.username,
+        targetType: "game", targetId: game.id, targetLabel: game.gamePin,
+        details: { pin: game.gamePin, quizId },
+      });
+
       res.status(201).json(toClientGame(game));
     } catch (error) {
       captureError(error, { scope: "http.game-create" });
@@ -866,6 +926,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const updatedGame = await gameRoomManager.startGame(pin, (req as any).authUserId);
+
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), {
+        action: AUDIT_ACTIONS.GAME_START, actorId: actor.id, actorName: actor.username,
+        targetType: "game", targetId: game.id, targetLabel: pin, details: { pin },
+      });
+
       res.json(updatedGame);
     } catch (error) {
       if (!(error instanceof RoomError)) {

@@ -1,5 +1,5 @@
 import {
-  users, quizzes, games, gameResponses, gamePlayers, tenants, bankQuestions, quizVersions, quizDrafts,
+  users, quizzes, games, gameResponses, gamePlayers, tenants, bankQuestions, quizVersions, quizDrafts, auditLog,
   type User, type InsertUser,
   type Quiz, type InsertQuiz,
   type Game, type InsertGame,
@@ -8,8 +8,10 @@ import {
   type Tenant, type InsertTenant,
   type BankQuestion, type InsertBankQuestion,
   type QuizVersion, type QuizDraft, type QuizDraftPayload, type QuizVersionListItem,
+  type AuditEvent,
   MAX_QUIZ_VERSIONS
 } from "@shared/schema";
+import type { AuditEntry } from "./audit";
 import { db } from "./db";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
 import { mergeInsightQuestions, type GameQuestionData, type InsightAgg } from "./insights";
@@ -128,6 +130,15 @@ export interface BankQuestionFilters {
 // left undefined is untouched.
 export type UpdateBankQuestionData = Partial<Omit<InsertBankQuestion, "subject">> & { subject?: string | null };
 
+export interface AuditEventFilters {
+  tenantId?: number; // REQUIRED when ctx is system context; ignored otherwise
+  action?: string;
+  targetType?: string;
+  targetId?: number;
+  before?: number; // keyset: only rows with id < before
+  limit?: number;  // default 50, clamped 1..100
+}
+
 export interface IStorage {
   // Users
   getUser(ctx: StorageCtx, id: number): Promise<User | undefined>;
@@ -209,6 +220,10 @@ export interface IStorage {
   getTenant(ctx: StorageCtx, id: number): Promise<Tenant | undefined>;
   createTenant(ctx: StorageCtx, tenant: InsertTenant): Promise<Tenant>;
   updateTenant(ctx: StorageCtx, id: number, updates: Partial<InsertTenant>): Promise<Tenant | undefined>;
+
+  // Audit log (append-only accountability trail)
+  insertAuditEvent(ctx: StorageCtx, entry: import("./audit").AuditEntry): Promise<AuditEvent>;
+  listAuditEvents(ctx: StorageCtx, filters?: AuditEventFilters): Promise<AuditEvent[]>;
 }
 
 // Every DB call runs in a transaction that sets the RLS GUC:
@@ -895,6 +910,43 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  // ── Audit log ─────────────────────────────────────────────────────
+  async insertAuditEvent(ctx: StorageCtx, entry: AuditEntry): Promise<AuditEvent> {
+    const tenantId = requireTenantId(ctx);
+    return withCtx(ctx, async (tx) => {
+      const [row] = await tx.insert(auditLog).values({
+        tenantId,
+        actorId: entry.actorId,
+        actorName: entry.actorName,
+        action: entry.action,
+        targetType: entry.targetType,
+        targetId: entry.targetId,
+        targetLabel: entry.targetLabel,
+        details: entry.details ?? {},
+      }).returning();
+      return row;
+    });
+  }
+
+  async listAuditEvents(ctx: StorageCtx, filters: AuditEventFilters = {}): Promise<AuditEvent[]> {
+    // Tenant reads scope to the ctx tenant; system-context reads (super-admin
+    // API) must name a tenant explicitly — there is no "all tenants" listing.
+    const tenantId = "system" in ctx ? filters.tenantId : ctx.tenantId;
+    if (!tenantId) throw new Error("listAuditEvents requires a tenant");
+    const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
+    return withCtx(ctx, async (tx) => {
+      const conds: (SQL | undefined)[] = [eq(auditLog.tenantId, tenantId)];
+      if (filters.action) conds.push(eq(auditLog.action, filters.action));
+      if (filters.targetType) conds.push(eq(auditLog.targetType, filters.targetType));
+      if (filters.targetId !== undefined) conds.push(eq(auditLog.targetId, filters.targetId));
+      if (filters.before !== undefined) conds.push(sql`${auditLog.id} < ${filters.before}`);
+      return tx.select().from(auditLog)
+        .where(and(...conds))
+        .orderBy(desc(auditLog.id))
+        .limit(limit);
+    });
+  }
+
   // Helper method to generate unique game PIN
   generateGamePin(): string {
     return Math.floor(100000 + Math.random() * 900000).toString();
@@ -911,6 +963,7 @@ export class MemStorage implements IStorage {
   private bankQuestions: Map<number, BankQuestion>;
   private quizVersions: Map<number, QuizVersion>;
   private quizDrafts: Map<number, QuizDraft>;       // keyed by quizId (one slot)
+  private auditEvents: Map<number, AuditEvent>;
   private currentUserId: number;
   private currentQuizId: number;
   private currentGameId: number;
@@ -920,6 +973,7 @@ export class MemStorage implements IStorage {
   private currentBankQuestionId: number;
   private currentQuizVersionId: number;
   private currentQuizDraftId: number;
+  private currentAuditEventId: number;
 
   constructor() {
     this.users = new Map();
@@ -930,6 +984,7 @@ export class MemStorage implements IStorage {
     this.bankQuestions = new Map();
     this.quizVersions = new Map();
     this.quizDrafts = new Map();
+    this.auditEvents = new Map();
     this.currentUserId = 1;
     this.currentQuizId = 1;
     this.currentGameId = 1;
@@ -938,6 +993,7 @@ export class MemStorage implements IStorage {
     this.currentBankQuestionId = 1;
     this.currentQuizVersionId = 1;
     this.currentQuizDraftId = 1;
+    this.currentAuditEventId = 1;
 
     // Add some sample quizzes
     this.initializeSampleData();
@@ -1583,6 +1639,40 @@ export class MemStorage implements IStorage {
     const updated: Tenant = { ...existing, ...merged, id: existing.id, createdAt: existing.createdAt };
     this.tenants.set(id, updated);
     return updated;
+  }
+
+  // ── Audit log ─────────────────────────────────────────────────────
+  async insertAuditEvent(ctx: StorageCtx, entry: AuditEntry): Promise<AuditEvent> {
+    const tenantId = requireTenantId(ctx);
+    const row: AuditEvent = {
+      id: this.currentAuditEventId++,
+      tenantId,
+      actorId: entry.actorId,
+      actorName: entry.actorName,
+      action: entry.action,
+      targetType: entry.targetType ?? null,
+      targetId: entry.targetId ?? null,
+      targetLabel: entry.targetLabel ?? null,
+      details: entry.details ?? {},
+      createdAt: new Date(),
+    };
+    this.auditEvents.set(row.id, row);
+    return row;
+  }
+
+  async listAuditEvents(ctx: StorageCtx, filters: AuditEventFilters = {}): Promise<AuditEvent[]> {
+    const tenantId = "system" in ctx ? filters.tenantId : ctx.tenantId;
+    if (!tenantId) throw new Error("listAuditEvents requires a tenant");
+    const limit = Math.min(Math.max(filters.limit ?? 50, 1), 100);
+    return Array.from(this.auditEvents.values())
+      .filter((r) =>
+        r.tenantId === tenantId
+        && (!filters.action || r.action === filters.action)
+        && (!filters.targetType || r.targetType === filters.targetType)
+        && (filters.targetId === undefined || r.targetId === filters.targetId)
+        && (filters.before === undefined || r.id < filters.before))
+      .sort((a, b) => b.id - a.id)
+      .slice(0, limit);
   }
 
   // Helper method to generate unique game PIN
