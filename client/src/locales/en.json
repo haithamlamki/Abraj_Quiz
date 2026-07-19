@@ -441,6 +441,12 @@
       "saved": "Draft saved {{time}}",
       "error": "Draft not saved — will retry"
     },
+    "draft": {
+      "resumeTitle": "Unsaved changes found",
+      "resumeBody": "You have unsaved changes from {{time}}. Resume editing or discard them?",
+      "resume": "Resume editing",
+      "discard": "Discard draft"
+    },
     "question": {
       "typeQuiz": "Quiz",
       "typeTrueFalse": "True or False",

@@ -10,6 +10,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye, Settings, Library,
@@ -56,6 +60,8 @@ interface QuizForm {
 }
 
 const TIME_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120];
+
+type DraftDecision = "pending" | "none" | "resumed" | "discarded";
 
 const VALIDATION_MSG: Record<QuestionValidationKey, string> = {
   needsText: "editor.toasts.validationQuestionNeedsText",
@@ -137,11 +143,11 @@ export default function QuizEditor() {
   // `t` identity on every language change — without this, toggling language
   // mid-edit re-runs hydration and silently discards unsaved edits.
   const hydratedQuizRef = useRef<unknown>(null);
-  // Task 5 replaces `true` with the draft-decision gate; until then autosave is
-  // armed as soon as auth resolves (markClean in hydration keeps it no-op safe).
   const [hydrated, setHydrated] = useState(!isEditMode);
   const storageKey = !isEditMode && user ? newQuizDraftKey(tenant.slug, user.id) : undefined;
   const initialCleanRef = useRef(false);
+  const [draftDecision, setDraftDecision] = useState<DraftDecision>("pending");
+  const [storedDraft, setStoredDraft] = useState<{ payload: any; updatedAt: string } | null>(null);
 
   // Redirect unauthenticated users.
   useEffect(() => {
@@ -155,6 +161,23 @@ export default function QuizEditor() {
   const { data: loaded } = useQuery<any>({
     queryKey: ["/api/quizzes", quizId],
     enabled: isEditMode && isAuthenticated,
+  });
+
+  // Draft existence ≡ unsaved changes (deleted transactionally on save), so a
+  // non-404 here is exactly "show the resume prompt". 404 → null, not an error.
+  const { data: draft, isFetched: draftFetched } = useQuery<{ payload: any; updatedAt: string } | null>({
+    queryKey: ["/api/quizzes", quizId, "draft"],
+    enabled: isEditMode && isAuthenticated,
+    retry: false,
+    queryFn: async () => {
+      try {
+        const res = await apiRequest("GET", `/api/quizzes/${quizId}/draft`);
+        return await res.json();
+      } catch (e: any) {
+        if (e?.response?.status === 404) return null;
+        throw e;
+      }
+    },
   });
   useEffect(() => {
     if (loaded && isEditMode) {
@@ -182,6 +205,29 @@ export default function QuizEditor() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Create mode: read the localStorage slot once.
+  useEffect(() => {
+    if (isEditMode || !storageKey) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        setStoredDraft(JSON.parse(raw));
+        return; // decision stays "pending" until the dialog is answered
+      }
+    } catch {
+      // Corrupt slot — treat as no draft.
+      localStorage.removeItem(storageKey);
+    }
+    setDraftDecision("none");
+  }, [isEditMode, storageKey]);
+
+  // Edit mode: resolve "none" when the fetch settles with no draft. The dialog
+  // itself only opens once hydration is done, so a Resume can never be
+  // clobbered by the live-quiz hydration effect.
+  useEffect(() => {
+    if (isEditMode && draftFetched && draft === null) setDraftDecision("none");
+  }, [isEditMode, draftFetched, draft]);
 
   const current = quiz.questions[currentIndex] ?? quiz.questions[0];
 
@@ -340,10 +386,34 @@ export default function QuizEditor() {
   const { status: autosaveStatus, savedAt: autosaveAt, markClean } = useQuizAutosave({
     quizId: isEditMode ? quizId : undefined,
     storageKey,
-    enabled: Boolean(isAuthenticated && hydrated),
+    enabled: Boolean(isAuthenticated && hydrated && draftDecision !== "pending"),
     paused: saveMutation.isPending,
     payload: quiz,
   });
+
+  const pendingDraft = isEditMode ? draft : storedDraft;
+  const showDraftPrompt = draftDecision === "pending" && hydrated && Boolean(pendingDraft);
+
+  const resumeDraft = () => {
+    if (pendingDraft?.payload) {
+      const form = toQuizForm(pendingDraft.payload);
+      setQuiz(form);
+      setCurrentIndex(0);
+      // Resumed content == the stored draft; no rewrite needed until a real edit.
+      markClean(form);
+    }
+    setDraftDecision("resumed");
+  };
+
+  const discardDraft = async () => {
+    try {
+      if (isEditMode) await apiRequest("DELETE", `/api/quizzes/${quizId}/draft`);
+      else if (storageKey) localStorage.removeItem(storageKey);
+    } catch {
+      // Non-blocking: worst case the prompt reappears next visit.
+    }
+    setDraftDecision("discarded");
+  };
 
   const handleSave = () => {
     const err = validate();
@@ -510,6 +580,25 @@ export default function QuizEditor() {
       <SaveToBankDialog open={saveToBankOpen} onOpenChange={setSaveToBankOpen} question={current} />
 
       <BankPickerDialog open={bankPickerOpen} onOpenChange={setBankPickerOpen} onAdd={addFromBank} />
+
+      <AlertDialog open={showDraftPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("editor.draft.resumeTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("editor.draft.resumeBody", {
+                time: pendingDraft?.updatedAt
+                  ? new Date(pendingDraft.updatedAt).toLocaleString()
+                  : "",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={discardDraft}>{t("editor.draft.discard")}</AlertDialogCancel>
+            <AlertDialogAction onClick={resumeDraft}>{t("editor.draft.resume")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl">
