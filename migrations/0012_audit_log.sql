@@ -35,6 +35,10 @@ create policy tenant_isolation on public.audit_log
 
 grant select, insert on public.audit_log to quiz_app;
 grant usage, select on sequence public.audit_log_id_seq to quiz_app;
+-- 0005's ALTER DEFAULT PRIVILEGES auto-grants ALL to quiz_app on new tables,
+-- which would silently defeat append-only. Revoke explicitly (verified on
+-- prod 2026-07-20: grants read {INSERT,SELECT} after this).
+revoke update, delete on public.audit_log from quiz_app;
 
 commit;
 
