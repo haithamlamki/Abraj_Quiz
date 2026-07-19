@@ -169,6 +169,53 @@ export const bankQuestions = pgTable(
   (t) => [index("bank_questions_tenant_idx").on(t.tenantId)],
 );
 
+// ── Quiz versioning + drafts (Enterprise wave slice 1) ───────────
+// quiz_versions is an immutable, append-only history: every explicit Save of
+// a quiz banks the PREVIOUS row state here (pruned to MAX_QUIZ_VERSIONS).
+// Deliberately a separate table — never new columns on the client-visible
+// quizzes row (spread-leak hazard). Payloads carry correctAnswers, so every
+// read path is owner-gated.
+export const quizVersions = pgTable(
+  "quiz_versions",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+    quizId: integer("quiz_id").notNull().references(() => quizzes.id),
+    versionNumber: integer("version_number").notNull(), // per-quiz, max+1
+    title: text("title").notNull(),
+    description: text("description"),
+    questions: jsonb("questions").notNull(),
+    theme: jsonb("theme"),
+    background: text("background"),
+    isPublic: boolean("is_public"),
+    createdBy: integer("created_by").notNull(),
+    createdAt: timestamp("created_at").defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("quiz_versions_quiz_version_uq").on(t.quizId, t.versionNumber),
+    index("quiz_versions_quiz_idx").on(t.quizId),
+    index("quiz_versions_tenant_idx").on(t.tenantId),
+  ],
+);
+
+// One mutable draft slot per quiz. Deleted in the same transaction as a
+// successful Save, so DRAFT EXISTENCE ≡ UNSAVED CHANGES (the client's resume
+// prompt relies on this — quizzes has no updated_at to compare against).
+export const quizDrafts = pgTable(
+  "quiz_drafts",
+  {
+    id: serial("id").primaryKey(),
+    tenantId: integer("tenant_id").notNull().references(() => tenants.id),
+    quizId: integer("quiz_id").notNull().references(() => quizzes.id),
+    payload: jsonb("payload").notNull(), // quizDraftSchema shape
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("quiz_drafts_quiz_uq").on(t.quizId),
+    index("quiz_drafts_tenant_idx").on(t.tenantId),
+  ],
+);
+
 export const sessions = pgTable("session", {
   sid: text("sid").primaryKey(),
   sess: jsonb("sess").notNull(),
@@ -356,6 +403,40 @@ export const insertBankQuestionSchema = z.object({
   tags: z.array(z.string().max(50)).max(20).default([]).transform(normalizeTags),
 });
 
+// Draft payloads must accept invalid-in-progress content that
+// insertQuizSchema/quizQuestionsSchema reject (empty title, no correct answer
+// marked, empty answer text) — but stay strict on BOUNDS so a pathological
+// client can't store megabytes of junk. Unknown keys are stripped.
+const draftQuestionSchema = z
+  .object({
+    question: z.string().max(5000).default(""),
+    imageUrl: z.string().max(2000).optional(),
+    type: z.string().max(30).default("quiz"),
+    answerType: z.string().max(30).default("single"),
+    answers: z.array(z.string().max(5000)).max(10).default([]),
+    correctAnswers: z.array(z.number().int().min(0).max(9)).max(10).default([]),
+    timeLimit: z.number().int().min(1).max(600).default(20),
+    points: z.string().max(20).default("standard"),
+  })
+  .strip();
+
+export const quizDraftSchema = z
+  .object({
+    title: z.string().max(200).default(""),
+    description: z.string().max(2000).default(""),
+    // May hold a base64 data URL (same as quizzes.background); the global
+    // express JSON body limit is the real ceiling.
+    background: z.string().default("classroom"),
+    isPublic: z.boolean().default(true),
+    theme: z.record(z.any()).optional(), // matches insertQuizSchema's theme
+    questions: z.array(draftQuestionSchema).max(100).default([]),
+  })
+  .strip();
+export type QuizDraftPayload = z.infer<typeof quizDraftSchema>;
+
+// Retention cap for quiz_versions, enforced on write (prune oldest).
+export const MAX_QUIZ_VERSIONS = 20;
+
 // Validated shape for AI-generated quizzes. Questions are the canonical
 // questionSchema (mixed types, correctAnswers[], optional difficulty/explanation);
 // the generator emits this directly and the server rejects anything else.
@@ -402,3 +483,14 @@ export type QuizQuestions = z.infer<typeof quizQuestionsSchema>;
 
 export type BankQuestion = typeof bankQuestions.$inferSelect;
 export type InsertBankQuestion = z.infer<typeof insertBankQuestionSchema>;
+
+export type QuizVersion = typeof quizVersions.$inferSelect;
+export type QuizDraft = typeof quizDrafts.$inferSelect;
+
+// Light list item for the history panel — deliberately NO questions payload.
+export interface QuizVersionListItem {
+  versionNumber: number;
+  title: string;
+  questionCount: number;
+  createdAt: Date | null;
+}
