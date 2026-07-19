@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
 
-const { buildGameReport, buildQuizReport } = await import("./reports");
+const { buildGameReport, buildQuizReport, buildGameReportXlsx, buildQuizReportXlsx, buildGameReportCsv, buildQuizReportCsv, REPORT_STRINGS, reportSlug } = await import("./reports");
 
 const Q = (question: string, over: Record<string, unknown> = {}) => ({
   question, type: "quiz", answerType: "single", answers: ["a", "b", "c"],
@@ -102,4 +102,62 @@ test("buildQuizReport: sessions, flat player rows, unique names case-insensitive
   assert.deepEqual(r.sessionRows.map((s) => [s.gamePin, s.playerCount]), [["111111", 1], ["222222", 2]]);
   assert.equal(r.playerRows.length, 3);
   assert.deepEqual(r.playerRows.map((p) => [p.gamePin, p.name, p.correctCount]), [["111111", "Amy", 1], ["222222", "amy", 1], ["222222", "bob", 0]]);
+});
+
+function sampleGameData() {
+  return buildGameReport({
+    quiz, game: game(),
+    players: [player("amy", 500), player("bob", 900)],
+    responses: [resp("bob", 0, { isCorrect: true }), resp("amy", 1, { selectedAnswer: 1 })],
+  });
+}
+
+test("REPORT_STRINGS: AR covers exactly the EN keys", () => {
+  assert.deepEqual(Object.keys(REPORT_STRINGS.ar).sort(), Object.keys(REPORT_STRINGS.en).sort());
+  for (const v of Object.values(REPORT_STRINGS.ar)) assert.ok(String(v).length > 0);
+});
+
+test("game xlsx roundtrip: 3 sheets, frozen bold header, spot cells", async () => {
+  const buf = await buildGameReportXlsx(sampleGameData(), "en");
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf as any);
+  assert.deepEqual(wb.worksheets.map((w) => w.name), [REPORT_STRINGS.en.sheetSummary, REPORT_STRINGS.en.sheetPlayers, REPORT_STRINGS.en.sheetAnswers]);
+  const players = wb.worksheets[1];
+  assert.equal(players.getRow(1).getCell(2).text, REPORT_STRINGS.en.player);
+  assert.equal(players.getRow(2).getCell(2).text, "bob"); // rank 1 first
+  assert.equal(players.getRow(2).getCell(1).text, "1");
+  const answers = wb.worksheets[2];
+  assert.equal(answers.getRow(2).getCell(2).text, "✓"); // q1 × bob
+  assert.equal(answers.getRow(3).getCell(3).text, "b"); // poll × amy chosen label
+  assert.equal(answers.getRow(4).getCell(2).text, "—"); // q2 × bob no answer
+});
+
+test("quiz xlsx roundtrip: 3 sheets with session and flat player rows", async () => {
+  const g1 = game({ id: 10, gamePin: "111111", createdAt: new Date("2026-07-01T08:00:00Z") });
+  const data = buildQuizReport({
+    quiz, games: [g1],
+    playersByGame: new Map([[10, [player("amy", 300)]]]),
+    responsesByGame: new Map([[10, [resp("amy", 0, { isCorrect: true })]]]),
+  });
+  const buf = await buildQuizReportXlsx(data, "ar");
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  await wb.xlsx.load(buf as any);
+  assert.deepEqual(wb.worksheets.map((w) => w.name), [REPORT_STRINGS.ar.sheetSummary, REPORT_STRINGS.ar.sheetSessions, REPORT_STRINGS.ar.sheetPlayerResults]);
+  assert.equal(wb.worksheets[2].getRow(2).getCell(3).text, "amy");
+});
+
+test("csv builders: BOM escape prefix, quoting, expected columns", () => {
+  const csv = buildGameReportCsv(sampleGameData(), "en");
+  assert.ok(csv.startsWith("\uFEFF"));
+  const lines = csv.slice(1).split("\r\n").filter(Boolean);
+  assert.equal(lines[0].split(",")[1], REPORT_STRINGS.en.player);
+  assert.equal(lines.length, 3); // header + 2 players
+  assert.match(lines[1], /^1,bob,900,/);
+});
+
+test("reportSlug: ascii slug, arabic falls back", () => {
+  assert.equal(reportSlug("Fire Safety 101!", "quiz-1"), "fire-safety-101");
+  assert.equal(reportSlug("اختبار السلامة", "quiz-7"), "quiz-7");
 });

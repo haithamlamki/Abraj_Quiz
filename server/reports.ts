@@ -5,6 +5,8 @@
 // NEVER include answer keys: cells carry outcomes (✓/✗/—) or, for polls, the
 // option the player chose — the completed-game reveal boundary.
 import type { Game, GamePlayer, GameResponse, Question, Quiz } from "@shared/schema";
+import ExcelJS from "exceljs";
+import { csvEscape } from "./import-service";
 
 export interface PlayerRow { rank: number; name: string; score: number; correctCount: number; scoredCount: number; accuracy: number }
 export type MatrixCell = { kind: "correct" | "incorrect" | "none" } | { kind: "poll"; label: string };
@@ -155,4 +157,150 @@ export function buildQuizReport(input: { quiz: Quiz; games: Game[]; playersByGam
     sessionRows,
     playerRows,
   };
+}
+
+export type ReportLang = "en" | "ar";
+
+// Report header/label strings. Data cells (names, question text) stay in
+// whatever language they already are — this dictionary covers ONLY the
+// generated file's own labels. A test asserts EN/AR key parity.
+export const REPORT_STRINGS: Record<ReportLang, Record<string, string>> = {
+  en: {
+    sheetSummary: "Summary", sheetPlayers: "Players", sheetAnswers: "Answers",
+    sheetSessions: "Sessions", sheetPlayerResults: "Player Results",
+    quizTitle: "Quiz", gamePin: "Game PIN", playedAt: "Date",
+    playerCount: "Players", questionCount: "Questions",
+    avgScore: "Average score", avgAccuracy: "Average accuracy",
+    sessionCount: "Sessions", uniquePlayers: "Unique players", dateRange: "Date range",
+    rank: "Rank", player: "Player", score: "Score", correct: "Correct",
+    accuracy: "Accuracy", question: "Question", session: "Session",
+    identityNote: "Player names are self-reported at join time.",
+  },
+  ar: {
+    sheetSummary: "الملخص", sheetPlayers: "اللاعبون", sheetAnswers: "الإجابات",
+    sheetSessions: "الجلسات", sheetPlayerResults: "نتائج اللاعبين",
+    quizTitle: "الاختبار", gamePin: "رمز اللعبة", playedAt: "التاريخ",
+    playerCount: "اللاعبون", questionCount: "الأسئلة",
+    avgScore: "متوسط النقاط", avgAccuracy: "متوسط الدقة",
+    sessionCount: "الجلسات", uniquePlayers: "اللاعبون الفريدون", dateRange: "الفترة الزمنية",
+    rank: "الترتيب", player: "اللاعب", score: "النقاط", correct: "إجابات صحيحة",
+    accuracy: "الدقة", question: "السؤال", session: "الجلسة",
+    identityNote: "أسماء اللاعبين مُدخلة ذاتيًا عند الانضمام.",
+  },
+};
+
+const CELL_MARK = { correct: "✓", incorrect: "✗", none: "—" } as const;
+
+function fmtDate(d: Date | null): string {
+  return d ? d.toISOString().slice(0, 16).replace("T", " ") : "—";
+}
+function fmtPct(x: number): string {
+  return `${Math.round(x * 100)}%`;
+}
+
+function addHeaderRow(ws: ExcelJS.Worksheet, cells: string[]): void {
+  const row = ws.addRow(cells);
+  row.font = { bold: true };
+  ws.views = [{ state: "frozen", ySplit: 1 }];
+}
+
+function addSummarySheet(wb: ExcelJS.Workbook, s: Record<string, string>, pairs: Array<[string, string]>, note: string): void {
+  const ws = wb.addWorksheet(s.sheetSummary);
+  for (const [label, value] of pairs) {
+    const row = ws.addRow([label, value]);
+    row.getCell(1).font = { bold: true };
+  }
+  ws.addRow([]);
+  ws.addRow([note]);
+  ws.getColumn(1).width = 24;
+  ws.getColumn(2).width = 40;
+}
+
+export async function buildGameReportXlsx(data: GameReportData, lang: ReportLang): Promise<Buffer> {
+  const s = REPORT_STRINGS[lang];
+  const wb = new ExcelJS.Workbook();
+
+  addSummarySheet(wb, s, [
+    [s.quizTitle, data.summary.quizTitle],
+    [s.gamePin, data.summary.gamePin],
+    [s.playedAt, fmtDate(data.summary.playedAt)],
+    [s.playerCount, String(data.summary.playerCount)],
+    [s.questionCount, String(data.summary.questionCount)],
+    [s.avgScore, String(Math.round(data.summary.avgScore))],
+    [s.avgAccuracy, fmtPct(data.summary.avgAccuracy)],
+  ], s.identityNote);
+
+  const players = wb.addWorksheet(s.sheetPlayers);
+  addHeaderRow(players, [s.rank, s.player, s.score, s.correct, s.accuracy]);
+  for (const p of data.playerRows) {
+    players.addRow([p.rank, p.name, p.score, `${p.correctCount}/${p.scoredCount}`, fmtPct(p.accuracy)]);
+  }
+  players.columns.forEach((c) => { c.width = 16; });
+  players.getColumn(2).width = 28;
+
+  const answers = wb.addWorksheet(s.sheetAnswers);
+  addHeaderRow(answers, [s.question, ...data.playerRows.map((p) => p.name)]);
+  data.questions.forEach((q, qi) => {
+    answers.addRow([q.question, ...data.matrix[qi].map((cell) => (cell.kind === "poll" ? cell.label : CELL_MARK[cell.kind]))]);
+  });
+  answers.getColumn(1).width = 50;
+  for (let c = 2; c <= data.playerRows.length + 1; c++) answers.getColumn(c).width = 14;
+
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
+
+export async function buildQuizReportXlsx(data: QuizReportData, lang: ReportLang): Promise<Buffer> {
+  const s = REPORT_STRINGS[lang];
+  const wb = new ExcelJS.Workbook();
+
+  addSummarySheet(wb, s, [
+    [s.quizTitle, data.summary.quizTitle],
+    [s.sessionCount, String(data.summary.sessionCount)],
+    [s.uniquePlayers, String(data.summary.uniquePlayers)],
+    [s.avgScore, String(Math.round(data.summary.avgScore))],
+    [s.dateRange, `${fmtDate(data.summary.from)} – ${fmtDate(data.summary.to)}`],
+  ], s.identityNote);
+
+  const sessions = wb.addWorksheet(s.sheetSessions);
+  addHeaderRow(sessions, [s.playedAt, s.gamePin, s.playerCount, s.avgScore]);
+  for (const row of data.sessionRows) {
+    sessions.addRow([fmtDate(row.playedAt), row.gamePin, row.playerCount, Math.round(row.avgScore)]);
+  }
+  sessions.columns.forEach((c) => { c.width = 18; });
+
+  const results = wb.addWorksheet(s.sheetPlayerResults);
+  addHeaderRow(results, [s.playedAt, s.session, s.player, s.score, s.correct, s.accuracy]);
+  for (const p of data.playerRows) {
+    results.addRow([fmtDate(p.playedAt), p.gamePin, p.name, p.score, `${p.correctCount}/${p.scoredCount}`, fmtPct(p.accuracy)]);
+  }
+  results.columns.forEach((c) => { c.width = 18; });
+  results.getColumn(3).width = 28;
+
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
+
+function csvLines(rows: string[][]): string {
+  return "\uFEFF" + rows.map((r) => r.map(csvEscape).join(",")).join("\r\n") + "\r\n";
+}
+
+export function buildGameReportCsv(data: GameReportData, lang: ReportLang): string {
+  const s = REPORT_STRINGS[lang];
+  return csvLines([
+    [s.rank, s.player, s.score, s.correct, s.accuracy],
+    ...data.playerRows.map((p) => [String(p.rank), p.name, String(p.score), `${p.correctCount}/${p.scoredCount}`, fmtPct(p.accuracy)]),
+  ]);
+}
+
+export function buildQuizReportCsv(data: QuizReportData, lang: ReportLang): string {
+  const s = REPORT_STRINGS[lang];
+  return csvLines([
+    [s.playedAt, s.session, s.player, s.score, s.correct, s.accuracy],
+    ...data.playerRows.map((p) => [fmtDate(p.playedAt), p.gamePin, p.name, String(p.score), `${p.correctCount}/${p.scoredCount}`, fmtPct(p.accuracy)]),
+  ]);
+}
+
+// ASCII-safe filename slug; Arabic titles slug to empty → fallback.
+export function reportSlug(title: string, fallback: string): string {
+  const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return slug || fallback;
 }
