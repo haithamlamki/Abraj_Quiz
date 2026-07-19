@@ -337,7 +337,14 @@
     "emptyTitle": "Your bank is empty",
     "emptyDescription": "Save questions from any quiz, or create one here to reuse later.",
     "emptyArchivedTitle": "No archived questions",
-    "authRequiredTitle": "Please log in to use the Question Bank"
+    "authRequiredTitle": "Please log in to use the Question Bank",
+    "difficultyLabel": "Difficulty",
+    "difficultyNone": "None",
+    "difficultyEasy": "Easy",
+    "difficultyMedium": "Medium",
+    "difficultyHard": "Hard",
+    "explanationLabel": "Explanation",
+    "explanationPlaceholder": "Why the correct answer is right (optional)"
   },
   "insights": {
     "loading": "Loading insights…",
@@ -483,7 +490,11 @@
       "urlPlaceholder": "https://example.com/article",
       "generateButton": "Generate",
       "footerNote": "Generated questions replace the current ones — review and edit before saving.",
-      "generatedQuizDefaultTitle": "Generated Quiz"
+      "generatedQuizDefaultTitle": "Generated Quiz",
+      "saveToBank": "Also save these questions to the Question Bank",
+      "savedToBankToast_one": "Saved {{count}} question to the bank",
+      "savedToBankToast_other": "Saved {{count}} questions to the bank",
+      "saveToBankFailed": "Couldn't save to the Question Bank"
     },
     "toasts": {
       "authRequiredTitle": "Authentication Required",

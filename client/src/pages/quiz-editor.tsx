@@ -5,6 +5,7 @@ import { useLocation, useParams } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -18,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import type { Question } from "@shared/schema";
 import { answerStyle } from "@/lib/answer-style";
+import { normalizeGeneratedQuestions } from "@/lib/from-generated";
 import {
   EDITOR_LEFT_RAIL,
   EDITOR_RIGHT_PANEL,
@@ -60,19 +62,6 @@ const VALIDATION_MSG: Record<QuestionValidationKey, string> = {
   needsCorrectAnswer: "editor.toasts.validationNeedsCorrectAnswer",
   singleSelectOneCorrect: "editor.toasts.validationSingleSelectOneCorrect",
 };
-
-// Map an AI-generated (legacy-shaped) question into the canonical shape.
-function fromGenerated(q: any): Question {
-  return {
-    question: q.question ?? "",
-    type: "quiz",
-    answerType: "single",
-    answers: Array.isArray(q.answers) && q.answers.length >= 2 ? q.answers : ["", "", "", ""],
-    correctAnswers: [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
-    timeLimit: q.timeLimit ?? 20,
-    points: q.points === "double" ? "double" : "standard",
-  };
-}
 
 export default function QuizEditor() {
   const { quizId } = useParams();
@@ -322,20 +311,37 @@ export default function QuizEditor() {
   const [aiText, setAiText] = useState("");
   const [aiUrl, setAiUrl] = useState("");
   const [aiFile, setAiFile] = useState<File | null>(null);
+  const [aiSaveToBank, setAiSaveToBank] = useState(true);
 
   const applyGenerated = (generated: any) => {
-    if (!generated || !Array.isArray(generated.questions) || generated.questions.length === 0) {
+    const questions = normalizeGeneratedQuestions(generated?.questions);
+    if (questions.length === 0) {
       throw new Error(t("editor.toasts.generatorNoQuestions"));
     }
     setQuiz((p) => ({
       ...p,
       title: p.title || generated.title || t("editor.ai.generatedQuizDefaultTitle"),
       description: p.description || generated.description || "",
-      questions: generated.questions.map(fromGenerated),
+      questions,
     }));
     setCurrentIndex(0);
+
+    if (aiSaveToBank && Array.isArray(generated.questions) && generated.questions.length > 0) {
+      const items = normalizeGeneratedQuestions(generated.questions).map((q) => ({
+        question: q,
+        subject: generated.subject || undefined,
+        tags: Array.isArray(generated.tags) ? generated.tags : [],
+      }));
+      if (items.length > 0) {
+        apiRequest("POST", "/api/bank/questions/bulk", { items })
+          .then((res) => res.json())
+          .then((data) => toast({ title: t("editor.ai.savedToBankToast", { count: data.created ?? items.length }) }))
+          .catch(() => toast({ title: t("editor.ai.saveToBankFailed"), variant: "destructive" }));
+      }
+    }
+
     setAiOpen(false);
-    toast({ title: t("editor.toasts.quizGeneratedTitle"), description: t("editor.toasts.quizGeneratedDescription", { count: generated.questions.length }) });
+    toast({ title: t("editor.toasts.quizGeneratedTitle"), description: t("editor.toasts.quizGeneratedDescription", { count: questions.length }) });
   };
 
   const runGeneration = async (kind: "topics" | "text" | "url" | "pdf") => {
@@ -424,6 +430,10 @@ export default function QuizEditor() {
                   </Button>
                 </TabsContent>
               </Tabs>
+              <label className="flex items-center gap-2 text-sm text-gray-600 mt-2">
+                <Checkbox checked={aiSaveToBank} onCheckedChange={(v) => setAiSaveToBank(v === true)} />
+                {t("editor.ai.saveToBank")}
+              </label>
               <p className="text-xs text-gray-400">{t("editor.ai.footerNote")}</p>
             </DialogContent>
           </Dialog>
