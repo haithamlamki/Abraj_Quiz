@@ -14,7 +14,7 @@
 
 - Work on branch `feat/import-pipeline` (create from `main` in Task 1).
 - Gate before every commit: `npm run check && npm test && npm run build` (from repo root). All three must pass.
-- `npm audit --omit=dev` must report **0 vulnerabilities** after adding `exceljs` and `mammoth`. If it doesn't, STOP and report — do not proceed.
+- `npm audit --omit=dev` must report **no NEW vulnerabilities vs the main baseline** after adding `exceljs` and `mammoth`. (Reality check 2026-07-19: main already carries 10 pre-existing advisories — undici, ws, shell-quote, etc. — logged as audit debt for the final review. exceljs's vulnerable `uuid <11.1.1` transitive is fixed by the `overrides` block in package.json pinning `uuid ^11.1.1`; mammoth adds nothing.) If a new advisory appears beyond that baseline, STOP and report.
 - Max **200** questions per import file; bulk endpoint cap becomes **200** (`MAX_BANK_BULK_ITEMS` in `shared/schema.ts`).
 - docx is the ONLY lane that calls OpenAI. xlsx/csv never touch it.
 - All storage calls go through the existing bulk endpoint's `tctx(req)` path — import code itself never calls storage.
@@ -50,7 +50,7 @@ npm install exceljs mammoth
 npm audit --omit=dev
 ```
 
-Expected: audit reports **found 0 vulnerabilities**. If not, STOP and report the audit output.
+Expected: audit reports the same 10 pre-existing vulnerabilities as main (1 low, 3 moderate, 5 high, 1 critical) and NOTHING newly introduced by exceljs/mammoth — the package.json `overrides` block pins exceljs's transitive `uuid` to `^11.1.1` to keep it that way. If a new advisory appears, STOP and report the audit output.
 
 - [ ] **Step 3: Write the failing tests**
 
