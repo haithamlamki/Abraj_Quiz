@@ -10,7 +10,7 @@ test("parseCsv: plain comma-delimited rows", () => {
 });
 
 test("parseCsv: strips BOM, handles quoted fields with commas, escaped quotes, embedded newlines", () => {
-  const csv = '﻿question,tags\r\n"What, exactly?","a;b"\r\n"He said ""hi""","line1\nline2"\r\n';
+  const csv = '\uFEFFquestion,tags\r\n"What, exactly?","a;b"\r\n"He said ""hi""","line1\nline2"\r\n';
   assert.deepEqual(parseCsv(csv), [
     ["question", "tags"],
     ["What, exactly?", "a;b"],
@@ -32,5 +32,5 @@ test("parseCsv: drops trailing fully-blank rows, keeps interior ones", () => {
 
 test("parseCsv: empty input → no rows", () => {
   assert.deepEqual(parseCsv(""), []);
-  assert.deepEqual(parseCsv("﻿"), []);
+  assert.deepEqual(parseCsv("\uFEFF"), []);
 });
