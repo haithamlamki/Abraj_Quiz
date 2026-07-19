@@ -57,14 +57,14 @@ export function registerReportRoutes(app: Express, { storage, requireAuth, tctx 
     const games = await storage.getCompletedQuizGames(tctx(req), quizId);
     const playersByGame = new Map<number, Awaited<ReturnType<IStorage["getGamePlayers"]>>>();
     const responsesByGame = new Map<number, Awaited<ReturnType<IStorage["getGameResponses"]>>>();
-    await Promise.all(games.map(async (g) => {
+    for (const g of games) {
       const [players, responses] = await Promise.all([
         storage.getGamePlayers(tctx(req), g.id),
         storage.getGameResponses(tctx(req), g.id),
       ]);
       playersByGame.set(g.id, players);
       responsesByGame.set(g.id, responses);
-    }));
+    }
     return {
       data: buildQuizReport({ quiz, games, playersByGame, responsesByGame }),
       slug: `${reportSlug(quiz.title, `quiz-${quiz.id}`)}-report`,

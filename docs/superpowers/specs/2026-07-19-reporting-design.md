@@ -83,11 +83,16 @@ returns report structures. Unit-testable without files or DB.
 
 ## Client
 
-Two surfaces, download buttons only — no new pages:
+One surface, download buttons only — no new pages. (Amended during planning: the
+`quiz-history` page lists QUIZZES, not game sessions — per-game rows only exist in the
+insights page's Recent Games table, so both report levels live on `quiz-insights`.)
 
-- **`quiz-history`**: each completed game row gets Excel/CSV report actions matching
-  the page's existing row-action idiom; absent/disabled for in-progress games.
-- **`quiz-insights`**: a "Download report" button group (Excel / CSV) in the header.
+- **`quiz-insights` header**: a "Download report" button group (Excel / CSV) — the
+  quiz-level report.
+- **`quiz-insights` Recent Games table**: a new trailing column with compact Excel/CSV
+  actions per row — the game-level report. (The insights aggregation already includes
+  completed games only, so no in-progress guard is needed client-side; the 409 remains
+  the server-side backstop.)
 - Downloads via fetch → blob → objectURL with an error toast — the third use of this
   pattern, so it is extracted to a shared `client/src/lib/download.ts` and
   `ImportDialog.downloadTemplate` is refactored to use it.

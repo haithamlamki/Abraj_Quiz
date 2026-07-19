@@ -484,4 +484,13 @@ test("getCompletedQuizGames: only completed games for the quiz, oldest first, te
   const rows = await s.getCompletedQuizGames(ctx, quiz.id);
   assert.deepEqual(rows.map((g) => g.gamePin), ["RPT001", "RPT003"]);
   assert.ok(!rows.some((g) => g.id === g2.id));
+
+  // Tenant isolation: a tenant-2 completed game on the same quizId is
+  // invisible to tenant 1 and vice versa.
+  const ctx2 = { tenantId: 2 };
+  const t2game = await s.createGame(ctx2, { quizId: quiz.id, gamePin: "RPT005", hostId: 9, status: "completed" } as any);
+  const t1rows = await s.getCompletedQuizGames(ctx, quiz.id);
+  assert.ok(!t1rows.some((g) => g.id === t2game.id));
+  const t2rows = await s.getCompletedQuizGames(ctx2, quiz.id);
+  assert.deepEqual(t2rows.map((g) => g.gamePin), ["RPT005"]);
 });

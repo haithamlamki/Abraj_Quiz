@@ -157,6 +157,17 @@ test("csv builders: BOM escape prefix, quoting, expected columns", () => {
   assert.match(lines[1], /^1,bob,900,/);
 });
 
+test("csv builders neutralize formula-injection player names (OWASP prefix)", () => {
+  const data = buildGameReport({
+    quiz, game: game(),
+    players: [player('=HYPERLINK("http://evil")', 10), player("+cmd", 5)],
+    responses: [],
+  });
+  const csv = buildGameReportCsv(data, "en");
+  assert.ok(csv.includes("'=HYPERLINK"));
+  assert.ok(csv.includes("'+cmd"));
+});
+
 test("reportSlug: ascii slug, arabic falls back", () => {
   assert.equal(reportSlug("Fire Safety 101!", "quiz-1"), "fire-safety-101");
   assert.equal(reportSlug("اختبار السلامة", "quiz-7"), "quiz-7");

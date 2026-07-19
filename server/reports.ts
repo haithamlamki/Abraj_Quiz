@@ -14,6 +14,8 @@ export type MatrixCell = { kind: "correct" | "incorrect" | "none" } | { kind: "p
 export interface GameReportData {
   summary: { quizTitle: string; gamePin: string; playedAt: Date | null; playerCount: number; questionCount: number; avgScore: number; avgAccuracy: number };
   playerRows: PlayerRow[];
+  // Full Question objects (incl. answer keys) for INTERNAL builder use only —
+  // never serialize GameReportData itself to a client (questions_snapshot lesson).
   questions: Question[];
   matrix: MatrixCell[][];
 }
@@ -279,8 +281,16 @@ export async function buildQuizReportXlsx(data: QuizReportData, lang: ReportLang
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
+// OWASP CSV-injection mitigation: Excel evaluates cells beginning with
+// = + - @ even when quoted, and player names are player-controlled. Prefix
+// a leading apostrophe (Excel's text marker). The xlsx path is immune \u2014
+// exceljs writes inline strings, never formulas.
+function csvCell(value: string): string {
+  return /^[=+\-@]/.test(value) ? `'${value}` : value;
+}
+
 function csvLines(rows: string[][]): string {
-  return "\uFEFF" + rows.map((r) => r.map(csvEscape).join(",")).join("\r\n") + "\r\n";
+  return "\uFEFF" + rows.map((r) => r.map((c) => csvEscape(csvCell(c))).join(",")).join("\r\n") + "\r\n";
 }
 
 export function buildGameReportCsv(data: GameReportData, lang: ReportLang): string {
