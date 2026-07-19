@@ -34,6 +34,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   let yPosition = 20;
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
+  const measure = (s: string) => pdf.getTextWidth(s);
 
   // Tenant-derived palette. The quiz `background` no longer picks colors —
   // branding always comes from the tenant unless the quiz has an explicit
@@ -126,12 +127,18 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   yPosition += 55;
 
   // Quiz Information Card - Modern Card Design (calculate dynamic height based on description)
-  let descriptionLines = 0;
+  pdf.setFontSize(11);
+  pdf.setFont('helvetica', 'normal');
+  let descLines: string[] = [];
   if (game.quiz?.description) {
-    const tempDescLines = pdf.splitTextToSize(game.quiz.description, pageWidth - 90);
-    descriptionLines = tempDescLines.length;
+    const descWidth = pageWidth - 108; // text starts at x=78, card right edge minus padding
+    descLines = pdf.splitTextToSize(game.quiz.description, descWidth);
+    if (descLines.length > 3) {
+      descLines = descLines.slice(0, 3);
+      descLines[2] = fitText(descLines[2] + ' ...', descWidth, measure);
+    }
   }
-  const quizCardHeight = 55 + (descriptionLines > 0 ? (descriptionLines - 1) * 5 : 0);
+  const quizCardHeight = 55 + (descLines.length > 0 ? (descLines.length - 1) * 5 : 0);
   
   pdf.setDrawColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
   pdf.setLineWidth(0.5);
@@ -164,7 +171,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   pdf.text('Title:', 30, quizInfoY);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(40, 40, 40);
-  pdf.text(game.quiz?.title || 'Untitled Quiz', 60, quizInfoY);
+  pdf.text(fitText(game.quiz?.title || 'Untitled Quiz', pageWidth / 2 - 60, measure), 60, quizInfoY);
   
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(100, 100, 100);
@@ -177,15 +184,12 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   let quizInfoOffset = 8;
   
   // Quiz description if available
-  if (game.quiz?.description) {
+  if (descLines.length > 0) {
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(100, 100, 100);
     pdf.text('Description:', 30, quizInfoY + quizInfoOffset);
-    pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(60, 60, 60);
-    const descLines = pdf.splitTextToSize(game.quiz.description, pageWidth - 90);
     pdf.text(descLines, 78, quizInfoY + quizInfoOffset);
-    // Account for description height
     quizInfoOffset += descLines.length * 5;
   }
   
@@ -391,7 +395,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
         const fastestPlayerName = players.find(p => p.id === fastestPlayer.playerId)?.name || 'Unknown';
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
-        pdf.text(`Fastest: ${fastestPlayerName}`, pageWidth - 120, analyticsY + 5);
+        pdf.text(fitText(`Fastest: ${fastestPlayerName}`, 60, measure), pageWidth - 120, analyticsY + 5);
       }
 
       // Advance yPosition using pre-calculated card height + margin for spacing between cards
@@ -431,7 +435,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
     pdf.text('1ST PLACE CHAMPION', pageWidth / 2, yPosition + 14, { align: 'center' });
     pdf.setFontSize(13);
     pdf.setTextColor(40, 40, 40);
-    pdf.text(sortedPlayers[0].name, pageWidth / 2, yPosition + 22, { align: 'center' });
+    pdf.text(fitText(sortedPlayers[0].name, 120, measure), pageWidth / 2, yPosition + 22, { align: 'center' });
     pdf.setFontSize(12);
     pdf.setTextColor(100, 100, 100);
     pdf.text(`${(sortedPlayers[0].score || 0).toLocaleString()} points`, pageWidth / 2, yPosition + 28, { align: 'center' });
@@ -458,7 +462,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
       pdf.text('2ND PLACE', 45, yPosition + 11);
       pdf.setFontSize(10);
       pdf.setTextColor(40, 40, 40);
-      pdf.text(secondPlace.name, 45, yPosition + 17);
+      pdf.text(fitText(secondPlace.name, (pageWidth / 2) - 78, measure), 45, yPosition + 17);
       pdf.setFontSize(9);
       pdf.setTextColor(100, 100, 100);
       pdf.text(`${(secondPlace.score || 0).toLocaleString()} pts`, 45, yPosition + 21);
@@ -483,7 +487,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
         pdf.text('3RD PLACE', pageWidth / 2 + 25, yPosition + 11);
         pdf.setFontSize(10);
         pdf.setTextColor(40, 40, 40);
-        pdf.text(thirdPlace.name, pageWidth / 2 + 25, yPosition + 17);
+        pdf.text(fitText(thirdPlace.name, (pageWidth / 2) - 78, measure), pageWidth / 2 + 25, yPosition + 17);
         pdf.setFontSize(9);
         pdf.setTextColor(100, 100, 100);
         pdf.text(`${(thirdPlace.score || 0).toLocaleString()} pts`, pageWidth / 2 + 25, yPosition + 21);
@@ -552,7 +556,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
     }
     
     pdf.text(`#${index + 1}`, 32, yPosition + 5);
-    pdf.text(player.name, 75, yPosition + 5);
+    pdf.text(fitText(player.name, 95, measure), 75, yPosition + 5);
     pdf.text((player.score || 0).toLocaleString(), 175, yPosition + 5);
     
     // Performance badge
