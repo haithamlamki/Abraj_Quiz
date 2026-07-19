@@ -74,3 +74,20 @@ export const getThemeSwatchStyle = (theme: ThemeOption): React.CSSProperties => 
     backgroundPosition: "center",
   };
 };
+
+// Background style with an optional darkening overlay (readability on busy
+// images, esp. AI-generated ones). Overlay is clamped to [0, 0.5]; 0 = plain.
+export const getBackgroundStyleWithOverlay = (
+  backgroundValue: string,
+  overlay?: number,
+): React.CSSProperties => {
+  const style = getBackgroundStyle(backgroundValue);
+  const alpha = typeof overlay === "number" && Number.isFinite(overlay)
+    ? Math.min(0.5, Math.max(0, overlay))
+    : 0;
+  if (alpha <= 0 || !style.backgroundImage) return style;
+  return {
+    ...style,
+    backgroundImage: `linear-gradient(rgba(0,0,0,${alpha}), rgba(0,0,0,${alpha})), ${style.backgroundImage}`,
+  };
+};
