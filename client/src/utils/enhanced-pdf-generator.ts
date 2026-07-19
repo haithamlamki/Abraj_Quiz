@@ -139,7 +139,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   // Subtitle
   pdf.setFontSize(11);
   pdf.setFont('helvetica', 'normal');
-  pdf.text(`Generated ${new Date().toLocaleDateString()}`, pageWidth / 2, yPosition + 26, { align: 'center' });
+  pdf.text(`Generated ${new Date().toLocaleDateString()}`, pageWidth / 2, yPosition + 24, { align: 'center' });
   yPosition += 55;
 
   // Quiz Information Card - Modern Card Design (calculate dynamic height based on description)
@@ -401,7 +401,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
       
       const avgResponseTime = questionResponses.length > 0 ? 
         (questionResponses.reduce((sum, r) => sum + (r.responseTime || 0), 0) / questionResponses.length / 1000).toFixed(1) : '0';
-      pdf.text(`Avg Time: ${avgResponseTime}s`, pageWidth / 2 + 12, analyticsY + 5);
+      pdf.text(`Avg Time: ${avgResponseTime}s`, 120, analyticsY + 5);
       
       const fastestPlayer = questionResponses
         .filter(r => r.isCorrect)
