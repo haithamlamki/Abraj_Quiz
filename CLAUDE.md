@@ -44,5 +44,21 @@
 - Run `npm run check && npm test && npm run build` before any commit.
 - Reference FR numbers from `PRODUCTION_MIGRATION_PRD.md` when discussing changes.
 
+## Git worktrees (mandatory for parallel sessions)
+- One session = one worktree = one branch. NEVER share a checkout between two
+  active sessions: it causes commits landing on foreign branches, mid-task
+  branch switches under running work, and port collisions (all happened
+  2026-07-20; see docs/superpowers/SESSION-SUMMARY-2026-07-20-audit-log.md).
+- Starting feature work while another session may be active:
+  `git worktree add "../Abraj_Quiz-<slug>" -b feat/<name> origin/main`
+  then work exclusively inside that directory (run `npm ci` there once).
+- Verify `git branch --show-current` before EVERY commit; a wrong branch
+  means you are in the shared checkout — stop and move to your worktree.
+- Only one dev server per port: check :5000 before `npm run dev`; if taken,
+  either reuse it (verify it serves YOUR branch's code — tsx does not
+  hot-reload server code) or run yours on another port.
+- When a branch merges: `git worktree remove ../Abraj_Quiz-<slug>` (from the
+  primary checkout) after deleting the branch.
+
 ## Source of truth
 - `PRODUCTION_MIGRATION_PRD.md` (FR-1 to FR-9, Sections 6-13).
