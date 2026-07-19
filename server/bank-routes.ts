@@ -3,6 +3,7 @@ import { z } from "zod";
 import { insertBankQuestionSchema, MAX_BANK_BULK_ITEMS } from "@shared/schema";
 import type { IStorage, StorageCtx } from "./storage";
 import { captureError } from "./instrument";
+import { logAudit, AUDIT_ACTIONS } from "./audit";
 
 // Bank routes live in their own module with injected deps (storage,
 // requireAuth, tctx are closures inside registerRoutes) so they can be
@@ -32,6 +33,8 @@ const updateBankQuestionSchema = insertBankQuestionSchema.partial().extend({
     .transform((s) => (s ? s : null))
     .optional(),
 });
+
+const bulkSourceSchema = z.enum(["manual", "ai", "import"]);
 
 function parseId(raw: string): number | null {
   const id = parseInt(raw, 10);
@@ -77,6 +80,8 @@ export function registerBankRoutes(app: Express, { storage, requireAuth, tctx }:
         ...validation.data,
         createdBy: (req as any).authUserId,
       });
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), { action: AUDIT_ACTIONS.BANK_CREATE, actorId: actor.id, actorName: actor.username, targetType: "bank_question", targetId: row.id, targetLabel: row.subject ?? undefined });
       res.status(201).json(row);
     } catch (error) {
       captureError(error, { scope: "http.bank-create" });
@@ -101,6 +106,13 @@ export function registerBankRoutes(app: Express, { storage, requireAuth, tctx }:
       }
       const createdBy = (req as any).authUserId as number;
       const rows = await storage.createBankQuestions(tctx(req), validated.map((v) => ({ ...v, createdBy })));
+      const sourceParsed = bulkSourceSchema.safeParse((req.body as any)?.source);
+      const source = sourceParsed.success ? sourceParsed.data : "manual";
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), {
+        action: AUDIT_ACTIONS.BANK_BULK_CREATE, actorId: actor.id, actorName: actor.username,
+        targetType: "bank_question", details: { count: rows.length, source },
+      });
       res.status(201).json({ created: rows.length });
     } catch (error) {
       captureError(error, { scope: "http.bank-bulk-create" });
@@ -118,6 +130,8 @@ export function registerBankRoutes(app: Express, { storage, requireAuth, tctx }:
       }
       const row = await storage.updateBankQuestion(tctx(req), id, validation.data);
       if (!row) return res.status(404).json({ message: "Bank question not found" });
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), { action: AUDIT_ACTIONS.BANK_UPDATE, actorId: actor.id, actorName: actor.username, targetType: "bank_question", targetId: row.id, targetLabel: row.subject ?? undefined });
       res.json(row);
     } catch (error) {
       captureError(error, { scope: "http.bank-update" });
@@ -131,6 +145,8 @@ export function registerBankRoutes(app: Express, { storage, requireAuth, tctx }:
       if (id === null) return res.status(400).json({ message: "Invalid question id" });
       const row = await storage.archiveBankQuestion(tctx(req), id);
       if (!row) return res.status(404).json({ message: "Bank question not found" });
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), { action: AUDIT_ACTIONS.BANK_ARCHIVE, actorId: actor.id, actorName: actor.username, targetType: "bank_question", targetId: row.id, targetLabel: row.subject ?? undefined });
       res.status(204).end();
     } catch (error) {
       captureError(error, { scope: "http.bank-archive" });
@@ -144,6 +160,8 @@ export function registerBankRoutes(app: Express, { storage, requireAuth, tctx }:
       if (id === null) return res.status(400).json({ message: "Invalid question id" });
       const row = await storage.restoreBankQuestion(tctx(req), id);
       if (!row) return res.status(404).json({ message: "Bank question not found" });
+      const actor = (req as any).authUser;
+      logAudit(storage, tctx(req), { action: AUDIT_ACTIONS.BANK_RESTORE, actorId: actor.id, actorName: actor.username, targetType: "bank_question", targetId: row.id, targetLabel: row.subject ?? undefined });
       res.json(row);
     } catch (error) {
       captureError(error, { scope: "http.bank-restore" });

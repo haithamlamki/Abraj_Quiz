@@ -27,6 +27,7 @@ function makeApp(storage: InstanceType<typeof MemStorage>) {
     const uid = req.headers["x-test-user"];
     if (!uid) return res.status(401).json({ message: "Authentication required" });
     req.authUserId = parseInt(String(uid), 10);
+    req.authUser = { id: req.authUserId, username: `user${req.authUserId}` };
     next();
   };
   registerBankRoutes(app, { storage, requireAuth, tctx: () => ({ tenantId: 1 }) });
@@ -210,5 +211,55 @@ test("bulk: accepts 200 items atomically, rejects 201", async () => {
       body: JSON.stringify({ items: Array.from({ length: 201 }, () => item) }),
     });
     assert.equal(over.status, 400);
+  });
+});
+
+test("bank mutations each write exactly one audit row; bulk records count + source", async () => {
+  const storage = new MemStorage();
+  await withServer(makeApp(storage), async (base) => {
+    const createRes = await fetch(`${base}/api/bank/questions`, {
+      method: "POST", headers: AUTH,
+      body: JSON.stringify({ question: VALID_QUESTION, subject: "Math" }),
+    });
+    const created = await createRes.json();
+
+    await fetch(`${base}/api/bank/questions/bulk`, {
+      method: "POST", headers: AUTH,
+      body: JSON.stringify({ items: [{ question: VALID_QUESTION }], source: "import" }),
+    });
+    await fetch(`${base}/api/bank/questions/${created.id}`, {
+      method: "PUT", headers: AUTH, body: JSON.stringify({ subject: "Arithmetic" }),
+    });
+    await fetch(`${base}/api/bank/questions/${created.id}`, { method: "DELETE", headers: AUTH });
+    await fetch(`${base}/api/bank/questions/${created.id}/restore`, { method: "POST", headers: AUTH });
+
+    // fire-and-forget writes: give the microtasks a beat
+    await new Promise((r) => setTimeout(r, 20));
+    const rows = await storage.listAuditEvents({ tenantId: 1 }, { limit: 100 });
+    const actions = rows.map((r) => r.action).sort();
+    assert.deepEqual(actions, ["bank.archive", "bank.bulk_create", "bank.create", "bank.restore", "bank.update"]);
+    const bulk = rows.find((r) => r.action === "bank.bulk_create")!;
+    assert.deepEqual(bulk.details, { count: 1, source: "import" });
+    assert.equal(bulk.targetId, null);
+    const create = rows.find((r) => r.action === "bank.create")!;
+    assert.equal(create.actorName, "user1");
+    assert.equal(create.targetType, "bank_question");
+    assert.equal(create.targetId, created.id);
+  });
+});
+
+test("bulk: absent or junk source defaults to manual", async () => {
+  const storage = new MemStorage();
+  await withServer(makeApp(storage), async (base) => {
+    await fetch(`${base}/api/bank/questions/bulk`, {
+      method: "POST", headers: AUTH, body: JSON.stringify({ items: [{ question: VALID_QUESTION }] }),
+    });
+    await fetch(`${base}/api/bank/questions/bulk`, {
+      method: "POST", headers: AUTH, body: JSON.stringify({ items: [{ question: VALID_QUESTION }], source: "hax" }),
+    });
+    await new Promise((r) => setTimeout(r, 20));
+    const rows = await storage.listAuditEvents({ tenantId: 1 }, { action: "bank.bulk_create", limit: 10 });
+    assert.equal(rows.length, 2);
+    assert.ok(rows.every((r) => (r.details as any).source === "manual"));
   });
 });

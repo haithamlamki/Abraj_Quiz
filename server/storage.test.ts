@@ -601,3 +601,43 @@ test("createQuiz and updateQuizWithVersion persist the theme blob (overlay round
   assert.equal((updated.theme as any)?.overlay, 0.4);
   assert.equal((await s.getQuiz(ctx, quiz.id))?.theme?.overlay, 0.4);
 });
+
+test("audit events: insert stamps tenant, list returns newest-first", async () => {
+  const s = new MemStorage();
+  const ctx = { tenantId: 1 };
+  await s.insertAuditEvent(ctx, { action: "quiz.create", actorId: 1, actorName: "alice", targetType: "quiz", targetId: 5, targetLabel: "Q1" });
+  await s.insertAuditEvent(ctx, { action: "quiz.save", actorId: 1, actorName: "alice", targetType: "quiz", targetId: 5, targetLabel: "Q1", details: { questionCount: 3 } });
+  const rows = await s.listAuditEvents(ctx);
+  assert.equal(rows.length, 2);
+  assert.equal(rows[0].action, "quiz.save");        // newest first
+  assert.equal(rows[0].tenantId, 1);
+  assert.equal((rows[0].details as any).questionCount, 3);
+  assert.equal(rows[1].action, "quiz.create");
+});
+
+test("audit events: filters, keyset pagination, limit clamp", async () => {
+  const s = new MemStorage();
+  const ctx = { tenantId: 1 };
+  for (let i = 0; i < 120; i++) {
+    await s.insertAuditEvent(ctx, { action: i % 2 ? "quiz.save" : "bank.update", actorId: 1, actorName: "a", targetType: i % 2 ? "quiz" : "bank_question", targetId: i });
+  }
+  assert.equal((await s.listAuditEvents(ctx)).length, 50);                       // default
+  assert.equal((await s.listAuditEvents(ctx, { limit: 999 })).length, 100);      // clamp
+  const bySave = await s.listAuditEvents(ctx, { action: "quiz.save", limit: 100 });
+  assert.ok(bySave.every((r) => r.action === "quiz.save"));
+  const page1 = await s.listAuditEvents(ctx, { limit: 10 });
+  const page2 = await s.listAuditEvents(ctx, { before: page1[9].id, limit: 10 });
+  assert.ok(page2[0].id < page1[9].id);
+  assert.equal(new Set([...page1, ...page2].map((r) => r.id)).size, 20);         // no overlap
+  const byTarget = await s.listAuditEvents(ctx, { targetType: "quiz", targetId: 7, limit: 100 });
+  assert.equal(byTarget.length, 1);
+});
+
+test("audit events: tenant isolation + system-context reads need explicit tenantId", async () => {
+  const s = new MemStorage();
+  await s.insertAuditEvent({ tenantId: 1 }, { action: "auth.login", actorId: 1, actorName: "a" });
+  assert.deepEqual(await s.listAuditEvents({ tenantId: 2 }), []);
+  const sys = await s.listAuditEvents({ system: true } as any, { tenantId: 1 });
+  assert.equal(sys.length, 1);
+  await assert.rejects(() => s.listAuditEvents({ system: true } as any), /tenant/i);
+});
