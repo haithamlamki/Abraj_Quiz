@@ -7,6 +7,7 @@ import {
   shade,
   derivePdfTheme,
   fitText,
+  logoPlateRect,
 } from "./pdf-theme";
 
 test("hexToRgb parses 6-digit, 3-digit, and rejects junk", () => {
@@ -62,4 +63,9 @@ test("fitText truncates with ellipsis to fit maxWidth", () => {
 test("fitText trims trailing whitespace before ellipsis", () => {
   const measure = (s: string) => s.length;
   assert.equal(fitText("abcd  efghijklm", 9, measure), "abcd...");
+});
+
+test("logoPlateRect pads the logo box symmetrically with rounded corners", () => {
+  assert.deepEqual(logoPlateRect(150, 10.5, 24, 19), { x: 147.5, y: 8, w: 29, h: 24, r: 2 });
+  assert.deepEqual(logoPlateRect(20, 20, 35, 30, 3), { x: 17, y: 17, w: 41, h: 36, r: 2 });
 });

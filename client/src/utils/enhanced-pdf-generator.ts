@@ -1,7 +1,7 @@
 import jsPDF from 'jspdf';
 import logo from "@assets/ABRJ.OM - Copy_1753146533010.png";
 import { resolveQuizTheme } from "@shared/quiz-theme";
-import { derivePdfTheme, fitText, hexToRgb, shade, type Rgb } from "./pdf-theme";
+import { derivePdfTheme, fitText, hexToRgb, logoPlateRect, shade, type Rgb } from "./pdf-theme";
 
 export interface PdfBranding {
   appName: string;
@@ -114,12 +114,15 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   pdf.rect(0, 43, pageWidth, 2, 'F');
   pdf.setGState(pdf.GState({ opacity: 1 }));
 
-  // Add logo
+  // Add logo on a white plate so it stays legible on the colored band
   try {
     const logoWidth = 35;
     const logoHeight = 30;
     const logoData = branding?.logoDataUrl || logo;
     const logoFormat = typeof logoData === "string" && logoData.startsWith("data:image/jpeg") ? "JPEG" : "PNG";
+    const plate = logoPlateRect(20, yPosition, logoWidth, logoHeight, 3);
+    pdf.setFillColor(255, 255, 255);
+    pdf.roundedRect(plate.x, plate.y, plate.w, plate.h, plate.r, plate.r, "F");
     pdf.addImage(logoData, logoFormat, 20, yPosition, logoWidth, logoHeight);
   } catch (error) {
     console.warn('Could not add logo to PDF:', error);
