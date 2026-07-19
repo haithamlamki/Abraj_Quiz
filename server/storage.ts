@@ -153,6 +153,7 @@ export interface IStorage {
   archiveBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined>;
   restoreBankQuestion(ctx: StorageCtx, id: number): Promise<BankQuestion | undefined>;
   getBankSubjectsAndTags(ctx: StorageCtx): Promise<{ subjects: string[]; tags: string[] }>;     // distinct, live rows only
+  createBankQuestions(ctx: StorageCtx, items: Array<InsertBankQuestion & { createdBy: number }>): Promise<BankQuestion[]>;
 
   // Games
   getGame(ctx: StorageCtx, id: number): Promise<Game | undefined>;
@@ -348,6 +349,20 @@ export class DatabaseStorage implements IStorage {
         tags: data.tags ?? [],
       }).returning();
       return row;
+    });
+  }
+
+  async createBankQuestions(ctx: StorageCtx, items: Array<InsertBankQuestion & { createdBy: number }>): Promise<BankQuestion[]> {
+    if (items.length === 0) return [];
+    const tenantId = requireTenantId(ctx);
+    return withCtx(ctx, async (tx) => {
+      return tx.insert(bankQuestions).values(items.map((item) => ({
+        tenantId,
+        createdBy: item.createdBy,
+        question: item.question,
+        subject: item.subject ?? null,
+        tags: item.tags ?? [],
+      }))).returning();
     });
   }
 
@@ -1028,6 +1043,12 @@ export class MemStorage implements IStorage {
     };
     this.bankQuestions.set(id, row);
     return row;
+  }
+
+  async createBankQuestions(ctx: StorageCtx, items: Array<InsertBankQuestion & { createdBy: number }>): Promise<BankQuestion[]> {
+    const out: BankQuestion[] = [];
+    for (const item of items) out.push(await this.createBankQuestion(ctx, item));
+    return out;
   }
 
   async updateBankQuestion(ctx: StorageCtx, id: number, updates: UpdateBankQuestionData): Promise<BankQuestion | undefined> {

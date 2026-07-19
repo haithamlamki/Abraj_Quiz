@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { questionSchema, insertQuizSchema, insertBankQuestionSchema, normalizeTags } from "./schema";
+import { questionSchema, insertQuizSchema, insertBankQuestionSchema, normalizeTags, generatedQuizSchema } from "./schema";
 
 test("points defaults to standard for legacy questions", () => {
   const q = questionSchema.parse({ question: "Q", answers: ["a", "b", "c", "d"], correctAnswer: 1 });
@@ -87,4 +87,45 @@ test("insertBankQuestionSchema: valid payload, tag caps, poll-with-correct rejec
   assert.throws(() => insertBankQuestionSchema.parse({ question, tags: ["x".repeat(51)] }));
   // poll with correctAnswers rejected (questionSchema reuse)
   assert.throws(() => insertBankQuestionSchema.parse({ question: { ...question, type: "poll" } }));
+});
+
+test("questionSchema accepts optional difficulty and explanation, round-trips them", () => {
+  const q = {
+    question: "Q?", type: "quiz", answerType: "single",
+    answers: ["a", "b"], correctAnswers: [0], timeLimit: 20, points: "standard",
+    difficulty: "medium", explanation: "A is right because reasons.",
+  };
+  const parsed = questionSchema.parse(q) as any;
+  assert.equal(parsed.difficulty, "medium");
+  assert.equal(parsed.explanation, "A is right because reasons.");
+  const { difficulty: _d, explanation: _e, ...bare } = q;
+  const bareParsed = questionSchema.parse(bare) as any;
+  assert.equal(bareParsed.difficulty, undefined);
+  assert.equal(bareParsed.explanation, undefined);
+});
+
+test("questionSchema rejects an over-long explanation and a bad difficulty", () => {
+  const base = { question: "Q?", type: "quiz", answerType: "single", answers: ["a", "b"], correctAnswers: [0], timeLimit: 20, points: "standard" };
+  assert.throws(() => questionSchema.parse({ ...base, explanation: "x".repeat(501) }));
+  assert.throws(() => questionSchema.parse({ ...base, difficulty: "trivial" }));
+});
+
+test("generatedQuizSchema accepts mixed types, normalizes tags, rejects poll-with-correct", () => {
+  const ok = generatedQuizSchema.parse({
+    title: "Mixed", description: "d", subject: " Safety ", tags: ["Fire", "fire", " ppe "],
+    questions: [
+      { question: "single?", type: "quiz", answerType: "single", answers: ["a", "b", "c", "d"], correctAnswers: [1], timeLimit: 20, points: "standard", difficulty: "easy", explanation: "b" },
+      { question: "tf?", type: "true_false", answerType: "single", answers: ["True", "False"], correctAnswers: [0], timeLimit: 15, points: "standard", difficulty: "medium", explanation: "true" },
+      { question: "multi?", type: "quiz", answerType: "multiple", answers: ["a", "b", "c"], correctAnswers: [0, 2], timeLimit: 30, points: "standard", difficulty: "hard", explanation: "a and c" },
+    ],
+  });
+  assert.equal(ok.subject, "Safety");
+  assert.deepEqual(ok.tags, ["Fire", "ppe"]);
+  assert.equal(ok.questions.length, 3);
+  // poll with correct answers is rejected by the underlying questionSchema
+  assert.throws(() => generatedQuizSchema.parse({
+    title: "x", description: "", questions: [{ question: "p?", type: "poll", answerType: "single", answers: ["a", "b"], correctAnswers: [0], timeLimit: 10, points: "standard" }],
+  }));
+  // empty questions rejected
+  assert.throws(() => generatedQuizSchema.parse({ title: "x", description: "", questions: [] }));
 });
