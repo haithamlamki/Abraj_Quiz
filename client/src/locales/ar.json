@@ -500,6 +500,17 @@
       "previewNext": "التالي",
       "previewCounter": "{{current}} / {{total}}"
     },
+    "autosave": {
+      "saving": "جارٍ حفظ المسودة…",
+      "saved": "حُفظت المسودة {{time}}",
+      "error": "تعذّر حفظ المسودة — ستُعاد المحاولة"
+    },
+    "draft": {
+      "resumeTitle": "توجد تغييرات غير محفوظة",
+      "resumeBody": "لديك تغييرات غير محفوظة من {{time}}. هل تريد متابعة التحرير أم تجاهلها؟",
+      "resume": "متابعة التحرير",
+      "discard": "تجاهل المسودة"
+    },
     "question": {
       "typeQuiz": "اختبار",
       "typeTrueFalse": "صح أو خطأ",
@@ -607,6 +618,24 @@
       "savedToBankToast_many": "تم حفظ {{count}} سؤالًا في البنك",
       "savedToBankToast_other": "تم حفظ {{count}} سؤال في البنك",
       "saveToBankFailed": "تعذّر الحفظ في بنك الأسئلة"
+    },
+    "history": {
+      "button": "سجل النسخ",
+      "title": "سجل النسخ",
+      "empty": "ستظهر النسخ بعد الحفظ التالي.",
+      "versionLabel": "النسخة {{n}}",
+      "questionCount_zero": "لا أسئلة",
+      "questionCount_one": "سؤال واحد",
+      "questionCount_two": "سؤالان",
+      "questionCount_few": "{{count}} أسئلة",
+      "questionCount_many": "{{count}} سؤالًا",
+      "questionCount_other": "{{count}} سؤال",
+      "restore": "استعادة",
+      "restoreConfirmTitle": "هل تريد استعادة هذه النسخة؟",
+      "restoreConfirmBody": "سيحل هذا محل المحتوى الحالي في المحرر.",
+      "cancel": "إلغاء",
+      "restoredToast": "تم تحميل النسخة {{n}} — احفظ للاحتفاظ بها.",
+      "loadFailed": "تعذّر تحميل هذه النسخة."
     },
     "toasts": {
       "authRequiredTitle": "التسجيل مطلوب",

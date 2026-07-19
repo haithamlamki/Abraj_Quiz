@@ -137,3 +137,15 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
 - [ ] If long-lived quizzes accumulate 100s of completed games, replace the report endpoint's sequential per-game reads with insights-style batched queries (join/inArray) — the sequential loop bounds concurrency but wall-clock grows linearly.
 - [ ] Minor test gaps: quiz-report 400 bad-id branch (mirrors the equally-untested insights branch); AR game-report xlsx roundtrip (only AR quiz workbook + AR CSV covered; browser QA covers it live).
 - [ ] Hardening: narrow GameReportData.questions to {question,type,answerType,answers} so a future JSON-serializing consumer can't leak keys (do-not-serialize comment in place today).
+
+## Versioning + autosave follow-ups (from feat/versioning-autosave final review, 2026-07-19)
+
+- [ ] **`quizzes.theme` is never written server-side** (pre-existing, discovered by this review): POST and PUT `/api/quizzes` both omit `theme` from the storage mapping, so ThemeBuilder customizations beyond `background` have never survived a reload — the column (migration 0007) is always NULL. One-line fix in each handler; the draft/version plumbing already carries theme end-to-end once it lands.
+- [ ] Concurrent saves from two tabs: both transactions compute version max+1 → unique(quiz_id, version_number) violation → generic 500 (no corruption; retry succeeds). Map Postgres 23505 → 409 or retry once inside `updateQuizWithVersion`.
+- [ ] In-flight autosave vs Save race: a draft PUT already in flight when Save commits can land after the transactional draft delete, leaving a stale draft row equal to the saved quiz → spurious resume prompt next open. Harmless content-wise; consider a draft-version token or timestamp guard.
+- [ ] Resume-prompt micro-race (final review, non-blocking): if the cache holds a stale-but-real draft while the mount refetch is in flight, a sub-300ms Resume click hydrates the slightly-older draft. Airtight fix is `&& !draftFetching` on the showDraftPrompt condition.
+- [ ] VersionHistorySheet list query renders a 500 as the "versions appear after your next save" empty state — destructure isError and show editor.history.loadFailed instead.
+- [ ] Autosave chip says "will retry" but retry is change-triggered only; if the final keystroke's write fails and the user stops typing, nothing retries (spec-sanctioned; noting for honesty). Consider a timer-based retry.
+- [ ] localStorage draft tampering (valid JSON, wrong shapes, e.g. questions: [null]) makes Resume's toQuizForm throw in the click handler → button silently no-ops. Guard toQuizForm or wrap the handler.
+- [ ] Draft `explanation` cap is 5000 vs canonical 500 — tighten for symmetry (adjudicated non-blocking: no editor UI path can produce >500 today).
+- [ ] Ledger Minors carried: loadOwnedQuiz gate-triple duplication (fold into future requireResourceRole); markClean use-before-define lint tripwire; draft-GET 403/404 swallowed as no-draft (unreachable today); ui/sheet.tsx physical `right-0` in RTL (Arabic polish list).

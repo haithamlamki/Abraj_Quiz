@@ -10,9 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye, Settings, Library,
+  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye, Settings, Library, History as HistoryIcon,
 } from "lucide-react";
 import { apiRequest, buildApiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -41,8 +45,11 @@ import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
 import { QuizSettingsDialog } from "@/components/quiz/QuizSettingsDialog";
 import { SaveToBankDialog } from "@/components/bank/SaveToBankDialog";
 import { BankPickerDialog } from "@/components/bank/BankPickerDialog";
+import { VersionHistorySheet } from "@/components/quiz/VersionHistorySheet";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { PageLoader } from "@/components/page-loader";
+import { useQuizAutosave, newQuizDraftKey, type AutosaveStatus } from "@/hooks/use-quiz-autosave";
+import { useTenant } from "@/lib/tenant";
 
 interface QuizForm {
   title: string;
@@ -55,6 +62,8 @@ interface QuizForm {
 
 const TIME_OPTIONS = [5, 10, 15, 20, 30, 45, 60, 90, 120];
 
+type DraftDecision = "pending" | "none" | "resumed" | "discarded";
+
 const VALIDATION_MSG: Record<QuestionValidationKey, string> = {
   needsText: "editor.toasts.validationQuestionNeedsText",
   needsTwoAnswers: "editor.toasts.validationNeedsTwoAnswers",
@@ -62,6 +71,51 @@ const VALIDATION_MSG: Record<QuestionValidationKey, string> = {
   needsCorrectAnswer: "editor.toasts.validationNeedsCorrectAnswer",
   singleSelectOneCorrect: "editor.toasts.validationSingleSelectOneCorrect",
 };
+
+// Maps any quiz-shaped payload (live quiz row, draft payload, version row)
+// to editor state. Also used by draft-resume and version-restore, so keep it
+// tolerant: normalizes legacy single-correct questions and fills defaults.
+function toQuizForm(src: any): QuizForm {
+  const questions: Question[] = Array.isArray(src?.questions) && src.questions.length
+    ? src.questions.map((q: any) => ({
+        question: q.question ?? "",
+        imageUrl: q.imageUrl,
+        type: q.type ?? "quiz",
+        answerType: q.answerType ?? "single",
+        answers: Array.isArray(q.answers) ? q.answers : ["", "", "", ""],
+        // Normalize legacy single-correct → array.
+        correctAnswers: Array.isArray(q.correctAnswers)
+          ? q.correctAnswers
+          : [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
+        timeLimit: q.timeLimit ?? 20,
+        points: q.points === "double" ? "double" : "standard",
+        difficulty: q.difficulty,
+        explanation: q.explanation,
+        sourceQuestionId: q.sourceQuestionId,
+      }))
+    : [blankQuestion()];
+  return {
+    title: src?.title ?? "",
+    description: src?.description ?? "",
+    background: src?.background || "aurora",
+    isPublic: src?.isPublic ?? true,
+    theme: resolveQuizTheme(src ?? {}),
+    questions,
+  };
+}
+
+function AutosaveChip({ status, savedAt }: { status: AutosaveStatus; savedAt: Date | null }) {
+  const { t } = useTranslation();
+  if (status === "idle") return null;
+  return (
+    <span className="text-xs text-muted-foreground whitespace-nowrap" aria-live="polite">
+      {status === "saving" && t("editor.autosave.saving")}
+      {status === "saved" && savedAt &&
+        t("editor.autosave.saved", { time: savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) })}
+      {status === "error" && t("editor.autosave.error")}
+    </span>
+  );
+}
 
 export default function QuizEditor() {
   const { quizId } = useParams();
@@ -71,6 +125,7 @@ export default function QuizEditor() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const tenant = useTenant();
 
   const [quiz, setQuiz] = useState<QuizForm>({
     title: "",
@@ -87,11 +142,17 @@ export default function QuizEditor() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [saveToBankOpen, setSaveToBankOpen] = useState(false);
   const [bankPickerOpen, setBankPickerOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   // Guards the hydration effect below against react-i18next handing out a new
   // `t` identity on every language change — without this, toggling language
   // mid-edit re-runs hydration and silently discards unsaved edits.
   const hydratedQuizRef = useRef<unknown>(null);
+  const [hydrated, setHydrated] = useState(!isEditMode);
+  const storageKey = !isEditMode && user ? newQuizDraftKey(tenant.slug, user.id) : undefined;
+  const initialCleanRef = useRef(false);
+  const [draftDecision, setDraftDecision] = useState<DraftDecision>("pending");
+  const [storedDraft, setStoredDraft] = useState<{ payload: any; updatedAt: string } | null>(null);
 
   // Redirect unauthenticated users.
   useEffect(() => {
@@ -106,6 +167,26 @@ export default function QuizEditor() {
     queryKey: ["/api/quizzes", quizId],
     enabled: isEditMode && isAuthenticated,
   });
+
+  // Draft existence ≡ unsaved changes (deleted transactionally on save), so a
+  // non-404 here is exactly "show the resume prompt". 404 → null, not an error.
+  const { data: draft, status: draftStatus, isFetching: draftFetching } = useQuery<{ payload: any; updatedAt: string } | null>({
+    queryKey: ["/api/quizzes", quizId, "draft"],
+    enabled: isEditMode && isAuthenticated,
+    retry: 1,
+    // staleTime is Infinity app-wide; without this an SPA remount serves the
+    // cached (possibly stale-null) draft and the resume prompt silently skips.
+    refetchOnMount: "always",
+    queryFn: async () => {
+      try {
+        const res = await apiRequest("GET", `/api/quizzes/${quizId}/draft`);
+        return await res.json();
+      } catch (e: any) {
+        if (e?.response?.status === 404) return null;
+        throw e;
+      }
+    },
+  });
   useEffect(() => {
     if (loaded && isEditMode) {
       if (hydratedQuizRef.current === loaded) return;
@@ -115,32 +196,53 @@ export default function QuizEditor() {
         setLocation("/my-quizzes");
         return;
       }
-      const questions: Question[] = Array.isArray(loaded.questions) && loaded.questions.length
-        ? loaded.questions.map((q: any) => ({
-            question: q.question ?? "",
-            imageUrl: q.imageUrl,
-            type: q.type ?? "quiz",
-            answerType: q.answerType ?? "single",
-            answers: Array.isArray(q.answers) ? q.answers : ["", "", "", ""],
-            // Normalize legacy single-correct → array.
-            correctAnswers: Array.isArray(q.correctAnswers)
-              ? q.correctAnswers
-              : [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
-            timeLimit: q.timeLimit ?? 20,
-            points: q.points === "double" ? "double" : "standard",
-          }))
-        : [blankQuestion()];
-      setQuiz({
-        title: loaded.title ?? "",
-        description: loaded.description ?? "",
-        background: loaded.background || "aurora",
-        isPublic: loaded.isPublic ?? true,
-        theme: resolveQuizTheme(loaded),
-        questions,
-      });
+      const form = toQuizForm(loaded);
+      setQuiz(form);
       setCurrentIndex(0);
+      markClean(form);
+      setHydrated(true);
     }
   }, [loaded, isEditMode, user, setLocation, toast, t]);
+
+  // In create mode, mark the pristine blank form clean once on mount so an
+  // untouched editor never writes a localStorage draft.
+  useEffect(() => {
+    if (!isEditMode && !initialCleanRef.current) {
+      initialCleanRef.current = true;
+      markClean(quiz);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Create mode: read the localStorage slot once.
+  useEffect(() => {
+    if (isEditMode || !storageKey) return;
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (raw) {
+        setStoredDraft(JSON.parse(raw));
+        return; // decision stays "pending" until the dialog is answered
+      }
+    } catch {
+      // Corrupt slot — treat as no draft.
+      localStorage.removeItem(storageKey);
+    }
+    setDraftDecision("none");
+  }, [isEditMode, storageKey]);
+
+  // Edit mode: resolve "none" when the fetch SETTLES with no draft — or errors.
+  // A failed draft probe must NOT leave the decision stuck on "pending": that
+  // would silently disable autosave for the whole session. On error we proceed
+  // as if no draft exists — the user's current work is the thing to protect.
+  // draftFetching gate: with refetchOnMount "always", the cached value renders
+  // first while the fresh probe is in flight; deciding on the cached null would
+  // skip the prompt for a draft written since the cache was populated.
+  useEffect(() => {
+    if (!isEditMode) return;
+    if (draftStatus === "error" || (draftStatus === "success" && draft === null && !draftFetching)) {
+      setDraftDecision("none");
+    }
+  }, [isEditMode, draftStatus, draft, draftFetching]);
 
   const current = quiz.questions[currentIndex] ?? quiz.questions[0];
 
@@ -284,6 +386,7 @@ export default function QuizEditor() {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/my-quizzes"] });
       toast({ title: isEditMode ? t("editor.toasts.quizUpdated") : t("editor.toasts.quizCreated") });
+      if (!isEditMode && storageKey) localStorage.removeItem(storageKey);
       setLocation(isEditMode ? "/my-quizzes" : `/host-quiz/${data.id}`);
     },
     onError: (error: any) => {
@@ -294,6 +397,53 @@ export default function QuizEditor() {
       toast({ title: t("editor.toasts.saveFailedTitle"), description: msg, variant: "destructive" });
     },
   });
+
+  const { status: autosaveStatus, savedAt: autosaveAt, markClean } = useQuizAutosave({
+    quizId: isEditMode ? quizId : undefined,
+    storageKey,
+    enabled: Boolean(isAuthenticated && hydrated && draftDecision !== "pending"),
+    paused: saveMutation.isPending,
+    payload: quiz,
+  });
+
+  const pendingDraft = isEditMode ? draft : storedDraft;
+  const showDraftPrompt = draftDecision === "pending" && hydrated && Boolean(pendingDraft);
+
+  const resumeDraft = () => {
+    if (pendingDraft?.payload) {
+      const form = toQuizForm(pendingDraft.payload);
+      setQuiz(form);
+      setCurrentIndex(0);
+      // Resumed content == the stored draft; no rewrite needed until a real edit.
+      markClean(form);
+    }
+    setDraftDecision("resumed");
+  };
+
+  const discardDraft = async () => {
+    try {
+      if (isEditMode) {
+        await apiRequest("DELETE", `/api/quizzes/${quizId}/draft`);
+        // The draft query caches forever (global staleTime: Infinity) — without this,
+        // remounting the editor within gcTime re-serves the deleted draft and the
+        // resume prompt reappears offering content the user explicitly discarded.
+        queryClient.setQueryData(["/api/quizzes", quizId, "draft"], null);
+      } else if (storageKey) localStorage.removeItem(storageKey);
+    } catch {
+      // Non-blocking: worst case the prompt reappears next visit.
+    }
+    setDraftDecision("discarded");
+  };
+
+  const restoreVersion = (version: any) => {
+    const form = toQuizForm(version);
+    setQuiz(form);
+    setCurrentIndex(0);
+    // Deliberately NOT markClean: the restored content is dirty relative to the
+    // live quiz, so autosave drafts it and a normal Save records it as a new
+    // version. History is never rewritten.
+    toast({ title: t("editor.history.restoredToast", { n: version.versionNumber }) });
+  };
 
   const handleSave = () => {
     const err = validate();
@@ -437,9 +587,15 @@ export default function QuizEditor() {
               <p className="text-xs text-gray-400">{t("editor.ai.footerNote")}</p>
             </DialogContent>
           </Dialog>
+          {isEditMode && (
+            <Button variant="outline" onClick={() => setHistoryOpen(true)}>
+              <HistoryIcon className="w-4 h-4 me-1" /> {t("editor.history.button")}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => { setPreviewIdx(currentIndex); setPreviewOpen(true); }}>
             <Eye className="w-4 h-4 me-1" /> {t("editor.topbar.preview")}
           </Button>
+          <AutosaveChip status={autosaveStatus} savedAt={autosaveAt} />
           <Button onClick={handleSave} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null}
             {isEditMode ? t("editor.topbar.saveChanges") : t("editor.topbar.save")}
@@ -459,6 +615,29 @@ export default function QuizEditor() {
       <SaveToBankDialog open={saveToBankOpen} onOpenChange={setSaveToBankOpen} question={current} />
 
       <BankPickerDialog open={bankPickerOpen} onOpenChange={setBankPickerOpen} onAdd={addFromBank} />
+
+      {isEditMode && quizId && (
+        <VersionHistorySheet open={historyOpen} onOpenChange={setHistoryOpen} quizId={quizId} onRestore={restoreVersion} />
+      )}
+
+      <AlertDialog open={showDraftPrompt}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("editor.draft.resumeTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("editor.draft.resumeBody", {
+                time: pendingDraft?.updatedAt
+                  ? new Date(pendingDraft.updatedAt).toLocaleString()
+                  : "",
+              })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={discardDraft}>{t("editor.draft.discard")}</AlertDialogCancel>
+            <AlertDialogAction onClick={resumeDraft}>{t("editor.draft.resume")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl">

@@ -436,6 +436,17 @@
       "previewNext": "Next",
       "previewCounter": "{{current}} / {{total}}"
     },
+    "autosave": {
+      "saving": "Saving draft…",
+      "saved": "Draft saved {{time}}",
+      "error": "Draft not saved — will retry"
+    },
+    "draft": {
+      "resumeTitle": "Unsaved changes found",
+      "resumeBody": "You have unsaved changes from {{time}}. Resume editing or discard them?",
+      "resume": "Resume editing",
+      "discard": "Discard draft"
+    },
     "question": {
       "typeQuiz": "Quiz",
       "typeTrueFalse": "True or False",
@@ -535,6 +546,20 @@
       "savedToBankToast_one": "Saved {{count}} question to the bank",
       "savedToBankToast_other": "Saved {{count}} questions to the bank",
       "saveToBankFailed": "Couldn't save to the Question Bank"
+    },
+    "history": {
+      "button": "History",
+      "title": "Version history",
+      "empty": "Versions appear after your next save.",
+      "versionLabel": "Version {{n}}",
+      "questionCount_one": "{{count}} question",
+      "questionCount_other": "{{count}} questions",
+      "restore": "Restore",
+      "restoreConfirmTitle": "Restore this version?",
+      "restoreConfirmBody": "This replaces the editor's current content.",
+      "cancel": "Cancel",
+      "restoredToast": "Version {{n}} loaded — save to keep it.",
+      "loadFailed": "Couldn't load this version."
     },
     "toasts": {
       "authRequiredTitle": "Authentication Required",

@@ -297,6 +297,22 @@ async function runSystemDeletes(literalPrefix: string): Promise<void> {
       `DELETE FROM games WHERE host_id IN (SELECT id FROM users WHERE username LIKE $1 ESCAPE '\\')`,
       [like],
     );
+    // quiz_versions and quiz_drafts both FK-reference quizzes — delete them
+    // before the quizzes they point at, or the quizzes delete fails on the FK.
+    await client.query(
+      `DELETE FROM quiz_versions WHERE quiz_id IN (
+         SELECT id FROM quizzes WHERE created_by IN (SELECT id FROM users WHERE username LIKE $1 ESCAPE '\\')
+            OR title LIKE $1 ESCAPE '\\'
+       )`,
+      [like],
+    );
+    await client.query(
+      `DELETE FROM quiz_drafts WHERE quiz_id IN (
+         SELECT id FROM quizzes WHERE created_by IN (SELECT id FROM users WHERE username LIKE $1 ESCAPE '\\')
+            OR title LIKE $1 ESCAPE '\\'
+       )`,
+      [like],
+    );
     await client.query(
       `DELETE FROM quizzes WHERE created_by IN (SELECT id FROM users WHERE username LIKE $1 ESCAPE '\\')`,
       [like],
