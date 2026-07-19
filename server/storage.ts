@@ -1,5 +1,5 @@
 import {
-  users, quizzes, games, gameResponses, gamePlayers, tenants, bankQuestions, quizVersions, quizDrafts,
+  users, quizzes, games, gameResponses, gamePlayers, tenants, bankQuestions, quizVersions, quizDrafts, auditLog,
   type User, type InsertUser,
   type Quiz, type InsertQuiz,
   type Game, type InsertGame,
@@ -8,6 +8,7 @@ import {
   type Tenant, type InsertTenant,
   type BankQuestion, type InsertBankQuestion,
   type QuizVersion, type QuizDraft, type QuizDraftPayload, type QuizVersionListItem,
+  type AuditEvent,
   MAX_QUIZ_VERSIONS
 } from "@shared/schema";
 import { db } from "./db";
@@ -128,6 +129,15 @@ export interface BankQuestionFilters {
 // left undefined is untouched.
 export type UpdateBankQuestionData = Partial<Omit<InsertBankQuestion, "subject">> & { subject?: string | null };
 
+export interface AuditEventFilters {
+  tenantId?: number; // REQUIRED when ctx is system context; ignored otherwise
+  action?: string;
+  targetType?: string;
+  targetId?: number;
+  before?: number; // keyset: only rows with id < before
+  limit?: number;  // default 50, clamped 1..100
+}
+
 export interface IStorage {
   // Users
   getUser(ctx: StorageCtx, id: number): Promise<User | undefined>;
@@ -209,6 +219,10 @@ export interface IStorage {
   getTenant(ctx: StorageCtx, id: number): Promise<Tenant | undefined>;
   createTenant(ctx: StorageCtx, tenant: InsertTenant): Promise<Tenant>;
   updateTenant(ctx: StorageCtx, id: number, updates: Partial<InsertTenant>): Promise<Tenant | undefined>;
+
+  // Audit log (append-only accountability trail)
+  insertAuditEvent(ctx: StorageCtx, entry: import("./audit").AuditEntry): Promise<AuditEvent>;
+  listAuditEvents(ctx: StorageCtx, filters?: AuditEventFilters): Promise<AuditEvent[]>;
 }
 
 // Every DB call runs in a transaction that sets the RLS GUC:
@@ -894,6 +908,10 @@ export class DatabaseStorage implements IStorage {
       return tenant || undefined;
     });
   }
+
+  // Audit log
+  async insertAuditEvent(): Promise<AuditEvent> { throw new Error("not implemented (Task 2)"); }
+  async listAuditEvents(): Promise<AuditEvent[]> { throw new Error("not implemented (Task 2)"); }
 
   // Helper method to generate unique game PIN
   generateGamePin(): string {
@@ -1584,6 +1602,10 @@ export class MemStorage implements IStorage {
     this.tenants.set(id, updated);
     return updated;
   }
+
+  // Audit log
+  async insertAuditEvent(): Promise<AuditEvent> { throw new Error("not implemented (Task 2)"); }
+  async listAuditEvents(): Promise<AuditEvent[]> { throw new Error("not implemented (Task 2)"); }
 
   // Helper method to generate unique game PIN
   generateGamePin(): string {
