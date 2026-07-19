@@ -556,6 +556,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Store the normalized (canonical) question shape.
         questions: questionsValidation.data,
         background: validation.data.background || "classroom",
+        theme: validation.data.theme,
         isPublic: validation.data.isPublic,
         createdBy: (req as any).authUserId
       });
@@ -604,6 +605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // shape) so edited quizzes migrate off the legacy shape.
         questions: questionsValidation.data,
         background: validation.data.background,
+        theme: validation.data.theme,
         isPublic: validation.data.isPublic
       });
 
