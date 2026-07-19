@@ -122,3 +122,12 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
 - [ ] `mapOpenAiError` (server/openai-service.ts) fallback echoes raw `error.message` into the HTTP response (pre-existing behavior, preserved in the rewrite) — map unknown/unexpected errors to a generic string to avoid surfacing SDK/axios internals.
 - [ ] Minor cleanup (non-blocking): `applyGenerated` (quiz-editor.tsx) calls `normalizeGeneratedQuestions` twice — compute once, reuse. And the `generatedQuizSchema`/`insertBankQuestionSchema` subject trim-transform idiom could be a shared helper.
 - Behavior note (not a bug): strict `generatedQuizSchema` now rejects >12 questions / empty title (with one AI retry) instead of the old silent slice-to-12 / title-fallback.
+
+## Import pipeline follow-ups (from PR #32 final review, 2026-07-19)
+
+- [ ] Server-side import error messages (per-row parse errors, "split the file", limiter messages) are English-only while PDO is Arabic-default and row errors are the feature's primary feedback. Move to error CODES + client-side translation (mirror the RATE_LIMITED pattern) in a follow-up.
+- [ ] Audit debt (pre-existing on main, surfaced while gating this branch): `npm audit --omit=dev` carries 10 advisories (undici, ws, shell-quote, axios, dompurify, esbuild, form-data, multer, qs — 1 low/3 mod/5 high/1 critical). Most are fixable via `npm audit fix`; schedule a dedicated dep-bump pass with full gate + smoke.
+- [ ] ImportDialog a11y polish bundle: add DialogDescription (kills the Radix aria-describedby console warning), give TagInput an `id` prop so the tags Label can htmlFor it, explicit `type="button"` on Buttons.
+- [ ] Friendly pre-checks for common row errors that currently fall through to raw Zod messages (<2 answers; >20/overlong tags).
+- [ ] `UnreadableFileError`/`FileTooLargeError` don't set `this.name` (log labels read "Error"); fold `parseGeneratedQuiz`/`parseExtractedQuiz` into one `parseWith(schema)` helper; extraction fallback interpolates `error.message` (fold into the existing mapOpenAiError raw-echo item above); delete the unused `MAX_IMPORT_ROWS` alias.
+- Behavior notes (by design, not bugs): docx lane is the only OpenAI spender and sits behind the AI limiter + aiGeneration feature gate; mimetype filter intentionally admits octet-stream (extension + magic-byte parse failure are the real gates); exceljs inflates the zip in memory (bounded by 10MB upload cap + MAX_SHEET_ROWS=2000 + auth + AI limiter).
