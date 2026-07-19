@@ -767,7 +767,7 @@ In the 2nd-place card, replace:
 with:
 
 ```ts
-      pdf.text(fitText(secondPlace.name, (pageWidth / 2) - 78, measure), 45, yPosition + 17);
+      pdf.text(fitText(secondPlace.name, (pageWidth / 2) - 90, measure), 45, yPosition + 17);
 ```
 
 In the 3rd-place card, replace:
@@ -779,7 +779,7 @@ In the 3rd-place card, replace:
 with:
 
 ```ts
-        pdf.text(fitText(thirdPlace.name, (pageWidth / 2) - 78, measure), pageWidth / 2 + 25, yPosition + 17);
+        pdf.text(fitText(thirdPlace.name, (pageWidth / 2) - 90, measure), pageWidth / 2 + 25, yPosition + 17);
 ```
 
 - [ ] **Step 5: Truncate rankings-table names and the fastest-player label**
@@ -874,7 +874,7 @@ In the 3rd-place card, after its accent-bar block, add:
         drawMedal(pageWidth / 2 + 30, yPosition + 14, 5.5, [205, 127, 50], '3');
 ```
 
-and shift its three text lines right — replace x-coordinate `pageWidth / 2 + 25` with `pageWidth / 2 + 40` in the `'3RD PLACE'`, name, and points `pdf.text(...)` calls. (The Task 4 name truncation widths already leave room for this shift.)
+and shift its three text lines right — replace x-coordinate `pageWidth / 2 + 25` with `pageWidth / 2 + 40` in the `'3RD PLACE'`, name, and points `pdf.text(...)` calls. (Width (pageWidth / 2) - 90 keeps the shifted text 5mm inside the card edge; the original - 78 width predated the shift and could overflow by 7mm.)
 
 - [ ] **Step 3: Add small medal discs to the top-3 rankings rows**
 
