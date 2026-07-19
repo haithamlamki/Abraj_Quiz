@@ -20,6 +20,7 @@ import { registerAdminRoutes } from "./admin-routes";
 import { registerBankRoutes } from "./bank-routes";
 import { registerImportRoutes } from "./import-routes";
 import { registerReportRoutes } from "./report-routes";
+import { registerVersionRoutes } from "./version-routes";
 import { uploadQuizImage } from "./supabase-storage";
 import { captureError } from "./instrument";
 import { buildRateLimiters } from "./rate-limits";
@@ -119,7 +120,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Build rate limiters once per server startup
-  const { authLimiter, aiLimiter, uploadLimiter, joinLimiter } = buildRateLimiters();
+  const { authLimiter, aiLimiter, uploadLimiter, joinLimiter, draftLimiter } = buildRateLimiters();
 
   app.get("/api/tenant/config", (req, res) => {
     const tenant = req.tenant as Tenant;
@@ -606,7 +607,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid questions format", errors: questionsValidation.error.errors });
       }
 
-      const updatedQuiz = await storage.updateQuiz(tctx(req), quizId, {
+      // Versioned save: banks the previous row state into quiz_versions, deletes
+      // any autosave draft, and prunes history — all in one transaction.
+      const updatedQuiz = await storage.updateQuizWithVersion(tctx(req), quizId, {
         title: validation.data.title,
         description: validation.data.description,
         // Persist the NORMALIZED questions (canonical correctAnswers/type/answerType
@@ -693,6 +696,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   registerReportRoutes(app, { storage, requireAuth, tctx });
+
+  registerVersionRoutes(app, { storage, requireAuth, tctx, draftLimiter });
 
   app.get("/api/quizzes/:id/insights", requireAuth, async (req, res) => {
     try {

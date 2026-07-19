@@ -51,3 +51,13 @@ test("buildRateLimiters constructs all four limiters without express-rate-limit 
   const validationNoise = logged.filter((l) => l.includes("ERR_ERL"));
   assert.deepEqual(validationNoise, []);
 });
+
+test("draft limiter: 60/min per user by default, env-overridable", () => {
+  const s = rateLimitSettings({} as NodeJS.ProcessEnv);
+  assert.equal(s.draft.windowMs, 60_000);
+  assert.equal(s.draft.max, 60);
+  assert.equal(s.draft.keyBy, "user");
+  assert.equal(s.draft.skipSuccessfulRequests, false);
+  const overridden = rateLimitSettings({ RATE_LIMIT_DRAFT_MAX: "5" } as any);
+  assert.equal(overridden.draft.max, 5);
+});

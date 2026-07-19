@@ -21,6 +21,7 @@ export interface RateLimitSettings {
   ai: LimiterSetting;
   upload: LimiterSetting;
   join: LimiterSetting;
+  draft: LimiterSetting;
 }
 
 function intFromEnv(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
@@ -37,6 +38,9 @@ export function rateLimitSettings(env: NodeJS.ProcessEnv): RateLimitSettings {
     ai:     { windowMs: 60 * 60_000, max: intFromEnv(env, "RATE_LIMIT_AI_MAX", 20),    skipSuccessfulRequests: false, keyBy: "user" },
     upload: { windowMs: 60 * 60_000, max: intFromEnv(env, "RATE_LIMIT_UPLOAD_MAX", 60), skipSuccessfulRequests: false, keyBy: "user" },
     join:   { windowMs: 60_000,      max: intFromEnv(env, "RATE_LIMIT_JOIN_MAX", 600), skipSuccessfulRequests: false, keyBy: "ip" },
+    // Autosave drafts — debounced client-side (~2.5s), so steady state is a few
+    // req/min; 60/min per account only stops runaway loops, never real typing.
+    draft:  { windowMs: 60_000, max: intFromEnv(env, "RATE_LIMIT_DRAFT_MAX", 60), skipSuccessfulRequests: false, keyBy: "user" },
   };
 }
 
@@ -68,5 +72,6 @@ export function buildRateLimiters(env: NodeJS.ProcessEnv = process.env) {
     aiLimiter:     toLimiter(s.ai,     "AI generation limit reached. Please try again later."),
     uploadLimiter: toLimiter(s.upload, "Upload limit reached. Please try again later."),
     joinLimiter:   toLimiter(s.join,   "Too many join attempts from this network. Please try again shortly."),
+    draftLimiter:  toLimiter(s.draft,  "Draft is saving too often. Please slow down."),
   };
 }
