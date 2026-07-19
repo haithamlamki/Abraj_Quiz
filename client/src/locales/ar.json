@@ -500,6 +500,11 @@
       "previewNext": "التالي",
       "previewCounter": "{{current}} / {{total}}"
     },
+    "autosave": {
+      "saving": "جارٍ حفظ المسودة…",
+      "saved": "حُفظت المسودة {{time}}",
+      "error": "تعذّر حفظ المسودة — ستُعاد المحاولة"
+    },
     "question": {
       "typeQuiz": "اختبار",
       "typeTrueFalse": "صح أو خطأ",

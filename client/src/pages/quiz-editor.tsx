@@ -43,6 +43,8 @@ import { SaveToBankDialog } from "@/components/bank/SaveToBankDialog";
 import { BankPickerDialog } from "@/components/bank/BankPickerDialog";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { PageLoader } from "@/components/page-loader";
+import { useQuizAutosave, newQuizDraftKey, type AutosaveStatus } from "@/hooks/use-quiz-autosave";
+import { useTenant } from "@/lib/tenant";
 
 interface QuizForm {
   title: string;
@@ -63,6 +65,48 @@ const VALIDATION_MSG: Record<QuestionValidationKey, string> = {
   singleSelectOneCorrect: "editor.toasts.validationSingleSelectOneCorrect",
 };
 
+// Maps any quiz-shaped payload (live quiz row, draft payload, version row)
+// to editor state. Also used by draft-resume and version-restore, so keep it
+// tolerant: normalizes legacy single-correct questions and fills defaults.
+function toQuizForm(src: any): QuizForm {
+  const questions: Question[] = Array.isArray(src?.questions) && src.questions.length
+    ? src.questions.map((q: any) => ({
+        question: q.question ?? "",
+        imageUrl: q.imageUrl,
+        type: q.type ?? "quiz",
+        answerType: q.answerType ?? "single",
+        answers: Array.isArray(q.answers) ? q.answers : ["", "", "", ""],
+        // Normalize legacy single-correct → array.
+        correctAnswers: Array.isArray(q.correctAnswers)
+          ? q.correctAnswers
+          : [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
+        timeLimit: q.timeLimit ?? 20,
+        points: q.points === "double" ? "double" : "standard",
+      }))
+    : [blankQuestion()];
+  return {
+    title: src?.title ?? "",
+    description: src?.description ?? "",
+    background: src?.background || "aurora",
+    isPublic: src?.isPublic ?? true,
+    theme: resolveQuizTheme(src ?? {}),
+    questions,
+  };
+}
+
+function AutosaveChip({ status, savedAt }: { status: AutosaveStatus; savedAt: Date | null }) {
+  const { t } = useTranslation();
+  if (status === "idle") return null;
+  return (
+    <span className="text-xs text-muted-foreground whitespace-nowrap" aria-live="polite">
+      {status === "saving" && t("editor.autosave.saving")}
+      {status === "saved" && savedAt &&
+        t("editor.autosave.saved", { time: savedAt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) })}
+      {status === "error" && t("editor.autosave.error")}
+    </span>
+  );
+}
+
 export default function QuizEditor() {
   const { quizId } = useParams();
   const isEditMode = Boolean(quizId);
@@ -71,6 +115,7 @@ export default function QuizEditor() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const tenant = useTenant();
 
   const [quiz, setQuiz] = useState<QuizForm>({
     title: "",
@@ -92,6 +137,11 @@ export default function QuizEditor() {
   // `t` identity on every language change — without this, toggling language
   // mid-edit re-runs hydration and silently discards unsaved edits.
   const hydratedQuizRef = useRef<unknown>(null);
+  // Task 5 replaces `true` with the draft-decision gate; until then autosave is
+  // armed as soon as auth resolves (markClean in hydration keeps it no-op safe).
+  const [hydrated, setHydrated] = useState(!isEditMode);
+  const storageKey = !isEditMode && user ? newQuizDraftKey(tenant.slug, user.id) : undefined;
+  const initialCleanRef = useRef(false);
 
   // Redirect unauthenticated users.
   useEffect(() => {
@@ -115,32 +165,23 @@ export default function QuizEditor() {
         setLocation("/my-quizzes");
         return;
       }
-      const questions: Question[] = Array.isArray(loaded.questions) && loaded.questions.length
-        ? loaded.questions.map((q: any) => ({
-            question: q.question ?? "",
-            imageUrl: q.imageUrl,
-            type: q.type ?? "quiz",
-            answerType: q.answerType ?? "single",
-            answers: Array.isArray(q.answers) ? q.answers : ["", "", "", ""],
-            // Normalize legacy single-correct → array.
-            correctAnswers: Array.isArray(q.correctAnswers)
-              ? q.correctAnswers
-              : [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
-            timeLimit: q.timeLimit ?? 20,
-            points: q.points === "double" ? "double" : "standard",
-          }))
-        : [blankQuestion()];
-      setQuiz({
-        title: loaded.title ?? "",
-        description: loaded.description ?? "",
-        background: loaded.background || "aurora",
-        isPublic: loaded.isPublic ?? true,
-        theme: resolveQuizTheme(loaded),
-        questions,
-      });
+      const form = toQuizForm(loaded);
+      setQuiz(form);
       setCurrentIndex(0);
+      markClean(form);
+      setHydrated(true);
     }
   }, [loaded, isEditMode, user, setLocation, toast, t]);
+
+  // In create mode, mark the pristine blank form clean once on mount so an
+  // untouched editor never writes a localStorage draft.
+  useEffect(() => {
+    if (!isEditMode && !initialCleanRef.current) {
+      initialCleanRef.current = true;
+      markClean(quiz);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const current = quiz.questions[currentIndex] ?? quiz.questions[0];
 
@@ -284,6 +325,7 @@ export default function QuizEditor() {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/my-quizzes"] });
       toast({ title: isEditMode ? t("editor.toasts.quizUpdated") : t("editor.toasts.quizCreated") });
+      if (!isEditMode && storageKey) localStorage.removeItem(storageKey);
       setLocation(isEditMode ? "/my-quizzes" : `/host-quiz/${data.id}`);
     },
     onError: (error: any) => {
@@ -293,6 +335,14 @@ export default function QuizEditor() {
         : error?.response?.data?.message || t("editor.toasts.saveFailedDefault");
       toast({ title: t("editor.toasts.saveFailedTitle"), description: msg, variant: "destructive" });
     },
+  });
+
+  const { status: autosaveStatus, savedAt: autosaveAt, markClean } = useQuizAutosave({
+    quizId: isEditMode ? quizId : undefined,
+    storageKey,
+    enabled: Boolean(isAuthenticated && hydrated),
+    paused: saveMutation.isPending,
+    payload: quiz,
   });
 
   const handleSave = () => {
@@ -440,6 +490,7 @@ export default function QuizEditor() {
           <Button variant="outline" onClick={() => { setPreviewIdx(currentIndex); setPreviewOpen(true); }}>
             <Eye className="w-4 h-4 me-1" /> {t("editor.topbar.preview")}
           </Button>
+          <AutosaveChip status={autosaveStatus} savedAt={autosaveAt} />
           <Button onClick={handleSave} disabled={saveMutation.isPending}>
             {saveMutation.isPending ? <Loader2 className="w-4 h-4 me-1 animate-spin" /> : null}
             {isEditMode ? t("editor.topbar.saveChanges") : t("editor.topbar.save")}

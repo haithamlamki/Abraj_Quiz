@@ -436,6 +436,11 @@
       "previewNext": "Next",
       "previewCounter": "{{current}} / {{total}}"
     },
+    "autosave": {
+      "saving": "Saving draft…",
+      "saved": "Draft saved {{time}}",
+      "error": "Draft not saved — will retry"
+    },
     "question": {
       "typeQuiz": "Quiz",
       "typeTrueFalse": "True or False",
