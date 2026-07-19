@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Trophy, Clock, Image, Users, BarChart, BookOpen, Play, QrCode, X, Crown, Medal, Award } from "lucide-react";
+import { Trophy, Sparkles, Palette, Library, FileUp, Gamepad2, BarChart, BookOpen, Play, QrCode, X, Crown, Medal, Award } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -40,6 +40,15 @@ interface LatestResultsData {
     rank: number;
   }>;
 }
+
+const featureCards = [
+  { icon: Sparkles, titleKey: "home.featureAiTitle", descKey: "home.featureAiDesc" },
+  { icon: Palette, titleKey: "home.featureThemeTitle", descKey: "home.featureThemeDesc" },
+  { icon: Library, titleKey: "home.featureBankTitle", descKey: "home.featureBankDesc" },
+  { icon: FileUp, titleKey: "home.featureImportTitle", descKey: "home.featureImportDesc" },
+  { icon: BarChart, titleKey: "home.featureReportsTitle", descKey: "home.featureReportsDesc" },
+  { icon: Gamepad2, titleKey: "home.featureLiveTitle", descKey: "home.featureLiveDesc" },
+] as const;
 
 export default function Home() {
   const { t } = useTranslation();
@@ -438,32 +447,16 @@ export default function Home() {
               </div>
             )}
             
-            {/* Features Grid - Horizontal */}
+            {/* Feature highlights — one line on desktop, tenant-theme colored */}
             <div className="max-w-6xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.1s' }}>
-                  <Clock className="w-8 h-8 mb-2 mx-auto" />
-                  <h4 className="font-bold">{t("home.featureTimeLimitsTitle")}</h4>
-                  <p className="text-sm opacity-90">{t("home.featureTimeLimitsDesc")}</p>
-                </div>
-
-                <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.2s' }}>
-                  <Image className="w-8 h-8 mb-2 mx-auto" />
-                  <h4 className="font-bold">{t("home.featureRichMediaTitle")}</h4>
-                  <p className="text-sm opacity-90">{t("home.featureRichMediaDesc")}</p>
-                </div>
-
-                <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.3s' }}>
-                  <Users className="w-8 h-8 mb-2 mx-auto" />
-                  <h4 className="font-bold">{t("home.featureTeamModeTitle")}</h4>
-                  <p className="text-sm opacity-90">{t("home.featureTeamModeDesc")}</p>
-                </div>
-
-                <div className="bg-transparent p-6 rounded-xl text-center card-3d-enhanced text-[#019ebd] animate-scale-in" style={{ animationDelay: '0.4s' }}>
-                  <BarChart className="w-8 h-8 mb-2 mx-auto" />
-                  <h4 className="font-bold">{t("home.featureAnalyticsTitle")}</h4>
-                  <p className="text-sm opacity-90">{t("home.featureAnalyticsDesc")}</p>
-                </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+                {featureCards.map(({ icon: Icon, titleKey, descKey }) => (
+                  <div key={titleKey} className="p-4 rounded-xl text-center card-3d-enhanced text-abraj-primary">
+                    <Icon className="w-6 h-6 mb-2 mx-auto" />
+                    <h4 className="font-bold text-sm">{t(titleKey)}</h4>
+                    <p className="text-xs opacity-80">{t(descKey)}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
