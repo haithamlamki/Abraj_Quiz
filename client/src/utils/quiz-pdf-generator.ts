@@ -110,7 +110,9 @@ export class QuizPDFGenerator {
   private loadLogoDataUrl(): Promise<string | undefined> {
     return new Promise((resolve) => {
       const source = this.options.branding?.logoDataUrl || logo;
-      if (source.startsWith("data:")) {
+      // Only PNG/JPEG data URLs can go straight to addImage; other formats
+      // (SVG/WebP tenant logos) must rasterize through the canvas path below.
+      if (source.startsWith("data:image/png") || source.startsWith("data:image/jpeg")) {
         resolve(source);
         return;
       }
@@ -185,6 +187,7 @@ export class QuizPDFGenerator {
     });
     this.pdf.setFontSize(10);
     this.pdf.setFont("helvetica", "normal");
+    this.pdf.setTextColor(255, 255, 255);
     this.pdf.text(`${questionCount} questions  |  ${creationDate}`, this.leftMargin, bandHeight - 6);
 
     this.yPosition = bandHeight + 12;
