@@ -21,7 +21,8 @@ import { registerBankRoutes } from "./bank-routes";
 import { registerImportRoutes } from "./import-routes";
 import { registerReportRoutes } from "./report-routes";
 import { registerVersionRoutes } from "./version-routes";
-import { uploadQuizImage } from "./supabase-storage";
+import { uploadQuizImage, storeGeneratedBackground } from "./supabase-storage";
+import { generateBackgroundBodySchema } from "./background-request";
 import { captureError } from "./instrument";
 import { buildRateLimiters } from "./rate-limits";
 
@@ -493,33 +494,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/generate-background", aiLimiter, requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
-      console.log("Background image generation request - User ID:", (req as any).authUserId);
-      
       if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ message: "Service not configured" });
       }
 
-      const { title, description } = req.body;
-      
-      // Validate title
-      if (!title || typeof title !== 'string' || title.trim().length < 3) {
-        return res.status(400).json({ message: "Quiz title is required and must be at least 3 characters long" });
+      const parsed = generateBackgroundBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid request" });
       }
 
-      if (title.trim().length > 100) {
-        return res.status(400).json({ message: "Quiz title must be less than 100 characters" });
-      }
-
-      // Validate description length
-      if (description && typeof description === 'string' && description.trim().length > 500) {
-        return res.status(400).json({ message: "Description must be less than 500 characters" });
-      }
-
-      const png = await generateBackgroundImage({
-        title: title.trim(),
-        description: description && typeof description === "string" ? description.trim() : "",
-      });
-      res.json({ url: `data:image/png;base64,${png.toString("base64")}` });
+      const png = await generateBackgroundImage(parsed.data);
+      const url = await storeGeneratedBackground(png);
+      res.json({ url });
     } catch (error: any) {
       captureError(error, { scope: "http.generate-background" });
       console.error("Error generating background image:", error);
