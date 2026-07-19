@@ -417,6 +417,11 @@ const draftQuestionSchema = z
     correctAnswers: z.array(z.number().int().min(0).max(9)).max(10).default([]),
     timeLimit: z.number().int().min(1).max(600).default(20),
     points: z.string().max(20).default("standard"),
+    // Mirrors questionSchema's optional metadata so it survives the draft
+    // round-trip (autosave/resume) instead of being silently stripped.
+    difficulty: z.enum(["easy", "medium", "hard"]).optional(),
+    explanation: z.string().max(5000).optional(),
+    sourceQuestionId: z.number().int().positive().optional(),
   })
   .strip();
 

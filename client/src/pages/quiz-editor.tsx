@@ -89,6 +89,9 @@ function toQuizForm(src: any): QuizForm {
           : [typeof q.correctAnswer === "number" ? q.correctAnswer : 0],
         timeLimit: q.timeLimit ?? 20,
         points: q.points === "double" ? "double" : "standard",
+        difficulty: q.difficulty,
+        explanation: q.explanation,
+        sourceQuestionId: q.sourceQuestionId,
       }))
     : [blankQuestion()];
   return {
@@ -413,8 +416,13 @@ export default function QuizEditor() {
 
   const discardDraft = async () => {
     try {
-      if (isEditMode) await apiRequest("DELETE", `/api/quizzes/${quizId}/draft`);
-      else if (storageKey) localStorage.removeItem(storageKey);
+      if (isEditMode) {
+        await apiRequest("DELETE", `/api/quizzes/${quizId}/draft`);
+        // The draft query caches forever (global staleTime: Infinity) — without this,
+        // remounting the editor within gcTime re-serves the deleted draft and the
+        // resume prompt reappears offering content the user explicitly discarded.
+        queryClient.setQueryData(["/api/quizzes", quizId, "draft"], null);
+      } else if (storageKey) localStorage.removeItem(storageKey);
     } catch {
       // Non-blocking: worst case the prompt reappears next visit.
     }

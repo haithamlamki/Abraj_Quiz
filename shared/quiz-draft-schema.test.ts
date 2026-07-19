@@ -48,3 +48,13 @@ test("quizDraftSchema enforces hard bounds", () => {
 test("MAX_QUIZ_VERSIONS is 20", () => {
   assert.equal(MAX_QUIZ_VERSIONS, 20);
 });
+
+test("quizDraftSchema preserves difficulty/explanation/sourceQuestionId through the draft round-trip", () => {
+  const parsed = quizDraftSchema.parse({
+    title: "t",
+    questions: [{ question: "q", difficulty: "hard", explanation: "because", sourceQuestionId: 7 }],
+  });
+  assert.equal(parsed.questions[0].difficulty, "hard");
+  assert.equal(parsed.questions[0].explanation, "because");
+  assert.equal(parsed.questions[0].sourceQuestionId, 7);
+});
