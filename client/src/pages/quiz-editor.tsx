@@ -139,6 +139,7 @@ export default function QuizEditor() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewIdx, setPreviewIdx] = useState(0);
   const [uploading, setUploading] = useState(false);
+  const [generatingBg, setGeneratingBg] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [saveToBankOpen, setSaveToBankOpen] = useState(false);
   const [bankPickerOpen, setBankPickerOpen] = useState(false);
@@ -336,6 +337,7 @@ export default function QuizEditor() {
   };
 
   const uploadThemeImage = async (file: File) => {
+    if (uploading || generatingBg) return;
     setUploading(true);
     try {
       const form = new FormData();
@@ -348,6 +350,25 @@ export default function QuizEditor() {
       toast({ title: t("editor.toasts.themeUploadFailedTitle"), description: e.message, variant: "destructive" });
     } finally {
       setUploading(false);
+    }
+  };
+
+  // AI background generation — on failure the current background is untouched.
+  const generateThemeImage = async (prompt: string) => {
+    if (uploading || generatingBg) return;
+    setGeneratingBg(true);
+    try {
+      const res = await apiRequest("POST", "/api/generate-background", { prompt });
+      const { url } = await res.json();
+      setQuiz((prev) => ({
+        ...prev,
+        background: url,
+        theme: { ...prev.theme, background: url, overlay: 0.25 },
+      }));
+    } catch (e: any) {
+      toast({ title: t("editor.theme.ai.failedTitle"), description: e.message, variant: "destructive" });
+    } finally {
+      setGeneratingBg(false);
     }
   };
 
@@ -893,6 +914,10 @@ export default function QuizEditor() {
                   uploading={uploading}
                   onChange={(theme) => setQuiz((p) => ({ ...p, theme, background: theme.background }))}
                   onUploadBackground={uploadThemeImage}
+                  aiEnabled={tenant.features.aiGeneration}
+                  generating={generatingBg}
+                  onGenerateBackground={generateThemeImage}
+                  defaultAiPrompt={quiz.title}
                 />
               </DialogContent>
             </Dialog>

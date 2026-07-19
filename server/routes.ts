@@ -21,7 +21,8 @@ import { registerBankRoutes } from "./bank-routes";
 import { registerImportRoutes } from "./import-routes";
 import { registerReportRoutes } from "./report-routes";
 import { registerVersionRoutes } from "./version-routes";
-import { uploadQuizImage } from "./supabase-storage";
+import { uploadQuizImage, storeGeneratedBackground } from "./supabase-storage";
+import { generateBackgroundBodySchema } from "./background-request";
 import { captureError } from "./instrument";
 import { buildRateLimiters } from "./rate-limits";
 import { logAudit, AUDIT_ACTIONS } from "./audit";
@@ -516,40 +517,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/generate-background", aiLimiter, requireAuth, requireFeature("aiGeneration"), async (req, res) => {
     try {
-      console.log("Background image generation request - User ID:", (req as any).authUserId);
-      
       if (!process.env.OPENAI_API_KEY) {
         return res.status(500).json({ message: "Service not configured" });
       }
 
-      const { title, description } = req.body;
-      
-      // Validate title
-      if (!title || typeof title !== 'string' || title.trim().length < 3) {
-        return res.status(400).json({ message: "Quiz title is required and must be at least 3 characters long" });
+      const parsed = generateBackgroundBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ message: parsed.error.errors[0]?.message || "Invalid request" });
       }
 
-      if (title.trim().length > 100) {
-        return res.status(400).json({ message: "Quiz title must be less than 100 characters" });
-      }
-
-      // Validate description length
-      if (description && typeof description === 'string' && description.trim().length > 500) {
-        return res.status(400).json({ message: "Description must be less than 500 characters" });
-      }
-
-      const backgroundDataUrl = await generateBackgroundImage(
-        title.trim(), 
-        description && typeof description === 'string' ? description.trim() : ""
-      );
-      res.json({ backgroundUrl: backgroundDataUrl });
+      const png = await generateBackgroundImage(parsed.data);
+      const url = await storeGeneratedBackground(png);
+      res.json({ url });
     } catch (error: any) {
       captureError(error, { scope: "http.generate-background" });
       console.error("Error generating background image:", error);
       // Return user-friendly error message without leaking internals
-      const userMessage = error.message?.includes('OpenAI') || error.message?.includes('API')
-        ? "Service temporarily unavailable. Please try again later."
-        : error.message || "Failed to generate background image";
+      const userMessage = error.message?.includes("Supabase Storage")
+        ? "Failed to store the generated image. Please try again."
+        : error.message?.includes('OpenAI') || error.message?.includes('API')
+          ? "Service temporarily unavailable. Please try again later."
+          : error.message || "Failed to generate background image";
       res.status(500).json({ message: userMessage });
     }
   });
@@ -591,6 +579,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Store the normalized (canonical) question shape.
         questions: questionsValidation.data,
         background: validation.data.background || "classroom",
+        theme: validation.data.theme,
         isPublic: validation.data.isPublic,
         createdBy: (req as any).authUserId
       });
@@ -647,6 +636,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // shape) so edited quizzes migrate off the legacy shape.
         questions: questionsValidation.data,
         background: validation.data.background,
+        theme: validation.data.theme,
         isPublic: validation.data.isPublic
       });
 

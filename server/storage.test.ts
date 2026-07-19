@@ -584,6 +584,24 @@ test("upsertQuizDraft rejects a quizId from another tenant and leaves the draft 
   assert.equal((draft?.payload as any).title, "mine"); // tenant 1's draft untouched
 });
 
+test("createQuiz and updateQuizWithVersion persist the theme blob (overlay round-trip)", async () => {
+  const s = new MemStorage();
+  const ctx = { tenantId: 1 };
+  const theme = { background: "classroom", accent: "#123456", overlay: 0.25 };
+
+  const quiz = await s.createQuiz(ctx, {
+    title: "t", questions: [], background: "classroom", isPublic: true, createdBy: 1,
+    theme,
+  } as any);
+  assert.equal((await s.getQuiz(ctx, quiz.id))?.theme?.overlay, 0.25);
+
+  const updated = await s.updateQuizWithVersion(ctx, quiz.id, {
+    theme: { ...theme, overlay: 0.4 },
+  });
+  assert.equal((updated.theme as any)?.overlay, 0.4);
+  assert.equal((await s.getQuiz(ctx, quiz.id))?.theme?.overlay, 0.4);
+});
+
 test("audit events: insert stamps tenant, list returns newest-first", async () => {
   const s = new MemStorage();
   const ctx = { tenantId: 1 };

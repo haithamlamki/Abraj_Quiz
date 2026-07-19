@@ -18,6 +18,8 @@ export interface QuizTheme {
   questionCard: string;
   font: QuizFont;
   cardStyle: QuizCardStyle;
+  /** 0–0.5 dark overlay over the background for text readability. Default 0. */
+  overlay?: number;
 }
 
 export const QUIZ_FONT_STACKS: Record<QuizFont, string> = {
@@ -46,6 +48,7 @@ export const DEFAULT_QUIZ_THEME: QuizTheme = {
   questionCard: "#ffffff",
   font: "sans",
   cardStyle: "solid",
+  overlay: 0,
 };
 
 export const PRESET_QUIZ_THEMES: Array<{ id: string; label: string; theme: QuizTheme }> = [
@@ -65,6 +68,11 @@ function isQuizTheme(value: unknown): value is Partial<QuizTheme> {
   return !!value && typeof value === "object" && !Array.isArray(value);
 }
 
+function clampOverlay(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+  return Math.min(0.5, Math.max(0, value));
+}
+
 // A quiz stores `background` (legacy single field) and optionally `theme` (the
 // richer config). The theme's background falls back to the quiz.background so
 // existing quizzes keep their look with no data migration.
@@ -78,6 +86,7 @@ export function resolveQuizTheme(quiz: { background?: string | null; theme?: unk
     questionCard: custom.questionCard ?? DEFAULT_QUIZ_THEME.questionCard,
     font: custom.font ?? DEFAULT_QUIZ_THEME.font,
     cardStyle: custom.cardStyle ?? DEFAULT_QUIZ_THEME.cardStyle,
+    overlay: clampOverlay(custom.overlay),
   };
 }
 

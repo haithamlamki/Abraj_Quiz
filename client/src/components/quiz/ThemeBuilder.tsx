@@ -1,9 +1,10 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { QuizTheme, QuizFont, QuizCardStyle } from "@shared/quiz-theme";
 import { PRESET_QUIZ_THEMES } from "@shared/quiz-theme";
 import { getThemeSwatchStyle, PRESET_THEMES } from "@/utils/backgrounds";
 import { QuizQuestionRenderer } from "./QuizQuestionRenderer";
-import { ImagePlus } from "lucide-react";
+import { ImagePlus, Sparkles } from "lucide-react";
 
 const FONTS: QuizFont[] = ["sans", "serif", "rounded", "mono"];
 const CARD_STYLES: QuizCardStyle[] = ["solid", "soft", "outline"];
@@ -13,10 +14,21 @@ export interface ThemeBuilderProps {
   onChange: (theme: QuizTheme) => void;
   onUploadBackground: (file: File) => void;
   uploading?: boolean;
+  /** Tenant has the aiGeneration feature — hides the AI section when false. */
+  aiEnabled?: boolean;
+  /** An AI generation request is in flight. */
+  generating?: boolean;
+  onGenerateBackground?: (prompt: string) => void;
+  /** Pre-fill for the AI prompt (the quiz title). */
+  defaultAiPrompt?: string;
 }
 
-export function ThemeBuilder({ theme, onChange, onUploadBackground, uploading }: ThemeBuilderProps) {
+export function ThemeBuilder({ theme, onChange, onUploadBackground, uploading, aiEnabled, generating, onGenerateBackground, defaultAiPrompt }: ThemeBuilderProps) {
   const { t } = useTranslation();
+  // Seeded on mount only — correct while the editor renders ThemeBuilder inside
+  // a Radix Dialog that unmounts on close (fresh seed per open). If that call
+  // site ever keeps it mounted, lift this state up.
+  const [aiPrompt, setAiPrompt] = useState(defaultAiPrompt ?? "");
   const set = (patch: Partial<QuizTheme>) => onChange({ ...theme, ...patch });
   const previewQuestion = {
     question: t("editor.theme.previewSampleQuestion"),
@@ -52,10 +64,43 @@ export function ThemeBuilder({ theme, onChange, onUploadBackground, uploading }:
           </div>
         </div>
 
+        {/* Generate with AI */}
+        {aiEnabled && onGenerateBackground && (
+          <div>
+            <div className="text-xs font-semibold text-gray-500 mb-1">{t("editor.theme.ai.sectionLabel")}</div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={aiPrompt}
+                maxLength={300}
+                disabled={generating}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder={t("editor.theme.ai.promptPlaceholder")}
+                className="flex-1 border rounded p-2 text-sm"
+              />
+              <button
+                onClick={() => onGenerateBackground(aiPrompt.trim())}
+                disabled={generating || uploading || aiPrompt.trim().length < 3}
+                className="shrink-0 flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium text-abraj-primary border-abraj-primary disabled:opacity-50"
+              >
+                <Sparkles className="w-4 h-4" /> {t("editor.theme.ai.generateButton")}
+              </button>
+            </div>
+            <div className="text-[10px] text-gray-400 mt-0.5">{aiPrompt.length} / 300</div>
+            {generating && (
+              <div className="text-xs text-gray-600 mt-1" role="status" aria-live="polite">
+                <div>{t("editor.theme.ai.generatingTitle")}</div>
+                <div className="text-gray-400">{t("editor.theme.ai.generatingHint")}</div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Custom background upload */}
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
           <ImagePlus className="w-4 h-4" /> {uploading ? t("editor.theme.uploading") : t("editor.theme.customBackgroundLabel")}
           <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+            disabled={uploading || generating}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadBackground(f); e.target.value = ""; }} />
         </label>
 
@@ -71,6 +116,20 @@ export function ThemeBuilder({ theme, onChange, onUploadBackground, uploading }:
             <input type="color" value={theme.questionCard} onChange={(e) => set({ questionCard: e.target.value })} className="block w-full h-8 mt-1" />
           </label>
         </div>
+
+        {/* Readability overlay */}
+        <label className="block text-xs text-gray-500">
+          {t("editor.theme.overlayLabel")} ({Math.round((theme.overlay ?? 0) * 100)}%)
+          <input
+            type="range"
+            min={0}
+            max={50}
+            step={5}
+            value={Math.round((theme.overlay ?? 0) * 100)}
+            onChange={(e) => set({ overlay: Number(e.target.value) / 100 })}
+            className="block w-full mt-1"
+          />
+        </label>
 
         {/* Font + card style — option text mirrors the internal font/card-style
             ids (sans/serif/rounded/mono, solid/soft/outline); these are not

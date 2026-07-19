@@ -1,7 +1,7 @@
 import type { CSSProperties, ReactNode } from "react";
 import type { QuizTheme } from "@shared/quiz-theme";
 import { themeToCssVars } from "@shared/quiz-theme";
-import { getBackgroundStyle } from "@/utils/backgrounds";
+import { getBackgroundStyleWithOverlay } from "@/utils/backgrounds";
 
 export interface QuizThemeProviderProps {
   theme: QuizTheme;
@@ -18,7 +18,7 @@ export function QuizThemeProvider({ theme, children, className = "", style }: Qu
   return (
     <div
       className={className}
-      style={{ ...getBackgroundStyle(theme.background), ...vars, fontFamily: "var(--quiz-font)", ...style }}
+      style={{ ...getBackgroundStyleWithOverlay(theme.background, theme.overlay), ...vars, fontFamily: "var(--quiz-font)", ...style }}
     >
       {children}
     </div>

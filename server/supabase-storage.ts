@@ -48,3 +48,13 @@ export async function uploadQuizImage(buffer: Buffer, contentType: string): Prom
 
   return `${baseUrl}/storage/v1/object/public/quiz-images/${objectPath}`;
 }
+
+// Stores an AI-generated background PNG. Falls back to an inline data URL when
+// Storage isn't configured (bare dev env) so the feature still works — at the
+// cost of a fat quiz row, which is acceptable only as a fallback.
+export async function storeGeneratedBackground(png: Buffer): Promise<string> {
+  if (!isImageUploadConfigured()) {
+    return `data:image/png;base64,${png.toString("base64")}`;
+  }
+  return uploadQuizImage(png, "image/png");
+}
