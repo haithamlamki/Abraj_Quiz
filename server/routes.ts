@@ -19,6 +19,7 @@ import { getAllowedOrigins } from "./origins";
 import { registerAdminRoutes } from "./admin-routes";
 import { registerBankRoutes } from "./bank-routes";
 import { registerImportRoutes } from "./import-routes";
+import { registerReportRoutes } from "./report-routes";
 import { uploadQuizImage } from "./supabase-storage";
 import { captureError } from "./instrument";
 import { buildRateLimiters } from "./rate-limits";
@@ -690,6 +691,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
     extractQuizFromText,
   });
+
+  registerReportRoutes(app, { storage, requireAuth, tctx });
 
   app.get("/api/quizzes/:id/insights", requireAuth, async (req, res) => {
     try {
