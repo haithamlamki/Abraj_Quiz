@@ -465,6 +465,12 @@
     "players": "اللاعبون",
     "avgScore": "متوسط النقاط"
   },
+  "reports": {
+    "downloadTitle": "تنزيل التقرير",
+    "excel": "تنسيق Excel",
+    "csv": "CSV",
+    "failedTitle": "تعذّر تنزيل التقرير"
+  },
   "preview": {
     "loading": "جارٍ التحميل…",
     "notFound": "الاختبار غير موجود.",
