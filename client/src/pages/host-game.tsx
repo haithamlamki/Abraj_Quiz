@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Users, Play, SkipForward, Copy, Share2 } from "lucide-react";
+import { Users, Play, SkipForward, Copy, Share2, Loader2 } from "lucide-react";
 import { apiRequest, retryTransient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import type { Game, Quiz, Question } from "@shared/schema";
@@ -212,12 +212,25 @@ export default function HostGame() {
       }, 1000);
       return () => clearTimeout(timer);
     } else {
-      // Countdown finished, start the game
-      setIsStartingGame(false);
+      // Countdown finished — fire the start request but KEEP isStartingGame
+      // so the overlay covers the start round trip; otherwise the host
+      // regresses to the lobby for a beat while players already see Q1.
+      // Nulling the countdown is also the re-entry guard: this effect
+      // re-runs on every render (startGameMutation is a fresh object each
+      // time), and the early return above is what stops a second mutate().
       setGameStartCountdown(null);
       startGameMutation.mutate();
     }
   }, [gameStartCountdown, isStartingGame, startGameMutation]);
+
+  // Dismiss the start overlay only once the game is actually active (the
+  // active branch below replaces the lobby wholesale). onError resets too,
+  // so a failed start can't strand the overlay.
+  useEffect(() => {
+    if (isStartingGame && game?.status === "active") {
+      setIsStartingGame(false);
+    }
+  }, [isStartingGame, game?.status]);
 
   useEffect(() => {
     if (timeLeft !== null && timeLeft > 0 && timeLeft <= 3 && !showResults) {
@@ -292,20 +305,29 @@ export default function HostGame() {
   const noLimit = currentQuestion?.timeLimit === 0;
   const players = runtimeState.players || (game.players as any[]) || [];
 
-  // Countdown overlay component
+  // Countdown overlay component. Stays up after the count hits zero
+  // (gameStartCountdown === null, spinner phase) until game.status flips to
+  // "active" and the whole lobby branch unmounts — the host goes straight
+  // from overlay to Q1, never back to the lobby.
   const CountdownOverlay = () => {
-    if (!isStartingGame || gameStartCountdown === null) return null;
-    
+    if (!isStartingGame) return null;
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
         <div className="text-center">
-          <div className={`w-32 h-32 rounded-full flex items-center justify-center font-bold text-6xl mx-auto mb-6 ${
-            gameStartCountdown === 3 ? 'bg-red-500 animate-pulse' :
-            gameStartCountdown === 2 ? 'bg-yellow-500 animate-bounce' :
-            'bg-green-500 animate-ping'
-          } text-white shadow-2xl`}>
-            {gameStartCountdown}
-          </div>
+          {gameStartCountdown !== null ? (
+            <div className={`w-32 h-32 rounded-full flex items-center justify-center font-bold text-6xl mx-auto mb-6 ${
+              gameStartCountdown === 3 ? 'bg-red-500 animate-pulse' :
+              gameStartCountdown === 2 ? 'bg-yellow-500 animate-bounce' :
+              'bg-green-500 animate-ping'
+            } text-white shadow-2xl`}>
+              {gameStartCountdown}
+            </div>
+          ) : (
+            <div className="w-32 h-32 rounded-full flex items-center justify-center bg-green-500 mx-auto mb-6 text-white shadow-2xl">
+              <Loader2 className="w-16 h-16 animate-spin" />
+            </div>
+          )}
           <h2 className="text-white text-2xl font-bold">{t("host.gameStarting")}</h2>
         </div>
       </div>
@@ -411,7 +433,11 @@ export default function HostGame() {
                     className="w-full font-bold text-base py-2"
                   >
                     <Play className="w-4 h-4 me-2" />
-                    {isStartingGame ? t("host.startingInCountdown", { count: gameStartCountdown }) : t("host.startGame")}
+                    {isStartingGame
+                      ? gameStartCountdown !== null
+                        ? t("host.startingInCountdown", { count: gameStartCountdown })
+                        : t("host.gameStarting")
+                      : t("host.startGame")}
                   </Button>
                 </div>
               </CardContent>
