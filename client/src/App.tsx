@@ -62,7 +62,7 @@ function App() {
       <ThemeProvider>
         <TenantProvider>
           <TooltipProvider>
-          <div className="page-fill relative">
+          <div className="min-h-screen relative">
             {/* Classroom background */}
             <div
               className="classroom-background"
