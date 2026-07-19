@@ -480,7 +480,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
       pdf.text('2ND PLACE', 60, yPosition + 11);
       pdf.setFontSize(10);
       pdf.setTextColor(40, 40, 40);
-      pdf.text(fitText(secondPlace.name, (pageWidth / 2) - 78, measure), 60, yPosition + 17);
+      pdf.text(fitText(secondPlace.name, (pageWidth / 2) - 90, measure), 60, yPosition + 17);
       pdf.setFontSize(9);
       pdf.setTextColor(100, 100, 100);
       pdf.text(`${(secondPlace.score || 0).toLocaleString()} pts`, 60, yPosition + 21);
@@ -506,7 +506,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
         pdf.text('3RD PLACE', pageWidth / 2 + 40, yPosition + 11);
         pdf.setFontSize(10);
         pdf.setTextColor(40, 40, 40);
-        pdf.text(fitText(thirdPlace.name, (pageWidth / 2) - 78, measure), pageWidth / 2 + 40, yPosition + 17);
+        pdf.text(fitText(thirdPlace.name, (pageWidth / 2) - 90, measure), pageWidth / 2 + 40, yPosition + 17);
         pdf.setFontSize(9);
         pdf.setTextColor(100, 100, 100);
         pdf.text(`${(thirdPlace.score || 0).toLocaleString()} pts`, pageWidth / 2 + 40, yPosition + 21);
