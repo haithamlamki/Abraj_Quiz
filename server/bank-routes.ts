@@ -1,6 +1,6 @@
 import type { Express } from "express";
 import { z } from "zod";
-import { insertBankQuestionSchema } from "@shared/schema";
+import { insertBankQuestionSchema, MAX_BANK_BULK_ITEMS } from "@shared/schema";
 import type { IStorage, StorageCtx } from "./storage";
 import { captureError } from "./instrument";
 
@@ -87,8 +87,8 @@ export function registerBankRoutes(app: Express, { storage, requireAuth, tctx }:
   app.post("/api/bank/questions/bulk", requireAuth, async (req, res) => {
     try {
       const items = (req.body as { items?: unknown })?.items;
-      if (!Array.isArray(items) || items.length === 0 || items.length > 50) {
-        return res.status(400).json({ message: "items must be an array of 1..50 bank questions" });
+      if (!Array.isArray(items) || items.length === 0 || items.length > MAX_BANK_BULK_ITEMS) {
+        return res.status(400).json({ message: `items must be an array of 1..${MAX_BANK_BULK_ITEMS} bank questions` });
       }
       // All-or-nothing: validate every item BEFORE inserting any.
       const validated: Array<z.infer<typeof insertBankQuestionSchema>> = [];
