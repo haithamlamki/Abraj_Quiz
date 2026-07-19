@@ -566,3 +566,20 @@ test("versions and drafts are invisible from another tenant ctx", async () => {
   assert.equal(await s.getQuizVersion(ctx2, quiz.id, 1), undefined);
   assert.equal(await s.getQuizDraft(ctx2, quiz.id), undefined);
 });
+
+test("upsertQuizDraft rejects a quizId from another tenant and leaves the draft untouched", async () => {
+  const s = new MemStorage();
+  const ctx1 = { tenantId: 1 };
+  const ctx2 = { tenantId: 2 };
+  const quiz = await s.createQuiz(ctx1, {
+    title: "t", questions: [], background: "classroom", isPublic: true, createdBy: 1,
+  } as any);
+  await s.upsertQuizDraft(ctx1, quiz.id, { title: "mine", description: "", background: "classroom", isPublic: true, questions: [] });
+
+  await assert.rejects(
+    () => s.upsertQuizDraft(ctx2, quiz.id, { title: "stolen", description: "", background: "classroom", isPublic: true, questions: [] }),
+    /Quiz not found/,
+  );
+  const draft = await s.getQuizDraft(ctx1, quiz.id);
+  assert.equal((draft?.payload as any).title, "mine"); // tenant 1's draft untouched
+});

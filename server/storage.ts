@@ -334,7 +334,7 @@ export class DatabaseStorage implements IStorage {
 
       const [row] = await tx.select({
         max: sql<number>`coalesce(max(${quizVersions.versionNumber}), 0)`,
-      }).from(quizVersions).where(eq(quizVersions.quizId, id));
+      }).from(quizVersions).where(and(eq(quizVersions.quizId, id), tenantFilter(ctx, quizVersions.tenantId)));
       const versionNumber = Number(row.max) + 1;
 
       await tx.insert(quizVersions).values({
@@ -361,6 +361,7 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(quizVersions).where(and(
         eq(quizVersions.quizId, id),
         sql`${quizVersions.versionNumber} <= ${versionNumber - MAX_QUIZ_VERSIONS}`,
+        tenantFilter(ctx, quizVersions.tenantId),
       ));
 
       return quiz;
@@ -403,6 +404,11 @@ export class DatabaseStorage implements IStorage {
   async upsertQuizDraft(ctx: StorageCtx, quizId: number, payload: QuizDraftPayload): Promise<QuizDraft> {
     const tenantId = requireTenantId(ctx);
     return withCtx(ctx, async (tx) => {
+      // Guard: a draft may only ever be attached to a quiz in the caller's tenant.
+      const [quiz] = await tx.select().from(quizzes)
+        .where(and(eq(quizzes.id, quizId), tenantFilter(ctx, quizzes.tenantId)));
+      if (!quiz) throw new Error("Quiz not found");
+
       const [row] = await tx.insert(quizDrafts)
         .values({ tenantId, quizId, payload, updatedAt: sql`now()` as any })
         .onConflictDoUpdate({
@@ -1197,6 +1203,10 @@ export class MemStorage implements IStorage {
   }
 
   async upsertQuizDraft(ctx: StorageCtx, quizId: number, payload: QuizDraftPayload): Promise<QuizDraft> {
+    // Guard: a draft may only ever be attached to a quiz in the caller's tenant.
+    const quiz = this.quizzes.get(quizId);
+    if (!quiz || !this.inTenant(ctx, quiz)) throw new Error("Quiz not found");
+
     const tenantId = requireTenantId(ctx);
     const existing = this.quizDrafts.get(quizId);
     const row: QuizDraft = {
