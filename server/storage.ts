@@ -170,6 +170,9 @@ export interface IStorage {
   // to let players fetch a private/archived quiz's sanitized data while a
   // live game on it is in progress.
   quizHasLiveGame(ctx: StorageCtx, quizId: number): Promise<boolean>;
+  // Completed games for a quiz, oldest first. Reporting reads these together
+  // with each game's players/responses to build compliance exports.
+  getCompletedQuizGames(ctx: StorageCtx, quizId: number): Promise<Game[]>;
 
   // Game Players (authoritative roster — replaces the legacy games.players JSON)
   getGamePlayers(ctx: StorageCtx, gameId: number): Promise<GamePlayer[]>;
@@ -530,6 +533,14 @@ export class DatabaseStorage implements IStorage {
       const [game] = await tx.select().from(games)
         .where(and(eq(games.gamePin, pin), tenantFilter(ctx, games.tenantId)));
       return game || undefined;
+    });
+  }
+
+  async getCompletedQuizGames(ctx: StorageCtx, quizId: number): Promise<Game[]> {
+    return withCtx(ctx, async (tx) => {
+      return tx.select().from(games)
+        .where(and(eq(games.quizId, quizId), eq(games.status, "completed"), tenantFilter(ctx, games.tenantId)))
+        .orderBy(asc(games.createdAt));
     });
   }
 
@@ -1163,6 +1174,12 @@ export class MemStorage implements IStorage {
     return Array.from(this.games.values()).find(
       (game) => game.gamePin === pin && this.inTenant(ctx, game),
     );
+  }
+
+  async getCompletedQuizGames(ctx: StorageCtx, quizId: number): Promise<Game[]> {
+    return Array.from(this.games.values())
+      .filter((g) => g.quizId === quizId && g.status === "completed" && this.inTenant(ctx, g))
+      .sort((a, b) => (a.createdAt?.getTime() ?? 0) - (b.createdAt?.getTime() ?? 0) || a.id - b.id);
   }
 
   async createGame(ctx: StorageCtx, insertGame: InsertGame): Promise<Game> {

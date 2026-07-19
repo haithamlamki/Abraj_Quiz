@@ -131,3 +131,9 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
 - [ ] Friendly pre-checks for common row errors that currently fall through to raw Zod messages (<2 answers; >20/overlong tags).
 - [ ] `UnreadableFileError`/`FileTooLargeError` don't set `this.name` (log labels read "Error"); fold `parseGeneratedQuiz`/`parseExtractedQuiz` into one `parseWith(schema)` helper; extraction fallback interpolates `error.message` (fold into the existing mapOpenAiError raw-echo item above); delete the unused `MAX_IMPORT_ROWS` alias.
 - Behavior notes (by design, not bugs): docx lane is the only OpenAI spender and sits behind the AI limiter + aiGeneration feature gate; mimetype filter intentionally admits octet-stream (extension + magic-byte parse failure are the real gates); exceljs inflates the zip in memory (bounded by 10MB upload cap + MAX_SHEET_ROWS=2000 + auth + AI limiter).
+
+## Reporting follow-ups (from PR #33 final review, 2026-07-19)
+
+- [ ] If long-lived quizzes accumulate 100s of completed games, replace the report endpoint's sequential per-game reads with insights-style batched queries (join/inArray) — the sequential loop bounds concurrency but wall-clock grows linearly.
+- [ ] Minor test gaps: quiz-report 400 bad-id branch (mirrors the equally-untested insights branch); AR game-report xlsx roundtrip (only AR quiz workbook + AR CSV covered; browser QA covers it live).
+- [ ] Hardening: narrow GameReportData.questions to {question,type,answerType,answers} so a future JSON-serializing consumer can't leak keys (do-not-serialize comment in place today).

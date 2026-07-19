@@ -401,6 +401,12 @@
     "players": "Players",
     "avgScore": "Avg score"
   },
+  "reports": {
+    "downloadTitle": "Download report",
+    "excel": "Excel",
+    "csv": "CSV",
+    "failedTitle": "Could not download the report"
+  },
   "preview": {
     "loading": "Loading…",
     "notFound": "Quiz not found.",

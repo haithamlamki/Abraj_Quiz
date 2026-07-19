@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Download, FileUp, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, buildApiUrl } from "@/lib/queryClient";
+import { downloadFile } from "@/lib/download";
 import { TagInput } from "@/components/bank/TagInput";
 import type { Question } from "@shared/schema";
 
@@ -57,18 +58,8 @@ export function ImportDialog({ open, onOpenChange, meta, onImported }: ImportDia
   };
 
   const downloadTemplate = async (kind: "xlsx" | "csv") => {
-    try {
-      const res = await fetch(buildApiUrl(`/api/import/template.${kind}`), { credentials: "include" });
-      if (!res.ok) throw new Error();
-      const url = URL.createObjectURL(await res.blob());
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `question-import-template.${kind}`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch {
-      toast({ title: t("bank.import.parseFailedTitle"), variant: "destructive" });
-    }
+    const ok = await downloadFile(`/api/import/template.${kind}`, `question-import-template.${kind}`);
+    if (!ok) toast({ title: t("bank.import.parseFailedTitle"), variant: "destructive" });
   };
 
   const runParse = async () => {

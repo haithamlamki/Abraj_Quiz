@@ -281,7 +281,7 @@ export async function buildTemplateXlsx(): Promise<Buffer> {
   return Buffer.from(await wb.xlsx.writeBuffer());
 }
 
-function csvEscape(cell: string): string {
+export function csvEscape(cell: string): string {
   return /[",;\n\r]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
 }
 

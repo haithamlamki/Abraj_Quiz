@@ -466,3 +466,31 @@ test("createBankQuestions inserts many rows, stamps tenant + createdBy, tenant-i
   // empty input is a no-op
   assert.deepEqual(await s.createBankQuestions(T1, []), []);
 });
+
+test("getCompletedQuizGames: only completed games for the quiz, oldest first, tenant-scoped", async () => {
+  const s = new MemStorage();
+  const ctx = { tenantId: 1 };
+  const quiz = await s.createQuiz(ctx, {
+    title: "Report quiz", description: "", createdBy: 1, isPublic: false,
+    questions: [{ question: "q?", type: "quiz", answerType: "single", answers: ["a", "b"], correctAnswers: [0], timeLimit: 20, points: "standard" }],
+  } as any);
+  const other = await s.createQuiz(ctx, { title: "Other", description: "", createdBy: 1, isPublic: false, questions: [] } as any);
+
+  const g1 = await s.createGame(ctx, { quizId: quiz.id, gamePin: "RPT001", hostId: 1, status: "completed" } as any);
+  const g2 = await s.createGame(ctx, { quizId: quiz.id, gamePin: "RPT002", hostId: 1, status: "waiting" } as any);
+  const g3 = await s.createGame(ctx, { quizId: quiz.id, gamePin: "RPT003", hostId: 1, status: "completed" } as any);
+  await s.createGame(ctx, { quizId: other.id, gamePin: "RPT004", hostId: 1, status: "completed" } as any);
+
+  const rows = await s.getCompletedQuizGames(ctx, quiz.id);
+  assert.deepEqual(rows.map((g) => g.gamePin), ["RPT001", "RPT003"]);
+  assert.ok(!rows.some((g) => g.id === g2.id));
+
+  // Tenant isolation: a tenant-2 completed game on the same quizId is
+  // invisible to tenant 1 and vice versa.
+  const ctx2 = { tenantId: 2 };
+  const t2game = await s.createGame(ctx2, { quizId: quiz.id, gamePin: "RPT005", hostId: 9, status: "completed" } as any);
+  const t1rows = await s.getCompletedQuizGames(ctx, quiz.id);
+  assert.ok(!t1rows.some((g) => g.id === t2game.id));
+  const t2rows = await s.getCompletedQuizGames(ctx2, quiz.id);
+  assert.deepEqual(t2rows.map((g) => g.gamePin), ["RPT005"]);
+});
