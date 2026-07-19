@@ -97,7 +97,7 @@ function toQuizForm(src: any): QuizForm {
   return {
     title: src?.title ?? "",
     description: src?.description ?? "",
-    background: src?.background || "aurora",
+    background: src?.background || "classroom",
     isPublic: src?.isPublic ?? true,
     theme: resolveQuizTheme(src ?? {}),
     questions,
@@ -130,9 +130,9 @@ export default function QuizEditor() {
   const [quiz, setQuiz] = useState<QuizForm>({
     title: "",
     description: "",
-    background: "aurora",
+    background: "classroom",
     isPublic: true,
-    theme: resolveQuizTheme({ background: "aurora" }),
+    theme: resolveQuizTheme({ background: "classroom" }),
     questions: [blankQuestion()],
   });
   const [currentIndex, setCurrentIndex] = useState(0);

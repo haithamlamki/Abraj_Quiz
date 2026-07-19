@@ -503,7 +503,10 @@
         "grape": "Grape",
         "ember": "Ember",
         "midnight": "Midnight",
-        "classroom": "Classroom"
+        "classroom": "Classroom",
+        "classroom-cartoon": "Classroom Cartoon",
+        "classroom-board": "Chalkboard",
+        "classroom-bright": "Bright Classroom"
       },
       "customBackgroundLabel": "Custom background image",
       "uploading": "Uploading…",

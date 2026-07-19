@@ -40,7 +40,7 @@ const CARD_SHADOW: Record<QuizCardStyle, string> = {
 };
 
 export const DEFAULT_QUIZ_THEME: QuizTheme = {
-  background: "aurora",
+  background: "classroom",
   accent: "#0f766e",
   questionText: "#1e293b",
   questionCard: "#ffffff",
@@ -49,13 +49,16 @@ export const DEFAULT_QUIZ_THEME: QuizTheme = {
 };
 
 export const PRESET_QUIZ_THEMES: Array<{ id: string; label: string; theme: QuizTheme }> = [
+  { id: "classroom", label: "Classroom", theme: { ...DEFAULT_QUIZ_THEME, background: "classroom", accent: "#2563eb" } },
+  { id: "classroom-cartoon", label: "Classroom Cartoon", theme: { ...DEFAULT_QUIZ_THEME, background: "classroom-cartoon", accent: "#ea580c" } },
+  { id: "classroom-board", label: "Chalkboard", theme: { ...DEFAULT_QUIZ_THEME, background: "classroom-board", accent: "#0d9488" } },
+  { id: "classroom-bright", label: "Bright Classroom", theme: { ...DEFAULT_QUIZ_THEME, background: "classroom-bright", accent: "#16a34a" } },
   { id: "aurora",   label: "Aurora",   theme: { ...DEFAULT_QUIZ_THEME, background: "aurora",   accent: "#6d28d9" } },
   { id: "sunset",   label: "Sunset",   theme: { ...DEFAULT_QUIZ_THEME, background: "sunset",   accent: "#db2777" } },
   { id: "mint",     label: "Mint",     theme: { ...DEFAULT_QUIZ_THEME, background: "mint",     accent: "#059669" } },
   { id: "grape",    label: "Grape",    theme: { ...DEFAULT_QUIZ_THEME, background: "grape",    accent: "#7c3aed" } },
   { id: "ember",    label: "Ember",    theme: { ...DEFAULT_QUIZ_THEME, background: "ember",    accent: "#ea580c" } },
   { id: "midnight", label: "Midnight", theme: { ...DEFAULT_QUIZ_THEME, background: "midnight", accent: "#38bdf8", questionText: "#0f172a", font: "rounded" } },
-  { id: "classroom", label: "Classroom", theme: { ...DEFAULT_QUIZ_THEME, background: "classroom", accent: "#2563eb" } },
 ];
 
 function isQuizTheme(value: unknown): value is Partial<QuizTheme> {

@@ -42,7 +42,7 @@ export interface QuizQuestionRendererProps {
 // player result overlays) lives in the pages; the "stage" lives here.
 export function QuizQuestionRenderer({
   question,
-  background = "aurora",
+  background = "classroom",
   theme,
   questionNumber,
   totalQuestions,
