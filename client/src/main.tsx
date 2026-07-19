@@ -15,4 +15,18 @@ Sentry.init({
   sendDefaultPii: false,
 });
 
+// A client holding a stale deploy requests old hashed chunks that no longer
+// exist on Vercel and gets index.html back ("Failed to fetch dynamically
+// imported module" / "'text/html' is not a valid JavaScript MIME type").
+// Reload once to pick up the new deploy; the guard stops a reload loop when
+// the failure has some other cause.
+window.addEventListener("vite:preloadError", (event) => {
+  const RELOAD_KEY = "chunk-reload-at";
+  const last = Number(sessionStorage.getItem(RELOAD_KEY) || 0);
+  if (Date.now() - last < 60_000) return; // already tried; let the error surface
+  sessionStorage.setItem(RELOAD_KEY, String(Date.now()));
+  event.preventDefault();
+  window.location.reload();
+});
+
 createRoot(document.getElementById("root")!).render(<App />);

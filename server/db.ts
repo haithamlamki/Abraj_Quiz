@@ -1,5 +1,6 @@
 import "dotenv/config";
 import pg from "pg";
+import { captureError } from "./instrument";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
 
@@ -30,6 +31,16 @@ export const pool = new pg.Pool({
   // seconds), so they only fire on pathological queries.
   statement_timeout: parseInt(process.env.DATABASE_STATEMENT_TIMEOUT_MS || "30000", 10),
   lock_timeout: parseInt(process.env.DATABASE_LOCK_TIMEOUT_MS || "10000", 10),
+});
+
+// pg.Pool emits 'error' when an idle client's connection drops (e.g. the
+// Supabase pooler reaping a connection). Without a listener that event is an
+// uncaught exception and kills the process — seen in prod 2026-07-19 as a
+// fatal "Connection terminated unexpectedly". The pool discards the dead
+// client on its own; we just log and report.
+pool.on("error", (err) => {
+  console.error("Postgres pool: idle client error:", err.message);
+  captureError(err, { scope: "db.pool.idle-client" });
 });
 
 export const db = drizzle({ client: pool, schema });

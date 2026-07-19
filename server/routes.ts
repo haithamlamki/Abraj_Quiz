@@ -25,6 +25,7 @@ import { uploadQuizImage } from "./supabase-storage";
 import { captureError } from "./instrument";
 import { buildRateLimiters } from "./rate-limits";
 import { logAudit, AUDIT_ACTIONS } from "./audit";
+import { guardUpload } from "./upload-guard";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Multer configuration for file uploads
@@ -54,6 +55,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     },
   });
+
 
   // Session configuration with PostgreSQL store
   const PgSession = connectPgSimple(session);
@@ -417,7 +419,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }
 
   // Auto-generation routes
-  app.post("/api/generate-quiz/pdf", aiLimiter, requireAuth, requireFeature("aiGeneration"), upload.single('pdf'), async (req, res) => {
+  app.post("/api/generate-quiz/pdf", aiLimiter, requireAuth, requireFeature("aiGeneration"), guardUpload(upload.single('pdf')), async (req, res) => {
     try {
       console.log("PDF quiz generation request - User ID:", (req as any).authUserId);
       
@@ -555,7 +557,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Upload a question or theme image to Supabase Storage; returns { url }.
-  app.post("/api/upload-image", uploadLimiter, requireAuth, imageUpload.single("image"), async (req, res) => {
+  app.post("/api/upload-image", uploadLimiter, requireAuth, guardUpload(imageUpload.single("image")), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: "No image uploaded" });
