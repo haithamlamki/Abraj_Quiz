@@ -41,12 +41,13 @@ quiz_app grants, idempotent migration mirroring 0009/0011.
 | action | text NOT NULL | one of the §4 catalog codes |
 | target_type | text | 'quiz' \| 'bank_question' \| 'game' \| 'user' \| 'tenant'; nullable (bank.bulk_create has type but no id/label) |
 | target_id | integer | |
-| target_label | text | title / game PIN / username snapshot |
+| target_label | text | title / game PIN / username / bank subject snapshot (all user-visible taxonomy text; never question content) |
 | details | jsonb NOT NULL default '{}' | scalars only (counts, pins, sources) |
 | created_at | timestamptz default now() | |
 
-Indexes: `(tenant_id, created_at desc)` (viewer), `(tenant_id, target_type, target_id)`
-(per-resource lookups).
+Indexes: `(tenant_id, id)` (viewer — all reads order by id desc and the keyset
+cursor is id; amended from the original `(tenant_id, created_at desc)` draft),
+`(tenant_id, target_type, target_id)` (per-resource lookups).
 
 ## 4. Action catalog (17)
 
