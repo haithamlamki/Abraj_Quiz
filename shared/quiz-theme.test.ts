@@ -31,3 +31,12 @@ test("every preset resolves to a full theme", () => {
     assert.ok(p.theme.accent && p.theme.questionText && p.theme.background);
   }
 });
+
+test("overlay defaults to 0 and clamps to [0, 0.5]", () => {
+  assert.equal(resolveQuizTheme({}).overlay, 0);
+  assert.equal(resolveQuizTheme({ theme: { overlay: 0.25 } }).overlay, 0.25);
+  assert.equal(resolveQuizTheme({ theme: { overlay: 2 } }).overlay, 0.5);
+  assert.equal(resolveQuizTheme({ theme: { overlay: -1 } }).overlay, 0);
+  assert.equal(resolveQuizTheme({ theme: { overlay: "dark" as unknown as number } }).overlay, 0);
+  assert.equal(DEFAULT_QUIZ_THEME.overlay, 0);
+});
