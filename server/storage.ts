@@ -1,12 +1,14 @@
 import {
-  users, quizzes, games, gameResponses, gamePlayers, tenants, bankQuestions,
+  users, quizzes, games, gameResponses, gamePlayers, tenants, bankQuestions, quizVersions, quizDrafts,
   type User, type InsertUser,
   type Quiz, type InsertQuiz,
   type Game, type InsertGame,
   type GameResponse, type InsertGameResponse,
   type GamePlayer,
   type Tenant, type InsertTenant,
-  type BankQuestion, type InsertBankQuestion
+  type BankQuestion, type InsertBankQuestion,
+  type QuizVersion, type QuizDraft, type QuizDraftPayload, type QuizVersionListItem,
+  MAX_QUIZ_VERSIONS
 } from "@shared/schema";
 import { db } from "./db";
 import { and, asc, desc, eq, inArray, isNotNull, isNull, sql, type SQL } from "drizzle-orm";
@@ -109,7 +111,7 @@ function requireSystem(ctx: StorageCtx): void {
   }
 }
 
-function tenantFilter(ctx: StorageCtx, column: typeof users.tenantId | typeof quizzes.tenantId | typeof games.tenantId | typeof gameResponses.tenantId | typeof gamePlayers.tenantId | typeof bankQuestions.tenantId): SQL | undefined {
+function tenantFilter(ctx: StorageCtx, column: typeof users.tenantId | typeof quizzes.tenantId | typeof games.tenantId | typeof gameResponses.tenantId | typeof gamePlayers.tenantId | typeof bankQuestions.tenantId | typeof quizVersions.tenantId | typeof quizDrafts.tenantId): SQL | undefined {
   return "system" in ctx ? undefined : eq(column, ctx.tenantId);
 }
 
@@ -141,6 +143,15 @@ export interface IStorage {
   updateQuiz(ctx: StorageCtx, id: number, quiz: Partial<InsertQuiz>): Promise<Quiz>;
   deleteQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined>;
   restoreQuiz(ctx: StorageCtx, id: number): Promise<Quiz | undefined>;
+
+  // Quiz versions + drafts
+  listQuizVersions(ctx: StorageCtx, quizId: number): Promise<QuizVersionListItem[]>;
+  getQuizVersion(ctx: StorageCtx, quizId: number, versionNumber: number): Promise<QuizVersion | undefined>;
+  updateQuizWithVersion(ctx: StorageCtx, id: number, updates: Partial<InsertQuiz>): Promise<Quiz>;
+  getQuizDraft(ctx: StorageCtx, quizId: number): Promise<QuizDraft | undefined>;
+  upsertQuizDraft(ctx: StorageCtx, quizId: number, payload: QuizDraftPayload): Promise<QuizDraft>;
+  deleteQuizDraft(ctx: StorageCtx, quizId: number): Promise<void>;
+
   // Aggregated analytics over this quiz's completed games. undefined when the
   // quiz is not visible in ctx (same tenant-visibility rule as getQuiz).
   getQuizInsights(ctx: StorageCtx, quizId: number): Promise<QuizInsights | undefined>;
@@ -308,6 +319,105 @@ export class DatabaseStorage implements IStorage {
         .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)))
         .returning();
       return row;
+    });
+  }
+
+  // ── Quiz versions + drafts ────────────────────────────────────────
+  // Save path: snapshot previous state → update → kill draft → prune. All four
+  // steps share ONE transaction (withCtx) so draft existence stays a truthful
+  // "unsaved changes" signal and history can never skew from the live row.
+  async updateQuizWithVersion(ctx: StorageCtx, id: number, updates: Partial<InsertQuiz>): Promise<Quiz> {
+    return withCtx(ctx, async (tx) => {
+      const [existing] = await tx.select().from(quizzes)
+        .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)));
+      if (!existing) throw new Error("Quiz not found");
+
+      const [row] = await tx.select({
+        max: sql<number>`coalesce(max(${quizVersions.versionNumber}), 0)`,
+      }).from(quizVersions).where(eq(quizVersions.quizId, id));
+      const versionNumber = Number(row.max) + 1;
+
+      await tx.insert(quizVersions).values({
+        tenantId: existing.tenantId,
+        quizId: id,
+        versionNumber,
+        title: existing.title,
+        description: existing.description,
+        questions: existing.questions,
+        theme: existing.theme,
+        background: existing.background,
+        isPublic: existing.isPublic,
+        createdBy: existing.createdBy,
+      });
+
+      const [quiz] = await tx.update(quizzes).set(updates)
+        .where(and(eq(quizzes.id, id), tenantFilter(ctx, quizzes.tenantId)))
+        .returning();
+
+      await tx.delete(quizDrafts)
+        .where(and(eq(quizDrafts.quizId, id), tenantFilter(ctx, quizDrafts.tenantId)));
+
+      // Prune: keep the newest MAX_QUIZ_VERSIONS.
+      await tx.delete(quizVersions).where(and(
+        eq(quizVersions.quizId, id),
+        sql`${quizVersions.versionNumber} <= ${versionNumber - MAX_QUIZ_VERSIONS}`,
+      ));
+
+      return quiz;
+    });
+  }
+
+  async listQuizVersions(ctx: StorageCtx, quizId: number): Promise<QuizVersionListItem[]> {
+    return withCtx(ctx, async (tx) => {
+      const rows = await tx.select({
+        versionNumber: quizVersions.versionNumber,
+        title: quizVersions.title,
+        questionCount: sql<number>`jsonb_array_length(${quizVersions.questions})`,
+        createdAt: quizVersions.createdAt,
+      }).from(quizVersions)
+        .where(and(eq(quizVersions.quizId, quizId), tenantFilter(ctx, quizVersions.tenantId)))
+        .orderBy(desc(quizVersions.versionNumber));
+      return rows.map((r) => ({ ...r, questionCount: Number(r.questionCount) }));
+    });
+  }
+
+  async getQuizVersion(ctx: StorageCtx, quizId: number, versionNumber: number): Promise<QuizVersion | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [row] = await tx.select().from(quizVersions).where(and(
+        eq(quizVersions.quizId, quizId),
+        eq(quizVersions.versionNumber, versionNumber),
+        tenantFilter(ctx, quizVersions.tenantId),
+      ));
+      return row || undefined;
+    });
+  }
+
+  async getQuizDraft(ctx: StorageCtx, quizId: number): Promise<QuizDraft | undefined> {
+    return withCtx(ctx, async (tx) => {
+      const [row] = await tx.select().from(quizDrafts)
+        .where(and(eq(quizDrafts.quizId, quizId), tenantFilter(ctx, quizDrafts.tenantId)));
+      return row || undefined;
+    });
+  }
+
+  async upsertQuizDraft(ctx: StorageCtx, quizId: number, payload: QuizDraftPayload): Promise<QuizDraft> {
+    const tenantId = requireTenantId(ctx);
+    return withCtx(ctx, async (tx) => {
+      const [row] = await tx.insert(quizDrafts)
+        .values({ tenantId, quizId, payload, updatedAt: sql`now()` as any })
+        .onConflictDoUpdate({
+          target: quizDrafts.quizId,
+          set: { payload, updatedAt: sql`now()` as any },
+        })
+        .returning();
+      return row;
+    });
+  }
+
+  async deleteQuizDraft(ctx: StorageCtx, quizId: number): Promise<void> {
+    return withCtx(ctx, async (tx) => {
+      await tx.delete(quizDrafts)
+        .where(and(eq(quizDrafts.quizId, quizId), tenantFilter(ctx, quizDrafts.tenantId)));
     });
   }
 
@@ -793,6 +903,8 @@ export class MemStorage implements IStorage {
   private gamePlayers: Map<number, GamePlayer>;
   private tenants: Map<number, Tenant> = new Map();
   private bankQuestions: Map<number, BankQuestion>;
+  private quizVersions: Map<number, QuizVersion>;
+  private quizDrafts: Map<number, QuizDraft>;       // keyed by quizId (one slot)
   private currentUserId: number;
   private currentQuizId: number;
   private currentGameId: number;
@@ -800,6 +912,8 @@ export class MemStorage implements IStorage {
   private currentGamePlayerId: number;
   private currentTenantId = 1;
   private currentBankQuestionId: number;
+  private currentQuizVersionId: number;
+  private currentQuizDraftId: number;
 
   constructor() {
     this.users = new Map();
@@ -808,12 +922,16 @@ export class MemStorage implements IStorage {
     this.gameResponses = new Map();
     this.gamePlayers = new Map();
     this.bankQuestions = new Map();
+    this.quizVersions = new Map();
+    this.quizDrafts = new Map();
     this.currentUserId = 1;
     this.currentQuizId = 1;
     this.currentGameId = 1;
     this.currentResponseId = 1;
     this.currentGamePlayerId = 1;
     this.currentBankQuestionId = 1;
+    this.currentQuizVersionId = 1;
+    this.currentQuizDraftId = 1;
 
     // Add some sample quizzes
     this.initializeSampleData();
@@ -1019,6 +1137,82 @@ export class MemStorage implements IStorage {
     const updated: Quiz = { ...existing, deletedAt: null };
     this.quizzes.set(id, updated);
     return updated;
+  }
+
+  async updateQuizWithVersion(ctx: StorageCtx, id: number, updates: Partial<InsertQuiz>): Promise<Quiz> {
+    const existing = this.quizzes.get(id);
+    if (!existing || !this.inTenant(ctx, existing)) throw new Error("Quiz not found");
+
+    const mine = Array.from(this.quizVersions.values()).filter((v) => v.quizId === id);
+    const versionNumber = mine.reduce((m, v) => Math.max(m, v.versionNumber), 0) + 1;
+
+    const version: QuizVersion = {
+      id: this.currentQuizVersionId++,
+      tenantId: existing.tenantId,
+      quizId: id,
+      versionNumber,
+      title: existing.title,
+      description: existing.description,
+      questions: existing.questions,
+      theme: existing.theme,
+      background: existing.background,
+      isPublic: existing.isPublic,
+      createdBy: existing.createdBy,
+      createdAt: new Date(),
+    };
+    this.quizVersions.set(version.id, version);
+
+    const quiz = await this.updateQuiz(ctx, id, updates);
+    this.quizDrafts.delete(id);
+
+    Array.from(this.quizVersions.values()).forEach((v) => {
+      if (v.quizId === id && v.versionNumber <= versionNumber - MAX_QUIZ_VERSIONS) {
+        this.quizVersions.delete(v.id);
+      }
+    });
+    return quiz;
+  }
+
+  async listQuizVersions(ctx: StorageCtx, quizId: number): Promise<QuizVersionListItem[]> {
+    return Array.from(this.quizVersions.values())
+      .filter((v) => v.quizId === quizId && this.inTenant(ctx, v))
+      .sort((a, b) => b.versionNumber - a.versionNumber)
+      .map((v) => ({
+        versionNumber: v.versionNumber,
+        title: v.title,
+        questionCount: Array.isArray(v.questions) ? (v.questions as unknown[]).length : 0,
+        createdAt: v.createdAt,
+      }));
+  }
+
+  async getQuizVersion(ctx: StorageCtx, quizId: number, versionNumber: number): Promise<QuizVersion | undefined> {
+    return Array.from(this.quizVersions.values()).find(
+      (v) => v.quizId === quizId && v.versionNumber === versionNumber && this.inTenant(ctx, v),
+    );
+  }
+
+  async getQuizDraft(ctx: StorageCtx, quizId: number): Promise<QuizDraft | undefined> {
+    const d = this.quizDrafts.get(quizId);
+    return d && this.inTenant(ctx, d) ? d : undefined;
+  }
+
+  async upsertQuizDraft(ctx: StorageCtx, quizId: number, payload: QuizDraftPayload): Promise<QuizDraft> {
+    const tenantId = requireTenantId(ctx);
+    const existing = this.quizDrafts.get(quizId);
+    const row: QuizDraft = {
+      id: existing?.id ?? this.currentQuizDraftId++,
+      tenantId,
+      quizId,
+      payload,
+      updatedAt: new Date(),
+    };
+    this.quizDrafts.set(quizId, row);
+    return row;
+  }
+
+  async deleteQuizDraft(ctx: StorageCtx, quizId: number): Promise<void> {
+    const d = this.quizDrafts.get(quizId);
+    if (d && this.inTenant(ctx, d)) this.quizDrafts.delete(quizId);
   }
 
   // Bank questions

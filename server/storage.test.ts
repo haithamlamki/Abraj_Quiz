@@ -494,3 +494,75 @@ test("getCompletedQuizGames: only completed games for the quiz, oldest first, te
   const t2rows = await s.getCompletedQuizGames(ctx2, quiz.id);
   assert.deepEqual(t2rows.map((g) => g.gamePin), ["RPT005"]);
 });
+
+test("updateQuizWithVersion snapshots the PREVIOUS state and deletes the draft", async () => {
+  const s = new MemStorage();
+  const ctx = { tenantId: 1 };
+  const quiz = await s.createQuiz(ctx, {
+    title: "v1 title", description: "d", questions: [{ question: "q1", answers: ["a", "b"], correctAnswers: [0], type: "quiz", answerType: "single", timeLimit: 20, points: "standard" }],
+    background: "classroom", isPublic: true, createdBy: 1,
+  } as any);
+  await s.upsertQuizDraft(ctx, quiz.id, { title: "wip", description: "", background: "classroom", isPublic: true, questions: [] });
+
+  const updated = await s.updateQuizWithVersion(ctx, quiz.id, { title: "v2 title" });
+  assert.equal(updated.title, "v2 title");
+
+  const list = await s.listQuizVersions(ctx, quiz.id);
+  assert.equal(list.length, 1);
+  assert.equal(list[0].versionNumber, 1);
+  assert.equal(list[0].title, "v1 title");          // PREVIOUS state, not the new one
+  assert.equal(list[0].questionCount, 1);
+
+  const full = await s.getQuizVersion(ctx, quiz.id, 1);
+  assert.equal(full?.title, "v1 title");
+  assert.equal((full?.questions as any[]).length, 1);
+
+  assert.equal(await s.getQuizDraft(ctx, quiz.id), undefined); // save killed the draft
+});
+
+test("updateQuizWithVersion prunes to MAX_QUIZ_VERSIONS, oldest first", async () => {
+  const s = new MemStorage();
+  const ctx = { tenantId: 1 };
+  const quiz = await s.createQuiz(ctx, {
+    title: "t0", questions: [], background: "classroom", isPublic: true, createdBy: 1,
+  } as any);
+  for (let i = 1; i <= 21; i++) {
+    await s.updateQuizWithVersion(ctx, quiz.id, { title: `t${i}` });
+  }
+  const list = await s.listQuizVersions(ctx, quiz.id);
+  assert.equal(list.length, 20);
+  assert.equal(list[0].versionNumber, 21);           // newest first
+  assert.equal(list[19].versionNumber, 2);           // version 1 pruned
+  assert.equal(await s.getQuizVersion(ctx, quiz.id, 1), undefined);
+});
+
+test("quiz draft lifecycle: upsert overwrites, get returns latest, delete is idempotent", async () => {
+  const s = new MemStorage();
+  const ctx = { tenantId: 1 };
+  const quiz = await s.createQuiz(ctx, {
+    title: "t", questions: [], background: "classroom", isPublic: true, createdBy: 1,
+  } as any);
+  const d1 = await s.upsertQuizDraft(ctx, quiz.id, { title: "one", description: "", background: "classroom", isPublic: true, questions: [] });
+  const d2 = await s.upsertQuizDraft(ctx, quiz.id, { title: "two", description: "", background: "classroom", isPublic: true, questions: [] });
+  assert.equal(d1.quizId, d2.quizId);
+  const got = await s.getQuizDraft(ctx, quiz.id);
+  assert.equal((got?.payload as any).title, "two");
+  await s.deleteQuizDraft(ctx, quiz.id);
+  await s.deleteQuizDraft(ctx, quiz.id);             // idempotent — no throw
+  assert.equal(await s.getQuizDraft(ctx, quiz.id), undefined);
+});
+
+test("versions and drafts are invisible from another tenant ctx", async () => {
+  const s = new MemStorage();
+  const ctx1 = { tenantId: 1 };
+  const ctx2 = { tenantId: 2 };
+  const quiz = await s.createQuiz(ctx1, {
+    title: "t", questions: [], background: "classroom", isPublic: true, createdBy: 1,
+  } as any);
+  await s.updateQuizWithVersion(ctx1, quiz.id, { title: "t2" });
+  await s.upsertQuizDraft(ctx1, quiz.id, { title: "wip", description: "", background: "classroom", isPublic: true, questions: [] });
+
+  assert.deepEqual(await s.listQuizVersions(ctx2, quiz.id), []);
+  assert.equal(await s.getQuizVersion(ctx2, quiz.id, 1), undefined);
+  assert.equal(await s.getQuizDraft(ctx2, quiz.id), undefined);
+});
