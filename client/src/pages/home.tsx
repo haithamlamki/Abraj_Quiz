@@ -165,7 +165,7 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen overflow-y-auto relative">
+    <div className="page-fill relative">
       {/* Background Gradient Overlay */}
       <div className="fixed inset-0 -z-10 bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 animate-gradient"></div>
       

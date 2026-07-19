@@ -287,7 +287,7 @@ export default function HostGame() {
 
   if (!game || !quiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="page-fill flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">{t("play.gameNotFound")}</p>

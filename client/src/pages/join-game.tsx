@@ -113,7 +113,7 @@ export default function JoinGame() {
   };
 
   return (
-    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center py-8">
+    <div className="page-fill animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center py-8">
       <div className="max-w-md w-full mx-4 animate-scale-in">
         {step === "pin" ? (
           <Card className="card-3d-enhanced glass">

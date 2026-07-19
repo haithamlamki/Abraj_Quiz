@@ -62,7 +62,7 @@ function App() {
       <ThemeProvider>
         <TenantProvider>
           <TooltipProvider>
-          <div className="min-h-screen relative">
+          <div className="page-fill relative">
             {/* Classroom background */}
             <div
               className="classroom-background"
@@ -89,7 +89,7 @@ function App() {
               */}
               <Sentry.ErrorBoundary
                 fallback={
-                  <div className="min-h-screen flex flex-col items-center justify-center gap-4 p-6 text-center">
+                  <div className="page-fill flex flex-col items-center justify-center gap-4 p-6 text-center">
                     <p className="text-lg text-gray-700">Something went wrong.</p>
                     <button
                       onClick={() => window.location.reload()}

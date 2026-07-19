@@ -415,4 +415,12 @@ html[lang="ar"] body {
   .pulse-ring {
     animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
+
+  /* Fills the viewport below the 68px sticky nav (h-16 + 4px border in
+     navigation.tsx). Pages use this instead of h-screen/min-h-screen so the
+     document is never taller than the viewport when content is short, and the
+     body stays the ONLY scroller (no nested overflow-y-auto page wrappers). */
+  .page-fill {
+    min-height: calc(100dvh - 68px);
+  }
 }

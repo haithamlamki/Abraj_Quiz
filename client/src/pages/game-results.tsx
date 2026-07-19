@@ -117,7 +117,7 @@ export default function GameResults() {
 
   if (!results) {
     return (
-      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
+      <div className="page-fill animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center">
         <Card className="w-full max-w-md mx-4 card-3d-enhanced glass">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">{t("results.resultsNotFound")}</p>
@@ -145,7 +145,7 @@ export default function GameResults() {
     const playerRank = sortedPlayers.findIndex((p: any) => p.name === playerName) + 1;
     
     return (
-      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8">
+      <div className="page-fill animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-8">
         {showCelebration && <ConfettiParticles />}
         <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-8 animate-scale-in">
@@ -227,7 +227,7 @@ export default function GameResults() {
 
   // Host view
   return (
-    <div className="h-screen overflow-y-auto animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-6">
+    <div className="page-fill animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 py-6">
       {showCelebration && <ConfettiParticles />}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-6 animate-scale-in">

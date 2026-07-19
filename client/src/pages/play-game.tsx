@@ -471,7 +471,7 @@ export default function PlayGame() {
 
   if (!game || !quiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="page-fill flex items-center justify-center">
         <Card className="w-full max-w-md mx-4">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">{t("play.gameNotFound")}</p>
@@ -515,7 +515,7 @@ export default function PlayGame() {
 
   if (game.status === "waiting") {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={getBackgroundStyle(quiz?.background || 'classroom')}>
+      <div className="page-fill flex items-center justify-center" style={getBackgroundStyle(quiz?.background || 'classroom')}>
         <ConnectionBanner status={connectionStatus} />
         <Card className="w-full max-w-md mx-4 bg-white/95 backdrop-blur-sm">
           <CardContent className="pt-6 text-center space-y-6">
@@ -557,7 +557,7 @@ export default function PlayGame() {
   // incorrect framing, no points — just an acknowledgement.
   if (isPoll && hasAnswered && runtimeState.status !== "closed") {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-slate-700 animate-in fade-in duration-300">
+      <div className="page-fill flex flex-col items-center justify-center p-4 bg-slate-700 animate-in fade-in duration-300">
         <ConnectionBanner status={connectionStatus} />
         <div className="bg-white/95 backdrop-blur-sm rounded-2xl px-10 py-12 text-center shadow-2xl max-w-md">
           <p className="text-2xl font-bold text-gray-800">{t("play.voteRecorded")}</p>
@@ -602,7 +602,7 @@ export default function PlayGame() {
 
   if (showResult && lastResult) {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-4 ${
+      <div className={`page-fill flex flex-col items-center justify-center p-4 ${
         lastResult.isCorrect ? 'bg-green-500' : 'bg-red-500'
       } animate-in fade-in duration-300`}>
         <ConnectionBanner status={connectionStatus} />
