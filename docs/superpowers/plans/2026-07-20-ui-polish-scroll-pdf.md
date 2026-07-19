@@ -114,7 +114,7 @@ Example (`client/src/pages/login.tsx:71`):
 After the sweep, run this to confirm no page-level stragglers remain (only the exclusions listed in Interfaces should match):
 
 Run: `rg -n "min-h-screen|h-screen" client/src`
-Expected: matches only in `client/src/components/ui/toast.tsx` (`max-h-screen`) — nothing else.
+Expected: matches only in `client/src/components/ui/toast.tsx` (`max-h-screen`) and `client/src/App.tsx` (the outer app shell keeps `min-h-screen` deliberately — it contains the nav, so `page-fill`'s below-nav floor would be the wrong semantics there) — nothing else.
 
 - [ ] **Step 4: Verify with the quality gate**
 
