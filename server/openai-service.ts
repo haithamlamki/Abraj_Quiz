@@ -1,7 +1,7 @@
 import OpenAI from "openai";
-// Dynamic import for pdf-parse to avoid file loading issues at startup
 import axios from "axios";
 import * as cheerio from "cheerio";
+import { extractPdfText } from "./pdf-text";
 import { generatedQuizSchema, extractedQuizSchema, type GeneratedQuiz, type ExtractedQuiz } from "@shared/schema";
 
 // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
@@ -183,21 +183,16 @@ function mapOpenAiError(error: any, fallbackMessage: string): Error {
   if (error?.status === 500) return new Error("OpenAI API service is temporarily unavailable. Please try again later.");
   if (error?.code === "insufficient_quota") return new Error("OpenAI API quota exceeded. Please check your account usage.");
   // Preserve already-user-facing messages thrown by our own guards/validator.
-  if (typeof error?.message === "string" && /too short|Failed to generate a properly formatted quiz|Failed to extract questions from the document/.test(error.message)) return error;
+  if (typeof error?.message === "string" && /too short|Failed to generate a properly formatted quiz|Failed to extract questions from the document|password-protected|Could not read this file/.test(error.message)) return error;
   return new Error(fallbackMessage);
 }
 
 export async function generateQuizFromPDF(pdfBuffer: Buffer): Promise<GeneratedQuiz> {
   try {
-    // Dynamic import (not a static import) to avoid file loading issues.
-    const pdfParse = (await import("pdf-parse")).default;
-
-    // Extract text from PDF
-    const pdfData = await pdfParse(pdfBuffer);
-    const content = pdfData.text;
+    const content = await extractPdfText(pdfBuffer);
 
     if (!content || content.trim().length < 100) {
-      throw new Error("PDF content is too short or empty to generate a meaningful quiz");
+      throw new Error("PDF content is too short or empty to generate a meaningful quiz. If the PDF is a scan, it contains no extractable text.");
     }
 
     return await generateQuizFromContent(content, "PDF Document");
@@ -253,6 +248,19 @@ export async function generateQuizFromURL(url: string): Promise<GeneratedQuiz> {
   } catch (error: any) {
     if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
       throw new Error("Unable to access the URL. Please check if the URL is correct and accessible.");
+    }
+    if (error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT') {
+      throw new Error("The website took too long to respond. Please try again or use a different URL.");
+    }
+    // TLS verification failures ("unable to verify the first certificate"
+    // et al): the site serves an incomplete or untrusted certificate chain.
+    // Browsers paper over missing intermediates via cached/AIA-fetched
+    // certs; Node's verifier correctly refuses. Verification stays strict —
+    // we only translate the raw OpenSSL message into something actionable
+    // (Sentry ABRAJ-QUIZ-SERVER-4).
+    const codes = `${error?.code ?? ""} ${error?.cause?.code ?? ""} ${error?.message ?? ""}`;
+    if (/certificate|CERT_|UNABLE_TO_VERIFY|UNABLE_TO_GET_ISSUER/i.test(codes)) {
+      throw new Error("This website's security certificate could not be verified, so the page was not fetched. Try a different URL for the same content, or paste the article text using the topics option.");
     }
     throw mapOpenAiError(error, `Failed to process URL: ${error.message}`);
   }
