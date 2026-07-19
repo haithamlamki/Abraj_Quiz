@@ -170,10 +170,13 @@ export default function QuizEditor() {
 
   // Draft existence ≡ unsaved changes (deleted transactionally on save), so a
   // non-404 here is exactly "show the resume prompt". 404 → null, not an error.
-  const { data: draft, status: draftStatus } = useQuery<{ payload: any; updatedAt: string } | null>({
+  const { data: draft, status: draftStatus, isFetching: draftFetching } = useQuery<{ payload: any; updatedAt: string } | null>({
     queryKey: ["/api/quizzes", quizId, "draft"],
     enabled: isEditMode && isAuthenticated,
     retry: 1,
+    // staleTime is Infinity app-wide; without this an SPA remount serves the
+    // cached (possibly stale-null) draft and the resume prompt silently skips.
+    refetchOnMount: "always",
     queryFn: async () => {
       try {
         const res = await apiRequest("GET", `/api/quizzes/${quizId}/draft`);
@@ -227,16 +230,19 @@ export default function QuizEditor() {
     setDraftDecision("none");
   }, [isEditMode, storageKey]);
 
-  // Edit mode: resolve "none" when the fetch settles with no draft — OR errors.
+  // Edit mode: resolve "none" when the fetch SETTLES with no draft — or errors.
   // A failed draft probe must NOT leave the decision stuck on "pending": that
   // would silently disable autosave for the whole session. On error we proceed
   // as if no draft exists — the user's current work is the thing to protect.
+  // draftFetching gate: with refetchOnMount "always", the cached value renders
+  // first while the fresh probe is in flight; deciding on the cached null would
+  // skip the prompt for a draft written since the cache was populated.
   useEffect(() => {
     if (!isEditMode) return;
-    if (draftStatus === "error" || (draftStatus === "success" && draft === null)) {
+    if (draftStatus === "error" || (draftStatus === "success" && draft === null && !draftFetching)) {
       setDraftDecision("none");
     }
-  }, [isEditMode, draftStatus, draft]);
+  }, [isEditMode, draftStatus, draft, draftFetching]);
 
   const current = quiz.questions[currentIndex] ?? quiz.questions[0];
 
