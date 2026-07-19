@@ -510,9 +510,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       captureError(error, { scope: "http.generate-background" });
       console.error("Error generating background image:", error);
       // Return user-friendly error message without leaking internals
-      const userMessage = error.message?.includes('OpenAI') || error.message?.includes('API')
-        ? "Service temporarily unavailable. Please try again later."
-        : error.message || "Failed to generate background image";
+      const userMessage = error.message?.includes("Supabase Storage")
+        ? "Failed to store the generated image. Please try again."
+        : error.message?.includes('OpenAI') || error.message?.includes('API')
+          ? "Service temporarily unavailable. Please try again later."
+          : error.message || "Failed to generate background image";
       res.status(500).json({ message: userMessage });
     }
   });

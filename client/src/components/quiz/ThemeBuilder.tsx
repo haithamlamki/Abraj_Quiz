@@ -25,6 +25,9 @@ export interface ThemeBuilderProps {
 
 export function ThemeBuilder({ theme, onChange, onUploadBackground, uploading, aiEnabled, generating, onGenerateBackground, defaultAiPrompt }: ThemeBuilderProps) {
   const { t } = useTranslation();
+  // Seeded on mount only — correct while the editor renders ThemeBuilder inside
+  // a Radix Dialog that unmounts on close (fresh seed per open). If that call
+  // site ever keeps it mounted, lift this state up.
   const [aiPrompt, setAiPrompt] = useState(defaultAiPrompt ?? "");
   const set = (patch: Partial<QuizTheme>) => onChange({ ...theme, ...patch });
   const previewQuestion = {
@@ -77,7 +80,7 @@ export function ThemeBuilder({ theme, onChange, onUploadBackground, uploading, a
               />
               <button
                 onClick={() => onGenerateBackground(aiPrompt.trim())}
-                disabled={generating || aiPrompt.trim().length < 3}
+                disabled={generating || uploading || aiPrompt.trim().length < 3}
                 className="shrink-0 flex items-center gap-1 rounded-lg border px-3 py-2 text-sm font-medium text-abraj-primary border-abraj-primary disabled:opacity-50"
               >
                 <Sparkles className="w-4 h-4" /> {t("editor.theme.ai.generateButton")}
@@ -97,6 +100,7 @@ export function ThemeBuilder({ theme, onChange, onUploadBackground, uploading, a
         <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
           <ImagePlus className="w-4 h-4" /> {uploading ? t("editor.theme.uploading") : t("editor.theme.customBackgroundLabel")}
           <input type="file" accept="image/png,image/jpeg,image/webp" className="hidden"
+            disabled={uploading || generating}
             onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadBackground(f); e.target.value = ""; }} />
         </label>
 

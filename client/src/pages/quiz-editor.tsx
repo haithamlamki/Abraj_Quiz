@@ -337,6 +337,7 @@ export default function QuizEditor() {
   };
 
   const uploadThemeImage = async (file: File) => {
+    if (uploading || generatingBg) return;
     setUploading(true);
     try {
       const form = new FormData();
@@ -354,6 +355,7 @@ export default function QuizEditor() {
 
   // AI background generation — on failure the current background is untouched.
   const generateThemeImage = async (prompt: string) => {
+    if (uploading || generatingBg) return;
     setGeneratingBg(true);
     try {
       const res = await apiRequest("POST", "/api/generate-background", { prompt });
