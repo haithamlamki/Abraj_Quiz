@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
 
-const { parseCsv, rowsToBankItems } = await import("./import-service");
+const { parseCsv, rowsToBankItems, parseWorkbook, buildTemplateXlsx, buildTemplateCsv, UnreadableFileError } = await import("./import-service");
 
 test("parseCsv: plain comma-delimited rows", () => {
   assert.deepEqual(parseCsv("a,b,c\r\n1,2,3\r\n"), [["a", "b", "c"], ["1", "2", "3"]]);
@@ -133,4 +133,36 @@ test("rowsToBankItems: gapped answer columns are rejected, not silently compacte
   assert.equal(res.valid.length, 0);
   assert.deepEqual(res.errors.map((e) => e.row), [2]);
   assert.match(res.errors[0].message, /answer3/);
+});
+
+test("template xlsx roundtrip: build → parse → map yields 2 valid questions, 0 errors", async () => {
+  const buf = await buildTemplateXlsx();
+  const rows = await parseWorkbook(buf);
+  const res = rowsToBankItems(rows);
+  assert.equal(res.errors.length, 0);
+  assert.equal(res.valid.length, 2);
+  assert.equal(res.valid[0].question.type, "quiz");
+  assert.equal(res.valid[1].question.type, "true_false");
+});
+
+test("template csv roundtrip: build → parse → map yields 2 valid questions, 0 errors", () => {
+  const res = rowsToBankItems(parseCsv(buildTemplateCsv()));
+  assert.equal(res.errors.length, 0);
+  assert.equal(res.valid.length, 2);
+});
+
+test("parseWorkbook: garbage bytes throw UnreadableFileError", async () => {
+  await assert.rejects(parseWorkbook(Buffer.from("not an xlsx")), UnreadableFileError);
+});
+
+test("parseWorkbook: preserves Arabic text", async () => {
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Questions");
+  ws.addRow(["question", "answer1", "answer2", "correct"]);
+  ws.addRow(["ما هي عاصمة عُمان؟", "مسقط", "صلالة", "1"]);
+  const rows = await parseWorkbook(Buffer.from(await wb.xlsx.writeBuffer()));
+  const res = rowsToBankItems(rows);
+  assert.equal(res.errors.length, 0);
+  assert.equal(res.valid[0].question.question, "ما هي عاصمة عُمان؟");
 });

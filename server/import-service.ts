@@ -4,6 +4,7 @@
 
 import { z } from "zod";
 import { insertBankQuestionSchema, MAX_BANK_BULK_ITEMS } from "@shared/schema";
+import ExcelJS from "exceljs";
 
 export class UnreadableFileError extends Error {}
 
@@ -203,4 +204,78 @@ export function rowsToBankItems(
     }
   }
   return { valid, errors, totalRows };
+}
+
+export const TEMPLATE_HEADERS = [
+  "question", "type", "answer1", "answer2", "answer3", "answer4", "answer5", "answer6",
+  "correct", "timeLimit", "points", "difficulty", "explanation", "subject", "tags",
+] as const;
+
+const EXAMPLE_ROWS: string[][] = [
+  ["What is the boiling point of water at sea level?", "quiz", "90°C", "100°C", "110°C", "120°C", "", "",
+    "2", "20", "standard", "easy", "Water boils at 100°C at 1 atm.", "Science", "physics;basics"],
+  ["The sun rises in the east.", "true_false", "True", "False", "", "", "", "",
+    "1", "15", "standard", "easy", "", "Science", ""],
+];
+
+const INSTRUCTIONS: string[] = [
+  "How to fill the Questions sheet:",
+  "- question: required.",
+  "- type: quiz (default), true_false, or poll.",
+  "- answer1..answer6: 2-6 answers. true_false rows may leave them blank (True/False is assumed).",
+  "- correct: answer numbers or letters, e.g. 2 or A;C. Leave empty for poll questions.",
+  "- timeLimit: 0 (no limit) or 5-120 seconds. Default 20.",
+  "- points: standard or double.",
+  "- difficulty: easy, medium, or hard (optional).",
+  "- explanation: why the answer is correct (optional, max 500 characters).",
+  "- subject and tags are optional; separate tags with ; or |.",
+  "- Max 200 questions per file. Delete the example rows before importing.",
+];
+
+// First worksheet → rows of cell text. Text only — no formula evaluation, no
+// style traversal (the safe subset of exceljs).
+export async function parseWorkbook(buffer: Buffer): Promise<string[][]> {
+  const wb = new ExcelJS.Workbook();
+  try {
+    await wb.xlsx.load(buffer);
+  } catch {
+    throw new UnreadableFileError("Could not read this Excel file");
+  }
+  const ws = wb.worksheets[0];
+  if (!ws) return [];
+  const colCount = Math.min(ws.columnCount || 0, 40);
+  const rows: string[][] = [];
+  for (let r = 1; r <= ws.rowCount; r++) {
+    const row = ws.getRow(r);
+    const cells: string[] = [];
+    for (let c = 1; c <= colCount; c++) {
+      cells.push(String(row.getCell(c).text ?? ""));
+    }
+    rows.push(cells);
+  }
+  while (rows.length && rows[rows.length - 1].every((c) => c.trim() === "")) rows.pop();
+  return rows;
+}
+
+export async function buildTemplateXlsx(): Promise<Buffer> {
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Questions");
+  ws.addRow([...TEMPLATE_HEADERS]);
+  ws.getRow(1).font = { bold: true };
+  for (const r of EXAMPLE_ROWS) ws.addRow(r);
+  ws.columns.forEach((c) => { c.width = 18; });
+  const inst = wb.addWorksheet("Instructions");
+  for (const line of INSTRUCTIONS) inst.addRow([line]);
+  inst.getColumn(1).width = 90;
+  return Buffer.from(await wb.xlsx.writeBuffer());
+}
+
+function csvEscape(cell: string): string {
+  return /[",;\n\r]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
+}
+
+// BOM prefix so Excel opens the file as UTF-8 (matters for Arabic content).
+export function buildTemplateCsv(): string {
+  const lines = [[...TEMPLATE_HEADERS], ...EXAMPLE_ROWS].map((r) => r.map(csvEscape).join(","));
+  return "\uFEFF" + lines.join("\r\n") + "\r\n";
 }
