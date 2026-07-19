@@ -289,44 +289,47 @@ export async function generateQuizFromText(text: string): Promise<GeneratedQuiz>
   }
 }
 
-export async function generateBackgroundImage(title: string, description: string): Promise<string> {
+export interface BackgroundImageInput {
+  prompt?: string;
+  title?: string;
+  description?: string;
+}
+
+// Fixed guardrail frame; user text is truncated and embedded, never replaces
+// the instructions (same injection posture as the old title-based prompt).
+export function buildBackgroundImagePrompt(input: BackgroundImageInput): string {
+  const fromPrompt = input.prompt?.trim() ?? "";
+  const fromQuiz = [input.title?.trim(), input.description?.trim()].filter(Boolean).join(" — ");
+  const userText = (fromPrompt.length >= 3 ? fromPrompt : fromQuiz).substring(0, 300);
+  if (userText.trim().length < 3) {
+    throw new Error("A prompt or quiz title of at least 3 characters is required");
+  }
+  return `Background image for an educational quiz game. Theme requested by the user: "${userText}". Professional educational style suitable for enterprise training; vibrant but not busy. The image must work as a backdrop with UI overlaid on top: keep the center area relatively clean and low-contrast. Absolutely no text, letters, numbers, logos, watermarks, branding, or UI components in the image.`;
+}
+
+export async function generateBackgroundImage(input: BackgroundImageInput): Promise<Buffer> {
   try {
-    if (!title || title.trim().length < 3) {
-      throw new Error("Quiz title is required to generate a background");
-    }
-
-    // Limit description length to prevent prompt injection
-    const maxDescLength = 200;
-    const safeDescription = description && description.trim().length > 0 
-      ? description.trim().substring(0, maxDescLength) 
-      : '';
-
-    // Create a descriptive prompt for DALL-E
-    const prompt = `Educational quiz background image for a quiz titled "${title.trim()}"${safeDescription ? `, about: ${safeDescription}` : ''}. Create a vibrant, colorful classroom or learning environment background that is visually appealing and suitable for an educational quiz game. The style should be modern, friendly, and engaging for students. Include educational elements like books, desks, or learning materials. The image should work well as a background with text overlaid on top. No text or words in the image.`;
+    const prompt = buildBackgroundImagePrompt(input);
 
     console.log("Generating background image with DALL-E");
 
     const response = await getOpenAI().images.generate({
       model: "dall-e-3",
-      prompt: prompt,
+      prompt,
       n: 1,
-      size: "1024x1024",
+      size: "1792x1024",
       quality: "standard",
-      response_format: "b64_json"
+      response_format: "b64_json",
     });
 
-    if (!response.data || !response.data[0] || !response.data[0].b64_json) {
+    const b64 = response.data?.[0]?.b64_json;
+    if (!b64) {
       throw new Error("Invalid response from image generation API");
     }
-
-    // Convert base64 to data URL
-    const base64Image = response.data[0].b64_json;
-    const dataUrl = `data:image/png;base64,${base64Image}`;
-
-    return dataUrl;
+    return Buffer.from(b64, "base64");
   } catch (error: any) {
     console.error("Background image generation error:", error);
-    
+
     // Handle specific OpenAI API errors
     if (error.status === 401) {
       throw new Error("Authentication failed. Please contact support.");
@@ -343,7 +346,10 @@ export async function generateBackgroundImage(title: string, description: string
     if (error.response?.status === 400 && error.response?.data?.error?.message?.includes('content_policy')) {
       throw new Error("Content policy violation. Please try with different quiz details.");
     }
-    
+    if (error.message?.includes("at least 3 characters")) {
+      throw error; // validation error — surface as-is (route 400s pre-flight anyway)
+    }
+
     throw new Error("Failed to generate background image. Please try again.");
   }
 }

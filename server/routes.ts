@@ -515,11 +515,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Description must be less than 500 characters" });
       }
 
-      const backgroundDataUrl = await generateBackgroundImage(
-        title.trim(), 
-        description && typeof description === 'string' ? description.trim() : ""
-      );
-      res.json({ backgroundUrl: backgroundDataUrl });
+      const png = await generateBackgroundImage({
+        title: title.trim(),
+        description: description && typeof description === "string" ? description.trim() : "",
+      });
+      res.json({ url: `data:image/png;base64,${png.toString("base64")}` });
     } catch (error: any) {
       captureError(error, { scope: "http.generate-background" });
       console.error("Error generating background image:", error);

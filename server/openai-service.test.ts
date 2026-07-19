@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseGeneratedQuiz, buildGenerationPrompt, buildExtractionPrompt, parseExtractedQuiz } from "./openai-service";
+import { parseGeneratedQuiz, buildGenerationPrompt, buildExtractionPrompt, parseExtractedQuiz, buildBackgroundImagePrompt } from "./openai-service";
 
 test("parseGeneratedQuiz accepts a valid canonical mixed-type payload", () => {
   const raw = {
@@ -61,4 +61,30 @@ test("parseExtractedQuiz accepts 40 questions (beyond the generation cap) and re
   const bad = parseExtractedQuiz({ title: "", questions: [] });
   assert.equal(bad.ok, false);
   if (!bad.ok) assert.ok(bad.errors.length > 0);
+});
+
+test("buildBackgroundImagePrompt wraps user text in the guardrail frame", () => {
+  const p = buildBackgroundImagePrompt({ prompt: "space adventure for kids" });
+  assert.match(p, /space adventure for kids/);
+  assert.match(p, /educational quiz game/i);
+  assert.match(p, /enterprise training/i);
+  assert.match(p, /center area relatively clean/i);
+  assert.match(p, /no text, letters, numbers, logos, watermarks, branding, or UI components/i);
+});
+
+test("buildBackgroundImagePrompt prefers prompt over title, falls back to title+description", () => {
+  const p = buildBackgroundImagePrompt({ prompt: "volcanoes", title: "Ignored", description: "ignored too" });
+  assert.match(p, /volcanoes/);
+  assert.doesNotMatch(p, /Ignored/);
+  const f = buildBackgroundImagePrompt({ title: "Fire Safety", description: "PPE basics" });
+  assert.match(f, /Fire Safety — PPE basics/);
+});
+
+test("buildBackgroundImagePrompt truncates user text to 300 chars and rejects <3 chars", () => {
+  const long = "x".repeat(400);
+  const p = buildBackgroundImagePrompt({ prompt: long });
+  assert.ok(!p.includes("x".repeat(301)));
+  assert.ok(p.includes("x".repeat(300)));
+  assert.throws(() => buildBackgroundImagePrompt({ prompt: "ab" }));
+  assert.throws(() => buildBackgroundImagePrompt({}));
 });
