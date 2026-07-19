@@ -124,3 +124,13 @@ test("rowsToBankItems: duplicate correct tokens dedupe; empty file errors", () =
   assert.equal(empty.valid.length, 0);
   assert.equal(empty.errors.length, 1);
 });
+
+test("rowsToBankItems: gapped answer columns are rejected, not silently compacted", () => {
+  const res = rowsToBankItems([
+    HEADERS,
+    row({ question: "gap?", answer1: "a", answer3: "c", correct: "1" }),
+  ]);
+  assert.equal(res.valid.length, 0);
+  assert.deepEqual(res.errors.map((e) => e.row), [2]);
+  assert.match(res.errors[0].message, /answer3/);
+});

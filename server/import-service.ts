@@ -121,9 +121,16 @@ export function rowsToBankItems(
     if (!type) rowErrors.push(`Unknown type "${get("type")}" (use quiz, true_false, or poll)`);
 
     let answers: string[] = [];
+    let gapAt: number | null = null;
     for (let k = 1; k <= 6; k++) {
       const a = get(`answer${k}`);
-      if (a) answers.push(a);
+      if (a) {
+        if (answers.length !== k - 1 && gapAt === null) gapAt = k;
+        answers.push(a);
+      }
+    }
+    if (gapAt !== null) {
+      rowErrors.push(`Answer columns must be filled in order starting at answer1 (answer${gapAt} is filled but an earlier answer column is empty)`);
     }
     if (type === "true_false" && answers.length === 0) answers = ["True", "False"];
 
