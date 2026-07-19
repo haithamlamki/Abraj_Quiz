@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { PageLoader } from "@/components/page-loader";
+import { AuditLogPanel } from "@/components/admin/AuditLogPanel";
 
 interface AdminTenant {
   id: number;
@@ -158,6 +159,7 @@ function TenantForm({
 export default function AdminTenants() {
   const { toast } = useToast();
   const [editing, setEditing] = useState<{ id: number; form: TenantFormState } | null>(null);
+  const [auditFor, setAuditFor] = useState<number | null>(null);
   const [createForm, setCreateForm] = useState<TenantFormState>(EMPTY_FORM);
 
   const { data: tenantList, error, isLoading } = useQuery<AdminTenant[]>({
@@ -204,11 +206,16 @@ export default function AdminTenants() {
             <CardTitle>
               {t.name} <span className="text-sm font-normal text-gray-500">({t.slug} · {t.status})</span>
             </CardTitle>
-            <Button variant="outline" onClick={() =>
-              setEditing(editing?.id === t.id ? null : { id: t.id, form: toFormState(t) })
-            }>
-              {editing?.id === t.id ? "Cancel" : "Edit"}
-            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() =>
+                setEditing(editing?.id === t.id ? null : { id: t.id, form: toFormState(t) })
+              }>
+                {editing?.id === t.id ? "Cancel" : "Edit"}
+              </Button>
+              <Button variant="outline" onClick={() => setAuditFor(auditFor === t.id ? null : t.id)}>
+                {auditFor === t.id ? "Hide audit" : "Audit log"}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-gray-600 mb-3">Domains: {(t.domains ?? []).join(", ") || "—"}</p>
@@ -223,6 +230,7 @@ export default function AdminTenants() {
                 onSubmit={() => updateMutation.mutate({ id: t.id, payload: toPayload(editing.form) })}
               />
             )}
+            {auditFor === t.id && <AuditLogPanel tenantId={t.id} />}
           </CardContent>
         </Card>
       ))}
