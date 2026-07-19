@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye, Settings, Library,
+  Plus, Trash2, Copy, ImagePlus, X, Clock, Check, Palette, ArrowLeft, Loader2, Wand2, Eye, Settings, Library, History as HistoryIcon,
 } from "lucide-react";
 import { apiRequest, buildApiUrl } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -45,6 +45,7 @@ import { ThemeBuilder } from "@/components/quiz/ThemeBuilder";
 import { QuizSettingsDialog } from "@/components/quiz/QuizSettingsDialog";
 import { SaveToBankDialog } from "@/components/bank/SaveToBankDialog";
 import { BankPickerDialog } from "@/components/bank/BankPickerDialog";
+import { VersionHistorySheet } from "@/components/quiz/VersionHistorySheet";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { PageLoader } from "@/components/page-loader";
 import { useQuizAutosave, newQuizDraftKey, type AutosaveStatus } from "@/hooks/use-quiz-autosave";
@@ -138,6 +139,7 @@ export default function QuizEditor() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [saveToBankOpen, setSaveToBankOpen] = useState(false);
   const [bankPickerOpen, setBankPickerOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
   // Guards the hydration effect below against react-i18next handing out a new
   // `t` identity on every language change — without this, toggling language
@@ -419,6 +421,16 @@ export default function QuizEditor() {
     setDraftDecision("discarded");
   };
 
+  const restoreVersion = (version: any) => {
+    const form = toQuizForm(version);
+    setQuiz(form);
+    setCurrentIndex(0);
+    // Deliberately NOT markClean: the restored content is dirty relative to the
+    // live quiz, so autosave drafts it and a normal Save records it as a new
+    // version. History is never rewritten.
+    toast({ title: t("editor.history.restoredToast", { n: version.versionNumber }) });
+  };
+
   const handleSave = () => {
     const err = validate();
     if (err) {
@@ -561,6 +573,11 @@ export default function QuizEditor() {
               <p className="text-xs text-gray-400">{t("editor.ai.footerNote")}</p>
             </DialogContent>
           </Dialog>
+          {isEditMode && (
+            <Button variant="outline" onClick={() => setHistoryOpen(true)}>
+              <HistoryIcon className="w-4 h-4 me-1" /> {t("editor.history.button")}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => { setPreviewIdx(currentIndex); setPreviewOpen(true); }}>
             <Eye className="w-4 h-4 me-1" /> {t("editor.topbar.preview")}
           </Button>
@@ -584,6 +601,10 @@ export default function QuizEditor() {
       <SaveToBankDialog open={saveToBankOpen} onOpenChange={setSaveToBankOpen} question={current} />
 
       <BankPickerDialog open={bankPickerOpen} onOpenChange={setBankPickerOpen} onAdd={addFromBank} />
+
+      {isEditMode && quizId && (
+        <VersionHistorySheet open={historyOpen} onOpenChange={setHistoryOpen} quizId={quizId} onRestore={restoreVersion} />
+      )}
 
       <AlertDialog open={showDraftPrompt}>
         <AlertDialogContent>

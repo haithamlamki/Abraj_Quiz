@@ -547,6 +547,19 @@
       "savedToBankToast_other": "Saved {{count}} questions to the bank",
       "saveToBankFailed": "Couldn't save to the Question Bank"
     },
+    "history": {
+      "button": "History",
+      "title": "Version history",
+      "empty": "Versions appear after your next save.",
+      "versionLabel": "Version {{n}}",
+      "questionCount": "{{count}} questions",
+      "restore": "Restore",
+      "restoreConfirmTitle": "Restore this version?",
+      "restoreConfirmBody": "This replaces the editor's current content.",
+      "cancel": "Cancel",
+      "restoredToast": "Version {{n}} loaded — save to keep it.",
+      "loadFailed": "Couldn't load this version."
+    },
     "toasts": {
       "authRequiredTitle": "Authentication Required",
       "authRequiredDescription": "Please login to build quizzes.",

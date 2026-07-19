@@ -619,6 +619,19 @@
       "savedToBankToast_other": "تم حفظ {{count}} سؤال في البنك",
       "saveToBankFailed": "تعذّر الحفظ في بنك الأسئلة"
     },
+    "history": {
+      "button": "سجل النسخ",
+      "title": "سجل النسخ",
+      "empty": "ستظهر النسخ بعد الحفظ التالي.",
+      "versionLabel": "النسخة {{n}}",
+      "questionCount": "{{count}} سؤال",
+      "restore": "استعادة",
+      "restoreConfirmTitle": "هل تريد استعادة هذه النسخة؟",
+      "restoreConfirmBody": "سيحل هذا محل المحتوى الحالي في المحرر.",
+      "cancel": "إلغاء",
+      "restoredToast": "تم تحميل النسخة {{n}} — احفظ للاحتفاظ بها.",
+      "loadFailed": "تعذّر تحميل هذه النسخة."
+    },
     "toasts": {
       "authRequiredTitle": "التسجيل مطلوب",
       "authRequiredDescription": "يرجى تسجيل الدخول لإنشاء الاختبارات.",
