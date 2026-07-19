@@ -8,6 +8,14 @@ import ExcelJS from "exceljs";
 
 export class UnreadableFileError extends Error {}
 
+export class FileTooLargeError extends Error {}
+
+// Sanity bound checked BEFORE materializing rows: a legitimate template file
+// holds at most MAX_IMPORT_ROWS data rows; anything claiming thousands of
+// sheet rows is hostile or wildly wrong, and exceljs's getRow() would
+// materialize every one of them.
+export const MAX_SHEET_ROWS = 2000;
+
 // RFC-4180 CSV: quoted fields ("" escapes a quote, newlines allowed inside
 // quotes), CRLF or LF endings, UTF-8 BOM tolerated. Delimiter (, vs ;) is
 // autodetected from the header line because Arabic-locale Excel exports
@@ -243,6 +251,9 @@ export async function parseWorkbook(buffer: Buffer): Promise<string[][]> {
   }
   const ws = wb.worksheets[0];
   if (!ws) return [];
+  if (ws.rowCount > MAX_SHEET_ROWS) {
+    throw new FileTooLargeError(`Worksheet claims ${ws.rowCount} rows`);
+  }
   const colCount = Math.min(ws.columnCount || 0, 40);
   const rows: string[][] = [];
   for (let r = 1; r <= ws.rowCount; r++) {

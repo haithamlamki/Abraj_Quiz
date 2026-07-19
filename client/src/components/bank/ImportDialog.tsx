@@ -173,7 +173,10 @@ export function ImportDialog({ open, onOpenChange, meta, onImported }: ImportDia
                 type="file"
                 accept=".xlsx,.csv,.docx"
                 className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => {
+                  setFile(e.target.files?.[0] ?? null);
+                  e.target.value = "";
+                }}
                 data-testid="input-import-file"
               />
             </div>

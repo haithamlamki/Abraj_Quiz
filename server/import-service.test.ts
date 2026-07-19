@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
 
-const { parseCsv, rowsToBankItems, parseWorkbook, buildTemplateXlsx, buildTemplateCsv, extractDocxText, UnreadableFileError } = await import("./import-service");
+const { parseCsv, rowsToBankItems, parseWorkbook, buildTemplateXlsx, buildTemplateCsv, extractDocxText, UnreadableFileError, FileTooLargeError } = await import("./import-service");
 
 test("parseCsv: plain comma-delimited rows", () => {
   assert.deepEqual(parseCsv("a,b,c\r\n1,2,3\r\n"), [["a", "b", "c"], ["1", "2", "3"]]);
@@ -157,6 +157,15 @@ test("parseWorkbook: garbage bytes throw UnreadableFileError", async () => {
 
 test("extractDocxText: garbage bytes throw UnreadableFileError", async () => {
   await assert.rejects(extractDocxText(Buffer.from("not a docx")), UnreadableFileError);
+});
+
+test("parseWorkbook: sparse sheet claiming huge rowCount is rejected before materializing rows", async () => {
+  const ExcelJS = (await import("exceljs")).default;
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("Questions");
+  ws.getCell(5000, 1).value = "boom";
+  const buf = Buffer.from(await wb.xlsx.writeBuffer());
+  await assert.rejects(parseWorkbook(buf), FileTooLargeError);
 });
 
 test("parseWorkbook: preserves Arabic text", async () => {

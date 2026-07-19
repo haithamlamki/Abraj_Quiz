@@ -7,7 +7,7 @@ import {
 } from "@shared/schema";
 import {
   buildTemplateCsv, buildTemplateXlsx, parseCsv, parseWorkbook, rowsToBankItems,
-  extractDocxText as realExtractDocxText, UnreadableFileError,
+  extractDocxText as realExtractDocxText, UnreadableFileError, FileTooLargeError,
   type ImportBankItem, type ImportRowError,
 } from "./import-service";
 import { captureError } from "./instrument";
@@ -97,7 +97,14 @@ export function registerImportRoutes(app: Express, deps: ImportRouteDeps): void 
         try {
           rows = ext === ".xlsx" ? await parseWorkbook(req.file.buffer) : parseCsv(req.file.buffer.toString("utf8"));
         } catch (error) {
-          if (!(error instanceof UnreadableFileError)) captureError(error, { scope: "http.import-parse" });
+          if (error instanceof FileTooLargeError) {
+            return res.status(400).json({
+              message: `The file has too many rows; the limit is ${MAX_BANK_BULK_ITEMS} questions per file. Split it and import in parts.`,
+            });
+          }
+          if (!(error instanceof UnreadableFileError) && !(error instanceof FileTooLargeError)) {
+            captureError(error, { scope: "http.import-parse" });
+          }
           return res.status(400).json({ message: "Could not read this file. Use the downloaded template as a starting point." });
         }
         const result = rowsToBankItems(rows, defaults);
