@@ -51,14 +51,14 @@ export default function QuizInsightsPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="page-fill bg-gray-50">
         <div className="flex items-center justify-center py-24 text-gray-500">{t("insights.loading")}</div>
       </div>
     );
   }
   if (isError || !data) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="page-fill bg-gray-50">
         <ErrorState description={t("insights.loadError")} onRetry={() => refetch()} />
       </div>
     );
@@ -73,7 +73,7 @@ export default function QuizInsightsPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="page-fill bg-gray-50">
       <div className="max-w-5xl mx-auto px-4 py-8 space-y-8">
         <div className="flex items-center gap-3">
           <Link href="/my-quizzes"><Button variant="ghost" size="sm" data-testid="button-back-insights"><ArrowLeft className="w-4 h-4 me-1 rtl:rotate-180" />{t("insights.myQuizzes")}</Button></Link>

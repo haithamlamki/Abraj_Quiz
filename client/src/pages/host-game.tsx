@@ -287,7 +287,7 @@ export default function HostGame() {
 
   if (!game || !quiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="page-fill flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">{t("play.gameNotFound")}</p>
@@ -336,13 +336,13 @@ export default function HostGame() {
 
   if (game.status === "waiting") {
     return (
-      <div className="h-screen overflow-y-auto py-8 animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50" style={getBackgroundStyle(quiz?.background || 'classroom')}>
+      <div className="h-[calc(100dvh-68px)] overflow-y-auto lg:overflow-hidden py-4 animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50" style={getBackgroundStyle(quiz?.background || 'classroom')}>
         <ConnectionBanner status={connectionStatus} />
         <CountdownOverlay />
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col">
-          <div className="text-center mb-8">
-            <h1 className="font-bold text-4xl mb-4 gradient-text">{t("host.gameLobby")}</h1>
-            <div className="flex justify-center items-center space-x-4 mb-6">
+          <div className="text-center mb-4">
+            <h1 className="font-bold text-3xl mb-2 gradient-text">{t("host.gameLobby")}</h1>
+            <div className="flex justify-center items-center space-x-4 mb-2">
               <Badge variant="secondary" className="inline-flex items-center rounded-full border font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent hover:bg-secondary/80 text-lg px-4 py-2 bg-[#019ebd] text-[#ffffff] pulse-ring">
                 {t("host.pinBadge", { pin: game.gamePin })}
               </Badge>
@@ -352,7 +352,7 @@ export default function HostGame() {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-4 flex-1 min-h-0">
+          <div className="grid lg:grid-cols-2 gap-4 flex-1 lg:min-h-0">
             <Card className="card-3d-enhanced glass flex flex-col">
               <CardHeader className="flex-shrink-0">
                 <CardTitle className="flex items-center space-x-2">
@@ -381,7 +381,7 @@ export default function HostGame() {
               <CardHeader className="flex-shrink-0">
                 <CardTitle>{t("host.shareGame")}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 flex-shrink-0">
+              <CardContent className="space-y-3 flex-1 min-h-0 lg:overflow-y-auto">
                 {qrCodeUrl && (
                   <div className="text-center space-y-1">
                     <img

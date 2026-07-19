@@ -91,7 +91,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
+    <div className="page-fill animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50 flex items-center justify-center p-4">
       <Card className="w-full max-w-md card-3d-enhanced glass animate-scale-in">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold gradient-text">

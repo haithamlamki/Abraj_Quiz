@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import type { Quiz } from '@shared/schema';
 import logo from '@assets/logo.jpg';
 import type { PdfBranding } from "./enhanced-pdf-generator";
-import { derivePdfTheme, fitText, rgbToHex, type PdfTheme } from "./pdf-theme";
+import { derivePdfTheme, fitText, logoPlateRect, rgbToHex, type PdfTheme } from "./pdf-theme";
 
 interface QuizPDFOptions {
   quiz: Quiz;
@@ -155,7 +155,11 @@ export class QuizPDFGenerator {
     const logoDataUrl = await this.loadLogoDataUrl();
     if (logoDataUrl) {
       try {
-        this.pdf.addImage(logoDataUrl, "PNG", logoX, (bandHeight - logoHeight) / 2, logoWidth, logoHeight);
+        const logoY = (bandHeight - logoHeight) / 2;
+        const plate = logoPlateRect(logoX, logoY, logoWidth, logoHeight);
+        this.pdf.setFillColor(255, 255, 255);
+        this.pdf.roundedRect(plate.x, plate.y, plate.w, plate.h, plate.r, plate.r, "F");
+        this.pdf.addImage(logoDataUrl, "PNG", logoX, logoY, logoWidth, logoHeight);
       } catch (error) {
         console.warn("Could not add logo to PDF:", error);
       }

@@ -74,7 +74,7 @@ export default function QuizPDF() {
 
   if (!quiz) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="page-fill flex items-center justify-center">
         <Card className="w-full max-w-md">
           <CardContent className="pt-6 text-center">
             <p className="text-lg text-gray-600 mb-4">Quiz not found</p>
@@ -90,7 +90,7 @@ export default function QuizPDF() {
   const questions = quiz.questions as any[];
 
   return (
-    <div className="min-h-screen py-8 bg-gray-50">
+    <div className="page-fill py-8 bg-gray-50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">

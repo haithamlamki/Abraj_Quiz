@@ -71,3 +71,19 @@ export function fitText(
   }
   return t.trimEnd() + ellipsis;
 }
+
+/**
+ * White backing plate behind a header logo. Both PDF generators stamp the
+ * logo onto the primary-colored band; without a plate, dark or transparent
+ * tenant logos disappear into it. Units: PDF mm. `r` feeds jsPDF
+ * roundedRect(x, y, w, h, r, r, "F").
+ */
+export function logoPlateRect(
+  logoX: number,
+  logoY: number,
+  logoW: number,
+  logoH: number,
+  pad = 2.5,
+): { x: number; y: number; w: number; h: number; r: number } {
+  return { x: logoX - pad, y: logoY - pad, w: logoW + pad * 2, h: logoH + pad * 2, r: 2 };
+}

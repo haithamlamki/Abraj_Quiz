@@ -38,7 +38,7 @@ export default function QuizPreview() {
   });
 
   if (isLoading) return <PageLoader label={t("preview.loading")} />;
-  if (!quiz) return <div className="min-h-screen flex items-center justify-center text-white bg-slate-900">{t("preview.notFound")}</div>;
+  if (!quiz) return <div className="page-fill flex items-center justify-center text-white bg-slate-900">{t("preview.notFound")}</div>;
 
   const questions = (Array.isArray(quiz.questions) ? quiz.questions : []).map(normalize);
   const q = questions[index];
@@ -46,7 +46,7 @@ export default function QuizPreview() {
   const theme = resolveQuizTheme(quiz);
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white flex flex-col">
+    <div className="page-fill bg-slate-900 text-white flex flex-col">
       <header className="flex items-center justify-between px-4 py-3">
         <Button variant="ghost" size="sm" className="text-white" onClick={() => setLocation(`/edit-quiz/${quizId}`)}>
           <ArrowLeft className="w-4 h-4 me-1 rtl:rotate-180" /> {t("preview.backToEditor")}

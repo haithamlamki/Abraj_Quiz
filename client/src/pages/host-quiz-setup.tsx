@@ -133,7 +133,7 @@ export default function HostQuizSetup() {
 
   if (!quiz) {
     return (
-      <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+      <div className="page-fill animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
         <div className="container mx-auto px-4 py-8">
           <div className="text-center py-12 animate-scale-in">
             <div className="card-3d-enhanced glass p-8 max-w-md mx-auto">
@@ -153,8 +153,8 @@ export default function HostQuizSetup() {
   const estimatedTime = Math.ceil(quiz.questions.reduce((acc, q) => acc + q.timeLimit, 0) / 60);
 
   return (
-    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      
+    <div className="page-fill animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-8 animate-scale-in">

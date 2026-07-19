@@ -98,8 +98,8 @@ export default function QuizHistory() {
   const formatDate = (dateString: string) => formatQuizDate(dateString, i18n.language);
 
   return (
-    <div className="min-h-screen animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
-      
+    <div className="page-fill animate-gradient bg-gradient-to-br from-blue-50 via-purple-50 to-pink-50">
+
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-8 animate-scale-in">

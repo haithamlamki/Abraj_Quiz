@@ -10,7 +10,7 @@ export function PageLoader({ label }: PageLoaderProps) {
   const { t } = useTranslation();
   return (
     <div
-      className="min-h-screen flex flex-col items-center justify-center gap-4"
+      className="page-fill flex flex-col items-center justify-center gap-4"
       role="status"
       aria-live="polite"
     >
