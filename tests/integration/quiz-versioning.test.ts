@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { pool } from "../../server/db";
 import {
   assertServerUp, cleanupTestData, createTestQuiz, createTestUser, endPool,
-  type TestAgent, type TestQuiz,
+  type TestQuiz,
 } from "./helpers";
 
 // Verifies migration 0011_quiz_versioning.sql + the versioned save path.
@@ -143,6 +143,10 @@ describe("quiz versioning + drafts", () => {
     const client = await pool.connect();
     try {
       await client.query("begin");
+      // CI connects as the postgres superuser, which bypasses RLS even with
+      // FORCE. Drop to the app role (a no-op when already quiz_app, e.g.
+      // against Render's URL) so the policy actually applies to the probe.
+      await client.query("set local role quiz_app");
       // Tenant 999999 does not exist — with RLS forced, both tables must be empty.
       await client.query("select set_config('app.tenant_id', '999999', true)");
       const versions = await client.query("select count(*)::int as n from quiz_versions where quiz_id = $1", [quiz.id]);

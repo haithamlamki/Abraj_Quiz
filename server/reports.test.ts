@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 
 process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
 
-const { buildGameReport, buildQuizReport, buildGameReportXlsx, buildQuizReportXlsx, buildGameReportCsv, buildQuizReportCsv, REPORT_STRINGS, reportSlug } = await import("./reports");
+const { buildGameReport, buildQuizReport, buildGameReportXlsx, buildQuizReportXlsx, buildGameReportCsv, REPORT_STRINGS, reportSlug } = await import("./reports");
 
 const Q = (question: string, over: Record<string, unknown> = {}) => ({
   question, type: "quiz", answerType: "single", answers: ["a", "b", "c"],

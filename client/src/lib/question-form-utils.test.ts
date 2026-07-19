@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
-  blankQuestion, trueFalseQuestion, withAnswerText, withAddedAnswer, withRemovedAnswer,
+  blankQuestion, trueFalseQuestion, withRemovedAnswer,
   withToggledCorrect, withType, withAnswerMode, validateQuestion,
 } from "./question-form-utils";
 

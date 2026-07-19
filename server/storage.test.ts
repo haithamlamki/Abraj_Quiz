@@ -476,9 +476,9 @@ test("getCompletedQuizGames: only completed games for the quiz, oldest first, te
   } as any);
   const other = await s.createQuiz(ctx, { title: "Other", description: "", createdBy: 1, isPublic: false, questions: [] } as any);
 
-  const g1 = await s.createGame(ctx, { quizId: quiz.id, gamePin: "RPT001", hostId: 1, status: "completed" } as any);
+  await s.createGame(ctx, { quizId: quiz.id, gamePin: "RPT001", hostId: 1, status: "completed" } as any);
   const g2 = await s.createGame(ctx, { quizId: quiz.id, gamePin: "RPT002", hostId: 1, status: "waiting" } as any);
-  const g3 = await s.createGame(ctx, { quizId: quiz.id, gamePin: "RPT003", hostId: 1, status: "completed" } as any);
+  await s.createGame(ctx, { quizId: quiz.id, gamePin: "RPT003", hostId: 1, status: "completed" } as any);
   await s.createGame(ctx, { quizId: other.id, gamePin: "RPT004", hostId: 1, status: "completed" } as any);
 
   const rows = await s.getCompletedQuizGames(ctx, quiz.id);
