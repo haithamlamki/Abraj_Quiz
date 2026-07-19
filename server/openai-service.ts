@@ -126,7 +126,7 @@ ${CANONICAL_EXAMPLE}`;
 async function completeValidated<T>(
   basePrompt: string,
   parse: (raw: unknown) => { ok: true; data: T } | { ok: false; errors: string },
-  opts: { temperature: number; maxTokens: number },
+  opts: { temperature: number; maxTokens: number; exhaustMessage: string },
 ): Promise<T> {
   let lastErrors = "";
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -151,13 +151,14 @@ async function completeValidated<T>(
     if (parsed.ok) return parsed.data;
     lastErrors = parsed.errors;
   }
-  throw new Error("Failed to generate a properly formatted quiz. Please try again.");
+  throw new Error(opts.exhaustMessage);
 }
 
 async function generateValidated(kind: "topics" | "content", input: string, sourceTitle?: string): Promise<GeneratedQuiz> {
   return completeValidated(buildGenerationPrompt(kind, input, sourceTitle), parseGeneratedQuiz, {
     temperature: 0.7,
     maxTokens: 3500,
+    exhaustMessage: "Failed to generate a properly formatted quiz. Please try again.",
   });
 }
 
@@ -168,6 +169,7 @@ export async function extractQuizFromText(documentText: string): Promise<Extract
     return await completeValidated(buildExtractionPrompt(documentText), parseExtractedQuiz, {
       temperature: 0.2,
       maxTokens: 16000,
+      exhaustMessage: "Failed to extract questions from the document. Please try again.",
     });
   } catch (error: any) {
     console.error("Quiz extraction error:", error);
@@ -181,7 +183,7 @@ function mapOpenAiError(error: any, fallbackMessage: string): Error {
   if (error?.status === 500) return new Error("OpenAI API service is temporarily unavailable. Please try again later.");
   if (error?.code === "insufficient_quota") return new Error("OpenAI API quota exceeded. Please check your account usage.");
   // Preserve already-user-facing messages thrown by our own guards/validator.
-  if (typeof error?.message === "string" && /too short|Failed to generate a properly formatted quiz/.test(error.message)) return error;
+  if (typeof error?.message === "string" && /too short|Failed to generate a properly formatted quiz|Failed to extract questions from the document/.test(error.message)) return error;
   return new Error(fallbackMessage);
 }
 
