@@ -318,6 +318,9 @@ async function runSystemDeletes(literalPrefix: string): Promise<void> {
       [like],
     );
     await client.query(`DELETE FROM quizzes WHERE title LIKE $1 ESCAPE '\\'`, [like]);
+    // audit_log has no FK to users, so orphaned it_ rows are harmless — and
+    // migration 0012 revokes DELETE on audit_log from quiz_app entirely (an
+    // actual GRANT, not an RLS policy), so no app.role GUC can bypass it here.
     await client.query(`DELETE FROM users WHERE username LIKE $1 ESCAPE '\\'`, [like]);
     await client.query("commit");
   } catch (err) {
