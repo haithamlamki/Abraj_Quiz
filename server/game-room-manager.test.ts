@@ -255,6 +255,27 @@ test("runtime room persists final scores when completing the game", async () => 
   assert.ok(roster[0].score > 0);
 });
 
+test("completing a game writes ONE game.complete audit row with host actor + pin", async () => {
+  const { manager, storage } = await createRuntimeFixture();
+  const pin = "123456";
+
+  await manager.startGame(pin, 1);
+  await manager.submitAnswer({ gamePin: pin, playerName: "Alice", questionIndex: 0, selectedAnswer: 0 });
+
+  // Quiz 1 (the fixture's default) has 3 questions — advance through all of them.
+  await manager.advanceQuestion(pin, 1);
+  await manager.advanceQuestion(pin, 1);
+  const completed = await manager.advanceQuestion(pin, 1);
+  assert.equal(completed.gameComplete, true);
+
+  const rows = await storage.listAuditEvents({ tenantId: 1 }, { action: "game.complete", limit: 10 });
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].targetType, "game");
+  assert.equal(rows[0].targetLabel, pin);
+  assert.equal((rows[0].details as any).pin, pin);
+  assert.equal(typeof (rows[0].details as any).players, "number");
+});
+
 test("calculatePoints doubles the score for double-points questions", async () => {
   const { GameRoomManager } = await import("./game-room-manager");
   const { MemStorage } = await import("./storage");

@@ -144,6 +144,14 @@ Tracked follow-ups after `PRODUCTION_MIGRATION_PRD.md` Phase 1 was closed (commi
 - [ ] Concurrent saves from two tabs: both transactions compute version max+1 → unique(quiz_id, version_number) violation → generic 500 (no corruption; retry succeeds). Map Postgres 23505 → 409 or retry once inside `updateQuizWithVersion`.
 - [ ] In-flight autosave vs Save race: a draft PUT already in flight when Save commits can land after the transactional draft delete, leaving a stale draft row equal to the saved quiz → spurious resume prompt next open. Harmless content-wise; consider a draft-version token or timestamp guard.
 - [ ] Resume-prompt micro-race (final review, non-blocking): if the cache holds a stale-but-real draft while the mount refetch is in flight, a sub-300ms Resume click hydrates the slightly-older draft. Airtight fix is `&& !draftFetching` on the showDraftPrompt condition.
+
+## Audit log follow-ups (from feat/audit-log final review, 2026-07-20)
+
+- [ ] **auth.logout actorName degrades in prod**: bearer-token-only clients (cross-site) have no session.username at logout → rows carry `user#<id>` fallback instead of the username snapshot. Fix: one getUser lookup in the logout handler, or add a username claim to the token.
+- [ ] **tenantCache.refresh() failure drops the tenant audit row AND 500s a committed write** (pre-existing false-500 + new audit-ordering wart, one fix): move logAudit above the refresh or wrap refresh in its own try/catch (log-and-continue) in tenant create/update.
+- [ ] AuditLogPanel: no stale-flight guard — rapid action-filter switching can let an older slow response overwrite a newer one. Use the ImportDialog flight-counter pattern.
+- [ ] bank-routes: `const actor…` + logAudit repeated 5×; a tiny helper could fold it (matches per-handler idiom today; cosmetic).
+- Notes (accepted, no action): integration `it_` audit rows are un-deletable by the app role by design (append-only grants) and accumulate harmlessly; double game.complete rows share the pre-existing concurrent next-question race (status guard covers sequential cases).
 - [ ] VersionHistorySheet list query renders a 500 as the "versions appear after your next save" empty state — destructure isError and show editor.history.loadFailed instead.
 - [ ] Autosave chip says "will retry" but retry is change-triggered only; if the final keystroke's write fails and the user stops typing, nothing retries (spec-sanctioned; noting for honesty). Consider a timer-based retry.
 - [ ] localStorage draft tampering (valid JSON, wrong shapes, e.g. questions: [null]) makes Resume's toQuizForm throw in the click handler → button silently no-ops. Guard toQuizForm or wrap the handler.

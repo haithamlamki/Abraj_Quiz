@@ -6,6 +6,7 @@ import { quizQuestionsSchema } from "@shared/schema";
 import { isSelectionCorrect, streakMultiplier, tallyDistribution } from "@shared/quiz-scoring";
 import type { WsErrorCode, WsServerMessage } from "@shared/ws-protocol";
 import { captureError } from "./instrument";
+import { logAudit, AUDIT_ACTIONS } from "./audit";
 
 interface RuntimePlayer {
   name: string;
@@ -584,6 +585,20 @@ export class GameRoomManager {
     const updatedGame = await this.storage.updateGame(SYSTEM_CTX, room.gameId, {
       status: "completed",
     });
+
+    // Audit: game completed. SYSTEM_CTX has no tenant, so pass the room's
+    // tenant explicitly; one low-volume user lookup for the name snapshot.
+    const host = await this.storage.getUser({ tenantId: room.tenantId }, room.hostId).catch(() => undefined);
+    logAudit(this.storage, { tenantId: room.tenantId }, {
+      action: AUDIT_ACTIONS.GAME_COMPLETE,
+      actorId: room.hostId,
+      actorName: host?.username ?? `user#${room.hostId}`,
+      targetType: "game",
+      targetId: room.gameId,
+      targetLabel: room.gamePin,
+      details: { pin: room.gamePin, players: players.length },
+    });
+
     const game = this.applyRuntimeState(updatedGame);
     this.broadcast(room, { type: "game_completed", game });
     this.scheduleCompletionCleanup(room);
