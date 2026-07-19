@@ -1,13 +1,7 @@
 import jsPDF from 'jspdf';
 import logo from "@assets/ABRJ.OM - Copy_1753146533010.png";
 import { resolveQuizTheme } from "@shared/quiz-theme";
-
-function hexToRgb(hex: string): [number, number, number] | null {
-  if (!/^#?([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) return null;
-  const m = hex.replace("#", "");
-  const n = m.length === 3 ? m.split("").map((c) => c + c).join("") : m;
-  return [parseInt(n.slice(0, 2), 16), parseInt(n.slice(2, 4), 16), parseInt(n.slice(4, 6), 16)];
-}
+import { derivePdfTheme, fitText, hexToRgb, shade, type Rgb } from "./pdf-theme";
 
 export interface PdfBranding {
   appName: string;
@@ -29,7 +23,6 @@ interface ThemeColors {
   primary: [number, number, number];
   secondary: [number, number, number];
   accent: [number, number, number];
-  name: string;
 }
 
 export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding) => {
@@ -42,45 +35,34 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
 
-  // Determine theme based on quiz background
-  const quizBackground = game.quiz?.background || 'classroom';
+  // Tenant-derived palette. The quiz `background` no longer picks colors —
+  // branding always comes from the tenant unless the quiz has an explicit
+  // custom theme (see below).
+  const derived = derivePdfTheme(branding?.primaryColor);
   let currentTheme: ThemeColors = {
-    primary: (branding?.primaryColor ?? [1, 158, 189]) as [number, number, number], // tenant primary
-    secondary: [240, 253, 255],
-    accent: [0, 174, 209],
-    name: 'Custom Background Theme'
+    primary: derived.primary,
+    secondary: derived.tint,
+    accent: derived.accent,
   };
+  const quizBackground = game.quiz?.background || 'classroom';
 
-  // Theme colors for different backgrounds
-  if (quizBackground && quizBackground.startsWith('data:image/')) {
-    currentTheme = {
-      primary: [1, 158, 189],
-      secondary: [240, 253, 255],
-      accent: [0, 174, 209],
-      name: 'Custom Background Theme'
-    };
-  } else {
-    const themes: Record<string, ThemeColors> = {
-      classroom: { primary: [70, 130, 180], secondary: [245, 250, 255], accent: [100, 149, 237], name: 'Academic Classroom' },
-      space: { primary: [75, 0, 130], secondary: [230, 230, 250], accent: [138, 43, 226], name: 'Cosmic Explorer' },
-      ocean: { primary: [0, 119, 190], secondary: [240, 248, 255], accent: [30, 144, 255], name: 'Ocean Adventure' },
-      forest: { primary: [34, 139, 34], secondary: [240, 255, 240], accent: [50, 205, 50], name: 'Forest Explorer' },
-      city: { primary: [105, 105, 105], secondary: [248, 248, 255], accent: [169, 169, 169], name: 'Urban Landscape' }
-    };
-    currentTheme = themes[quizBackground] || currentTheme;
-  }
-
-  // Override the header/accent color with the quiz's resolved theme accent,
-  // but ONLY when the quiz has an explicit custom theme object. Un-themed
-  // quizzes (the vast majority — pre-existing quizzes and any quiz created
-  // without opening the theme builder) must keep the tenant-branded /
-  // background-keyed `primary` set above; resolveQuizTheme() falls back to
-  // the default teal accent when quiz.theme is absent, and unconditionally
-  // applying that would override every tenant's branding with teal.
+  // Override the primary with the quiz's resolved theme accent, but ONLY when
+  // the quiz has an explicit custom theme object. Un-themed quizzes (the vast
+  // majority — pre-existing quizzes and any quiz created without opening the
+  // theme builder) must keep the tenant-branded primary set above;
+  // resolveQuizTheme() falls back to the default teal accent when quiz.theme
+  // is absent, and unconditionally applying that would override every
+  // tenant's branding with teal.
   const hasCustomTheme = !!(game.quiz && (game.quiz as any).theme && typeof (game.quiz as any).theme === "object");
   if (hasCustomTheme) {
     const accentRgb = hexToRgb(resolveQuizTheme(game.quiz ?? {}).accent);
-    if (accentRgb) currentTheme = { ...currentTheme, primary: accentRgb };
+    if (accentRgb) {
+      currentTheme = {
+        primary: accentRgb,
+        secondary: derivePdfTheme(accentRgb).tint,
+        accent: derivePdfTheme(accentRgb).accent,
+      };
+    }
   }
 
   // Helper function to apply background
@@ -88,8 +70,10 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
     if (quizBackground && quizBackground.startsWith('data:image/')) {
       try {
         pdf.addImage(quizBackground, 'JPEG', 0, 0, pageWidth, pageHeight);
-        pdf.setFillColor(255, 255, 255, 0.90);
+        pdf.setGState(pdf.GState({ opacity: 0.9 }));
+        pdf.setFillColor(255, 255, 255);
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
+        pdf.setGState(pdf.GState({ opacity: 1 }));
       } catch {
         pdf.setFillColor(currentTheme.secondary[0], currentTheme.secondary[1], currentTheme.secondary[2]);
         pdf.rect(0, 0, pageWidth, pageHeight, 'F');
@@ -128,12 +112,17 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   pdf.setFontSize(30);
   pdf.setFont('helvetica', 'bold');
   pdf.setTextColor(255, 255, 255);
-  pdf.text(branding?.headerText ?? 'ABRAJ QUIZ COMPLETE REPORT', pageWidth / 2, yPosition + 16, { align: 'center' });
-  
+  const headerTitle = fitText(
+    branding?.headerText ?? 'QUIZ COMPLETE REPORT',
+    pageWidth - 130,
+    (s) => pdf.getTextWidth(s),
+  );
+  pdf.text(headerTitle, pageWidth / 2, yPosition + 16, { align: 'center' });
+
   // Subtitle
   pdf.setFontSize(11);
   pdf.setFont('helvetica', 'normal');
-  pdf.text(`${currentTheme.name} • Generated ${new Date().toLocaleDateString()}`, pageWidth / 2, yPosition + 26, { align: 'center' });
+  pdf.text(`Generated ${new Date().toLocaleDateString()}`, pageWidth / 2, yPosition + 26, { align: 'center' });
   yPosition += 55;
 
   // Quiz Information Card - Modern Card Design (calculate dynamic height based on description)
@@ -598,7 +587,7 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   pdf.setFontSize(9);
   pdf.setFont('helvetica', 'normal');
   pdf.setTextColor(100, 100, 100);
-  pdf.text(`Generated by ${branding?.appName ?? 'Abraj Quiz'} System - ${currentTheme.name}`, 25, yPosition + 6);
+  pdf.text(`Generated by ${branding?.appName ?? 'Abraj Quiz'}`, 25, yPosition + 6);
   
   pdf.setFontSize(8);
   pdf.setFont('helvetica', 'normal');
