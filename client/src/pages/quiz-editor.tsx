@@ -165,10 +165,10 @@ export default function QuizEditor() {
 
   // Draft existence ≡ unsaved changes (deleted transactionally on save), so a
   // non-404 here is exactly "show the resume prompt". 404 → null, not an error.
-  const { data: draft, isFetched: draftFetched } = useQuery<{ payload: any; updatedAt: string } | null>({
+  const { data: draft, status: draftStatus } = useQuery<{ payload: any; updatedAt: string } | null>({
     queryKey: ["/api/quizzes", quizId, "draft"],
     enabled: isEditMode && isAuthenticated,
-    retry: false,
+    retry: 1,
     queryFn: async () => {
       try {
         const res = await apiRequest("GET", `/api/quizzes/${quizId}/draft`);
@@ -222,12 +222,16 @@ export default function QuizEditor() {
     setDraftDecision("none");
   }, [isEditMode, storageKey]);
 
-  // Edit mode: resolve "none" when the fetch settles with no draft. The dialog
-  // itself only opens once hydration is done, so a Resume can never be
-  // clobbered by the live-quiz hydration effect.
+  // Edit mode: resolve "none" when the fetch settles with no draft — OR errors.
+  // A failed draft probe must NOT leave the decision stuck on "pending": that
+  // would silently disable autosave for the whole session. On error we proceed
+  // as if no draft exists — the user's current work is the thing to protect.
   useEffect(() => {
-    if (isEditMode && draftFetched && draft === null) setDraftDecision("none");
-  }, [isEditMode, draftFetched, draft]);
+    if (!isEditMode) return;
+    if (draftStatus === "error" || (draftStatus === "success" && draft === null)) {
+      setDraftDecision("none");
+    }
+  }, [isEditMode, draftStatus, draft]);
 
   const current = quiz.questions[currentIndex] ?? quiz.questions[0];
 
