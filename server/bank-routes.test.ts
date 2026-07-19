@@ -191,7 +191,24 @@ test("bulk: empty items and over-cap both 400", async () => {
   await withServer(makeApp(new MemStorage()), async (base) => {
     const empty = await fetch(`${base}/api/bank/questions/bulk`, { method: "POST", headers: AUTH, body: JSON.stringify({ items: [] }) });
     assert.equal(empty.status, 400);
-    const tooMany = await fetch(`${base}/api/bank/questions/bulk`, { method: "POST", headers: AUTH, body: JSON.stringify({ items: Array.from({ length: 51 }, () => ({ question: VALID_QUESTION })) }) });
+    const tooMany = await fetch(`${base}/api/bank/questions/bulk`, { method: "POST", headers: AUTH, body: JSON.stringify({ items: Array.from({ length: 201 }, () => ({ question: VALID_QUESTION })) }) });
     assert.equal(tooMany.status, 400);
+  });
+});
+
+test("bulk: accepts 200 items atomically, rejects 201", async () => {
+  await withServer(makeApp(new MemStorage()), async (base) => {
+    const item = { question: VALID_QUESTION, tags: [] };
+    const ok = await fetch(`${base}/api/bank/questions/bulk`, {
+      method: "POST", headers: AUTH,
+      body: JSON.stringify({ items: Array.from({ length: 200 }, () => item) }),
+    });
+    assert.equal(ok.status, 201);
+    assert.equal((await ok.json()).created, 200);
+    const over = await fetch(`${base}/api/bank/questions/bulk`, {
+      method: "POST", headers: AUTH,
+      body: JSON.stringify({ items: Array.from({ length: 201 }, () => item) }),
+    });
+    assert.equal(over.status, 400);
   });
 });

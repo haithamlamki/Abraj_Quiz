@@ -368,6 +368,19 @@ export const generatedQuizSchema = z.object({
 });
 export type GeneratedQuiz = z.infer<typeof generatedQuizSchema>;
 
+// AI extraction from an uploaded document (Import pipeline). Same shape as
+// generatedQuizSchema, but a document can legitimately hold far more than a
+// generated quiz's 12 questions; ~100 is the realistic bound for one model
+// response.
+export const extractedQuizSchema = generatedQuizSchema.extend({
+  questions: z.array(questionSchema).min(1).max(100),
+});
+export type ExtractedQuiz = z.infer<typeof extractedQuizSchema>;
+
+// Shared ceiling for bank bulk-insert and file import (one file = one atomic
+// bulk call, so these must match).
+export const MAX_BANK_BULK_ITEMS = 200;
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;

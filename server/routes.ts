@@ -9,7 +9,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { pool } from "./db";
 import multer from "multer";
-import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText, generateBackgroundImage } from "./openai-service";
+import { generateQuizFromPDF, generateQuizFromURL, generateQuizFromTopics, generateQuizFromText, generateBackgroundImage, extractQuizFromText } from "./openai-service";
 import { gameWS } from "./websocket";
 import { gameRoomManager, RoomError, toClientGame } from "./game-room-manager";
 import { tenantMiddleware, requireFeature } from "./tenant";
@@ -18,6 +18,7 @@ import { brandingSchema, featuresSchema, type Tenant } from "@shared/schema";
 import { getAllowedOrigins } from "./origins";
 import { registerAdminRoutes } from "./admin-routes";
 import { registerBankRoutes } from "./bank-routes";
+import { registerImportRoutes } from "./import-routes";
 import { uploadQuizImage } from "./supabase-storage";
 import { captureError } from "./instrument";
 import { buildRateLimiters } from "./rate-limits";
@@ -674,6 +675,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Question Bank (per-tenant reusable question library). Routes live in
   // server/bank-routes.ts with injected deps so they're testable sans DB.
   registerBankRoutes(app, { storage, requireAuth, tctx });
+
+  registerImportRoutes(app, {
+    requireAuth,
+    aiLimiter,
+    // Same semantics as requireFeature("aiGeneration") in tenant.ts, exposed
+    // as a predicate because only the docx lane of the parse route is gated.
+    hasAiFeature: (req) => {
+      try {
+        return featuresSchema.parse((req.tenant?.features as object) ?? {}).aiGeneration === true;
+      } catch {
+        return false;
+      }
+    },
+    extractQuizFromText,
+  });
 
   app.get("/api/quizzes/:id/insights", requireAuth, async (req, res) => {
     try {

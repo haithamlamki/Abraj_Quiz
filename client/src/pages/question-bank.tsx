@@ -10,11 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Edit, Library, Plus, Search, Trash2 } from "lucide-react";
+import { Edit, Library, Plus, Search, Trash2, Upload } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { formatQuizDate } from "@/lib/language";
 import { BankQuestionDialog, type BankQuestionRow } from "@/components/bank/BankQuestionDialog";
+import { ImportDialog } from "@/components/bank/ImportDialog";
 
 const ALL_SUBJECTS = "__all__";
 
@@ -31,6 +32,7 @@ export default function QuestionBank() {
   const [showArchived, setShowArchived] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<BankQuestionRow | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -97,6 +99,9 @@ export default function QuestionBank() {
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => setShowArchived((v) => !v)} data-testid="button-toggle-archived-bank">
               {showArchived ? t("bank.backToLive") : t("bank.showArchived")}
+            </Button>
+            <Button variant="outline" onClick={() => setImportOpen(true)} data-testid="button-import-bank">
+              <Upload className="w-4 h-4 me-1" /> {t("bank.import.button")}
             </Button>
             <Button onClick={() => { setEditing(null); setDialogOpen(true); }} data-testid="button-new-bank-question">
               <Plus className="w-4 h-4 me-1" /> {t("bank.newQuestion")}
@@ -201,6 +206,12 @@ export default function QuestionBank() {
           initial={editing}
           meta={meta ?? { subjects: [], tags: [] }}
           onSaved={invalidate}
+        />
+        <ImportDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          meta={meta ?? { subjects: [], tags: [] }}
+          onImported={invalidate}
         />
       </div>
     </div>

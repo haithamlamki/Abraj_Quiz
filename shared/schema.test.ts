@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { questionSchema, insertQuizSchema, insertBankQuestionSchema, normalizeTags, generatedQuizSchema } from "./schema";
+import { questionSchema, insertQuizSchema, insertBankQuestionSchema, normalizeTags, generatedQuizSchema, extractedQuizSchema } from "./schema";
 
 test("points defaults to standard for legacy questions", () => {
   const q = questionSchema.parse({ question: "Q", answers: ["a", "b", "c", "d"], correctAnswer: 1 });
@@ -128,4 +128,13 @@ test("generatedQuizSchema accepts mixed types, normalizes tags, rejects poll-wit
   }));
   // empty questions rejected
   assert.throws(() => generatedQuizSchema.parse({ title: "x", description: "", questions: [] }));
+});
+
+test("extractedQuizSchema allows up to 100 questions; generatedQuizSchema stays capped at 12", () => {
+  const q = { question: "q?", type: "quiz", answerType: "single", answers: ["a", "b"], correctAnswers: [0], timeLimit: 20, points: "standard" };
+  const many = { title: "T", description: "", questions: Array.from({ length: 40 }, () => ({ ...q })) };
+  assert.equal(extractedQuizSchema.safeParse(many).success, true);
+  assert.equal(generatedQuizSchema.safeParse(many).success, false);
+  const tooMany = { ...many, questions: Array.from({ length: 101 }, () => ({ ...q })) };
+  assert.equal(extractedQuizSchema.safeParse(tooMany).success, false);
 });
