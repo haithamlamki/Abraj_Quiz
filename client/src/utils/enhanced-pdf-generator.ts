@@ -35,6 +35,22 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   const pageWidth = pdf.internal.pageSize.getWidth();
   const pageHeight = pdf.internal.pageSize.getHeight();
   const measure = (s: string) => pdf.getTextWidth(s);
+  // Vector medal: two ribbon strands + a colored disc with the rank number.
+  // Drawn with primitives because WinAnsi helvetica has no medal/trophy glyphs.
+  const drawMedal = (x: number, y: number, r: number, color: Rgb, rank: string) => {
+    const dark = shade(color, 0.3);
+    pdf.setFillColor(dark[0], dark[1], dark[2]);
+    pdf.triangle(x - r * 0.7, y - r - r * 0.6, x - r * 0.1, y - r - r * 0.6, x - r * 0.3, y - r * 0.4, 'F');
+    pdf.triangle(x + r * 0.7, y - r - r * 0.6, x + r * 0.1, y - r - r * 0.6, x + r * 0.3, y - r * 0.4, 'F');
+    pdf.setDrawColor(dark[0], dark[1], dark[2]);
+    pdf.setLineWidth(0.5);
+    pdf.setFillColor(color[0], color[1], color[2]);
+    pdf.circle(x, y, r, 'FD');
+    pdf.setFontSize(r * 2.6);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(rank, x, y + r * 0.35, { align: 'center' });
+  };
 
   // Tenant-derived palette. The quiz `background` no longer picks colors —
   // branding always comes from the tenant unless the quiz has an explicit
@@ -143,19 +159,19 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
   pdf.setDrawColor(currentTheme.primary[0], currentTheme.primary[1], currentTheme.primary[2]);
   pdf.setLineWidth(0.5);
   pdf.setFillColor(255, 255, 255);
-  pdf.roundedRect(20, yPosition, pageWidth - 40, quizCardHeight, 4, 4, 'FD');
-  
+  pdf.roundedRect(25, yPosition, pageWidth - 50, quizCardHeight, 4, 4, 'FD');
+
   // Card shadow effect
   pdf.setFillColor(0, 0, 0);
   pdf.setGState(pdf.GState({ opacity: 0.08 }));
-  pdf.roundedRect(20.5, yPosition + 0.5, pageWidth - 40, quizCardHeight, 4, 4, 'F');
+  pdf.roundedRect(25.5, yPosition + 0.5, pageWidth - 50, quizCardHeight, 4, 4, 'F');
   pdf.setGState(pdf.GState({ opacity: 1 }));
-  
+
   // Section header bar
   pdf.setFillColor(currentTheme.accent[0], currentTheme.accent[1], currentTheme.accent[2]);
-  pdf.roundedRect(20, yPosition, pageWidth - 40, 12, 4, 4, 'F');
+  pdf.roundedRect(25, yPosition, pageWidth - 50, 12, 4, 4, 'F');
   pdf.setFillColor(255, 255, 255);
-  pdf.rect(20, yPosition + 8, pageWidth - 40, 4, 'F');
+  pdf.rect(25, yPosition + 8, pageWidth - 50, 4, 'F');
   
   pdf.setFontSize(16);
   pdf.setFont('helvetica', 'bold');
@@ -428,7 +444,8 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
     pdf.roundedRect(pageWidth / 2 - 70, yPosition, 140, 6, 4, 4, 'F');
     pdf.setFillColor(255, 250, 240);
     pdf.rect(pageWidth / 2 - 70, yPosition + 3, 140, 3, 'F');
-    
+    drawMedal(pageWidth / 2 - 58, yPosition + 19, 7, [218, 165, 32], '1');
+
     pdf.setFontSize(14);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(218, 165, 32);
@@ -455,17 +472,18 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
       pdf.roundedRect(40, yPosition, (pageWidth / 2) - 65, 5, 3, 3, 'F');
       pdf.setFillColor(248, 248, 248);
       pdf.rect(40, yPosition + 2.5, (pageWidth / 2) - 65, 2.5, 'F');
-      
+      drawMedal(50, yPosition + 14, 5.5, [169, 169, 169], '2');
+
       pdf.setFontSize(11);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(169, 169, 169);
-      pdf.text('2ND PLACE', 45, yPosition + 11);
+      pdf.text('2ND PLACE', 60, yPosition + 11);
       pdf.setFontSize(10);
       pdf.setTextColor(40, 40, 40);
-      pdf.text(fitText(secondPlace.name, (pageWidth / 2) - 78, measure), 45, yPosition + 17);
+      pdf.text(fitText(secondPlace.name, (pageWidth / 2) - 78, measure), 60, yPosition + 17);
       pdf.setFontSize(9);
       pdf.setTextColor(100, 100, 100);
-      pdf.text(`${(secondPlace.score || 0).toLocaleString()} pts`, 45, yPosition + 21);
+      pdf.text(`${(secondPlace.score || 0).toLocaleString()} pts`, 60, yPosition + 21);
 
       if (sortedPlayers.length > 2) {
         const thirdPlace = sortedPlayers[2];
@@ -480,17 +498,18 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
         pdf.roundedRect(pageWidth / 2 + 20, yPosition, (pageWidth / 2) - 65, 5, 3, 3, 'F');
         pdf.setFillColor(250, 240, 230);
         pdf.rect(pageWidth / 2 + 20, yPosition + 2.5, (pageWidth / 2) - 65, 2.5, 'F');
-        
+        drawMedal(pageWidth / 2 + 30, yPosition + 14, 5.5, [205, 127, 50], '3');
+
         pdf.setFontSize(11);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(205, 127, 50);
-        pdf.text('3RD PLACE', pageWidth / 2 + 25, yPosition + 11);
+        pdf.text('3RD PLACE', pageWidth / 2 + 40, yPosition + 11);
         pdf.setFontSize(10);
         pdf.setTextColor(40, 40, 40);
-        pdf.text(fitText(thirdPlace.name, (pageWidth / 2) - 78, measure), pageWidth / 2 + 25, yPosition + 17);
+        pdf.text(fitText(thirdPlace.name, (pageWidth / 2) - 78, measure), pageWidth / 2 + 40, yPosition + 17);
         pdf.setFontSize(9);
         pdf.setTextColor(100, 100, 100);
-        pdf.text(`${(thirdPlace.score || 0).toLocaleString()} pts`, pageWidth / 2 + 25, yPosition + 21);
+        pdf.text(`${(thirdPlace.score || 0).toLocaleString()} pts`, pageWidth / 2 + 40, yPosition + 21);
       }
       yPosition += 34;
     }
@@ -553,8 +572,16 @@ export const generateEnhancedPDF = async (data: PdfData, branding?: PdfBranding)
       } else if (index === 2) {
         pdf.setTextColor(205, 127, 50); // Bronze
       }
+      const medalColors: Rgb[] = [[218, 165, 32], [169, 169, 169], [205, 127, 50]];
+      drawMedal(28, yPosition + 3.5, 2.5, medalColors[index], '');
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'bold');
     }
-    
+
+    if (index === 0) pdf.setTextColor(218, 165, 32);
+    else if (index === 1) pdf.setTextColor(169, 169, 169);
+    else if (index === 2) pdf.setTextColor(205, 127, 50);
+    else pdf.setTextColor(80, 80, 80);
     pdf.text(`#${index + 1}`, 32, yPosition + 5);
     pdf.text(fitText(player.name, 95, measure), 75, yPosition + 5);
     pdf.text((player.score || 0).toLocaleString(), 175, yPosition + 5);
