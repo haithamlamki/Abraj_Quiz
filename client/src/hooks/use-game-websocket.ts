@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { WsServerMessage } from "@shared/ws-protocol";
+import { resolveGameCacheAction, type CachedGameLike } from "@/lib/game-ws-cache";
 import { getAuthToken } from "@/lib/authToken";
 import { reconnectDelayMs, shouldReconnect } from "@/lib/ws-reconnect";
 
@@ -106,6 +107,21 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
           const message = JSON.parse(event.data) as WsServerMessage;
           console.log("WebSocket message received:", message.type);
 
+          // Game-carrying broadcasts are applied to the cache directly —
+          // refetching here made every transition cost a round trip and made
+          // the host (whose own mutation invalidation cancel-restarted the
+          // refetch) render each question AFTER the players. Refetch only
+          // when the push can't cover us (see resolveGameCacheAction).
+          const cacheAction = resolveGameCacheAction(
+            message,
+            queryClient.getQueryData<CachedGameLike>(["/api/games", gamePin]),
+          );
+          if (cacheAction.kind === "set") {
+            queryClient.setQueryData(["/api/games", gamePin], cacheAction.game);
+          } else if (cacheAction.kind === "invalidate") {
+            queryClient.invalidateQueries({ queryKey: ["/api/games", gamePin] });
+          }
+
           switch (message.type) {
             case "joined":
               console.log("Successfully joined game via WebSocket");
@@ -113,19 +129,17 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
 
             case "game_updated":
             case "game_started":
+              break;
+
             case "next_question":
-              // Invalidate game query to trigger refetch with new data
-              queryClient.invalidateQueries({ queryKey: ["/api/games", gamePin] });
-              if (message.type === "next_question") {
-                setRuntimeState({
-                  status: "idle",
-                  questionIndex: null,
-                  timeRemaining: null,
-                });
-                queryClient.invalidateQueries({ 
-                  queryKey: ["/api/games", gamePin, "question-results"] 
-                });
-              }
+              setRuntimeState({
+                status: "idle",
+                questionIndex: null,
+                timeRemaining: null,
+              });
+              queryClient.invalidateQueries({
+                queryKey: ["/api/games", gamePin, "question-results"]
+              });
               break;
 
             case "question_started":
@@ -134,7 +148,6 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
                 questionIndex: message.questionIndex,
                 timeRemaining: message.timeRemaining,
               });
-              queryClient.invalidateQueries({ queryKey: ["/api/games", gamePin] });
               break;
 
             case "time_remaining":
@@ -158,9 +171,8 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
                 totalResponses: message.distribution.totalResponses,
                 players: message.players,
               });
-              queryClient.invalidateQueries({ queryKey: ["/api/games", gamePin] });
-              queryClient.invalidateQueries({ 
-                queryKey: ["/api/games", gamePin, "question-results"] 
+              queryClient.invalidateQueries({
+                queryKey: ["/api/games", gamePin, "question-results"]
               });
               break;
 
@@ -170,7 +182,6 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
                 status: "completed",
                 timeRemaining: 0,
               }));
-              queryClient.invalidateQueries({ queryKey: ["/api/games", gamePin] });
               break;
 
             case "error":

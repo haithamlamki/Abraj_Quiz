@@ -121,8 +121,16 @@ export default function HostGame() {
       const response = await apiRequest("POST", `/api/games/${pin}/start`, {});
       return response.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/games", pin] });
+    onSuccess: (game) => {
+      // The response body IS the started game snapshot — apply it directly.
+      // Invalidating here cancel-restarted the refetch the game_started
+      // broadcast had already begun, so the host's screen flipped to Q1 a
+      // round trip AFTER every player's.
+      if (game?.gamePin) {
+        queryClient.setQueryData(["/api/games", pin], game);
+      } else {
+        queryClient.invalidateQueries({ queryKey: ["/api/games", pin] });
+      }
       toast({
         title: t("host.gameStartedTitle"),
         description: t("host.gameStartedDescription"),
@@ -149,7 +157,12 @@ export default function HostGame() {
       if (data.gameComplete) {
         setLocation(`/results/${pin}`);
       } else {
-        queryClient.invalidateQueries({ queryKey: ["/api/games", pin] });
+        // Same as start: the advance response carries the updated snapshot.
+        if (data.game?.gamePin) {
+          queryClient.setQueryData(["/api/games", pin], data.game);
+        } else {
+          queryClient.invalidateQueries({ queryKey: ["/api/games", pin] });
+        }
         setShowResults(false);
         // timeLeft is owned by the runtimeState effect below. Nulling it here
         // races the question_started broadcast: for no-limit questions there
