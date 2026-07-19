@@ -3,7 +3,9 @@ import { useRoute, Link } from "wouter";
 import { useTranslation } from "react-i18next";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { downloadFile } from "@/lib/download";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import {
@@ -40,6 +42,13 @@ export default function QuizInsightsPage() {
     enabled: !!quizId,
   });
 
+  const { toast } = useToast();
+  const lang = i18n.language.startsWith("ar") ? "ar" : "en";
+  const download = async (path: string, filename: string) => {
+    const ok = await downloadFile(`${path}?lang=${lang}`, filename);
+    if (!ok) toast({ title: t("reports.failedTitle"), variant: "destructive" });
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -69,6 +78,17 @@ export default function QuizInsightsPage() {
         <div className="flex items-center gap-3">
           <Link href="/my-quizzes"><Button variant="ghost" size="sm" data-testid="button-back-insights"><ArrowLeft className="w-4 h-4 me-1 rtl:rotate-180" />{t("insights.myQuizzes")}</Button></Link>
           <h1 className="text-2xl font-bold">{t("insights.title")}</h1>
+          <div className="ms-auto flex items-center gap-2">
+            <span className="text-sm text-gray-500 hidden sm:inline">{t("reports.downloadTitle")}</span>
+            <Button variant="outline" size="sm" data-testid="button-quiz-report-xlsx"
+              onClick={() => download(`/api/quizzes/${quizId}/report.xlsx`, `quiz-${quizId}-report.xlsx`)}>
+              <Download className="w-4 h-4 me-1" /> {t("reports.excel")}
+            </Button>
+            <Button variant="outline" size="sm" data-testid="button-quiz-report-csv"
+              onClick={() => download(`/api/quizzes/${quizId}/report.csv`, `quiz-${quizId}-report.csv`)}>
+              <Download className="w-4 h-4 me-1" /> {t("reports.csv")}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -116,7 +136,8 @@ export default function QuizInsightsPage() {
                     <th className="py-2 pe-4">{t("insights.pin")}</th>
                     <th className="py-2 pe-4">{t("insights.date")}</th>
                     <th className="py-2 pe-4">{t("insights.players")}</th>
-                    <th className="py-2">{t("insights.avgScore")}</th>
+                    <th className="py-2 pe-4">{t("insights.avgScore")}</th>
+                    <th className="py-2 text-end">{t("reports.downloadTitle")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -125,7 +146,17 @@ export default function QuizInsightsPage() {
                       <td className="py-2 pe-4 font-mono">{g.gamePin}</td>
                       <td className="py-2 pe-4">{g.createdAt ? formatQuizDate(g.createdAt, i18n.language) : "—"}</td>
                       <td className="py-2 pe-4">{g.playerCount}</td>
-                      <td className="py-2">{Math.round(g.avgScore)}</td>
+                      <td className="py-2 pe-4">{Math.round(g.avgScore)}</td>
+                      <td className="py-2 text-end whitespace-nowrap">
+                        <Button variant="ghost" size="sm" className="h-7 px-2" data-testid={`button-game-report-xlsx-${g.id}`}
+                          onClick={() => download(`/api/games/${g.gamePin}/report.xlsx`, `game-${g.gamePin}-report.xlsx`)}>
+                          {t("reports.excel")}
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-7 px-2" data-testid={`button-game-report-csv-${g.id}`}
+                          onClick={() => download(`/api/games/${g.gamePin}/report.csv`, `game-${g.gamePin}-report.csv`)}>
+                          {t("reports.csv")}
+                        </Button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
