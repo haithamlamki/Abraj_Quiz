@@ -96,19 +96,30 @@ jobs:
       - name: Apply schema (drizzle-kit push)
         run: npx drizzle-kit push --force
 
-      - name: Apply RLS migrations (match production security setup)
-        # drizzle-kit push creates the tables but NOT the hand-written security
-        # layer: the RLS functions/policies (0003), the quiz_app role (0005), and
-        # game_players' FORCE RLS + tenant_isolation policy (0006). Apply them so
-        # the integration + migration tests verify the REAL tenant-isolation
-        # setup rather than a bare schema. The ephemeral CI DB is fresh, so
-        # pre-create the Supabase-style roles the migrations revoke from / grant
-        # to (anon, authenticated); 0005 creates quiz_app itself.
+      - name: Apply hand-written migrations (match production security setup)
+        # drizzle-kit push creates the tables but NOT the hand-written layer:
+        # RLS functions/policies, roles, GRANTs, and non-schema indexes (e.g.
+        # bank_questions_tags_gin). Apply every hand-written migration from
+        # 0003 on — they are all idempotent against a pushed schema — so the
+        # integration + migration tests verify the REAL tenant-isolation setup
+        # rather than a bare schema. The ephemeral CI DB is fresh, so
+        # pre-create the Supabase-style roles the migrations revoke from /
+        # grant to (anon, authenticated); 0005 creates quiz_app itself.
+        # NOTE: new migrations must be added here or the migration tests fail.
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c "create role anon; create role authenticated;"
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/0003_rls.sql
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/0005_quiz_app_role.sql
-          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f migrations/0006_game_players.sql
+          for f in migrations/0003_rls.sql \
+                   migrations/0005_quiz_app_role.sql \
+                   migrations/0006_game_players.sql \
+                   migrations/0007_quiz_theme.sql \
+                   migrations/0008_quiz_soft_delete.sql \
+                   migrations/0009_question_bank.sql \
+                   migrations/0010_game_question_snapshot.sql \
+                   migrations/0011_quiz_versioning.sql \
+                   migrations/0012_audit_log.sql; do
+            echo "--- applying $f"
+            psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f "$f"
+          done
 
       - name: Seed CI tenant
         # tenantMiddleware resolves req.tenant from Origin/Host; with an empty

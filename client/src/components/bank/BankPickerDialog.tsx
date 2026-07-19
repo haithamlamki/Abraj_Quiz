@@ -102,8 +102,8 @@ export function BankPickerDialog({ open, onOpenChange, onAdd }: BankPickerDialog
             <p className="text-sm text-gray-500 text-center py-8">{t("editor.bank.pickerEmpty")}</p>
           ) : (
             (rows ?? []).map((row) => (
-              <label key={row.id} className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer hover:bg-gray-50">
-                <Checkbox checked={selected.has(row.id)} onCheckedChange={() => toggleRow(row.id)} className="mt-0.5" />
+              <label key={row.id} htmlFor={`bank-pick-${row.id}`} className="flex items-start gap-3 rounded-lg border p-3 cursor-pointer hover:bg-gray-50">
+                <Checkbox id={`bank-pick-${row.id}`} checked={selected.has(row.id)} onCheckedChange={() => toggleRow(row.id)} className="mt-0.5" />
                 <div className="min-w-0">
                   <div className="text-sm font-medium line-clamp-2">{row.question.question}</div>
                   <div className="flex flex-wrap gap-1 mt-1">

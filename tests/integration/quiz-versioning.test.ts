@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { pool } from "../../server/db";
 import {
   assertServerUp, cleanupTestData, createTestQuiz, createTestUser, endPool,
-  type TestAgent, type TestQuiz,
+  type TestQuiz,
 } from "./helpers";
 
 // Verifies migration 0011_quiz_versioning.sql + the versioned save path.

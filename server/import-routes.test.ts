@@ -12,7 +12,7 @@ process.env.DATABASE_URL ||= "postgres://user:pass@localhost:5432/test";
 process.env.OPENAI_API_KEY ||= "sk-test-not-a-real-key";
 
 const { registerImportRoutes } = await import("./import-routes");
-const { buildTemplateXlsx, buildTemplateCsv } = await import("./import-service");
+const { buildTemplateXlsx } = await import("./import-service");
 const { extractedQuizSchema } = await import("@shared/schema");
 
 const passThrough = (_req: any, _res: any, next: any) => next();
