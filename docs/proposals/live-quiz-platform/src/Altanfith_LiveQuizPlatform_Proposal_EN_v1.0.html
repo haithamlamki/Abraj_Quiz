@@ -94,7 +94,7 @@ Sultanate of Oman</p>
 <p><strong>[Client Name]</strong> can choose how the platform is hosted and delivered. Three deployment models are available: a fully managed cloud/SaaS option, a fully on-premises option in which the Express.js backend runs entirely within the client's own infrastructure, and a hybrid option that splits components between the two — the right choice depends on <strong>[Client Name]</strong>'s data residency, network, and cybersecurity requirements, and is confirmed through a dedicated infrastructure assessment rather than assumed in advance. Commercially, the platform is available under three models — an annual SaaS subscription, a one-time perpetual license, and an enterprise custom development partnership — so that <strong>[Client Name]</strong> can select the ownership and cost structure that best fits its procurement approach.</p>
 <p>Underpinning all of this is the fact that Altanfith Aldwaliah SPC is an Omani company: delivery, support, and communication happen locally, in Arabic and English, without the delays or handover friction that come with an offshore vendor. This local presence supports the value of the platform — it is the foundation the offer is delivered on, not the offer itself.</p>
 <table>
-<tr><th>Proposal at a glance</th><th></th></tr>
+<tr><th colspan="2">Proposal at a glance</th></tr>
 <tr><td><strong>Solution</strong></td><td>Enterprise engagement, assessment &amp; analytics platform — Live Quiz Platform</td></tr>
 <tr class="alt"><td><strong>Proven use</strong></td><td>In production at Abraj Energy Services — HSE meetings &amp; engagement sessions with 100+ live participants</td></tr>
 <tr><td><strong>Deployment</strong></td><td>Cloud/SaaS, fully on-premises, or hybrid — confirmed via infrastructure assessment</td></tr>
@@ -176,7 +176,7 @@ Sultanate of Oman</p>
 <h1>12. Current Use Case</h1>
 <p>The Live Quiz Platform is not a concept, prototype, or proof of demonstration — it is in real, ongoing operational use today.</p>
 <p>The platform is currently deployed and actively used within <strong>Abraj Energy Services</strong>, where it supports HSE (Health, Safety, and Environment) meetings and employee engagement activities. Live sessions run on the platform have brought together more than 100 participants at once, joining and answering in real time within a single session.</p>
-<p>We present this use case as evidence that the core platform — live session hosting, real-time participation at meaningful scale, and the underlying engagement experience — is production-proven and functioning in a real organizational setting, rather than as a marketing claim or a controlled demonstration environment. We have not included any additional client references, dates, or testimonial statements beyond what is described above, and we will not represent any other deployment as a live production reference unless and until it is one.</p>
+<p>We present this use case as evidence that the core platform — live session hosting, real-time participation at meaningful scale, and the underlying engagement experience — is production-proven and functioning in a real organizational setting, rather than as a marketing claim or a controlled demonstration environment. We have not included any additional client references, dates, or testimonial statements beyond what is described above, All references in this proposal are drawn from this production deployment.</p>
 
 <h1>13. Functional Scope</h1>
 <p>The tables below set out the platform's functional scope in full, grouped into six capability areas. Each capability is marked with its current status: <span class="badge-inc">Included</span> capabilities are part of the core platform today; <span class="badge-opt">Optional</span> capabilities are available as scoped additions; <span class="badge-fut">Future enhancement</span> items are on our roadmap and not part of the current platform.</p>
@@ -365,13 +365,13 @@ Sultanate of Oman</p>
 <p>The diagram below shows the platform's core request and real-time data flow, followed by the three supported deployment variants.</p>
 <table>
 <tr>
-<td style="text-align:center;border:1pt solid #0B2239;width:22%;"><strong>Browser</strong><br>(Host &amp; Participants)</td>
+<td style="text-align:center;border:1pt solid #0B2239;width:21%;"><strong>Browser</strong><br>(Host &amp; Participants)</td>
 <td style="text-align:center;border:none;width:6%;font-size:14pt;">⇄</td>
-<td style="text-align:center;border:1pt solid #0B2239;width:18%;"><strong>HTTPS / WSS</strong></td>
+<td style="text-align:center;border:1pt solid #0B2239;width:17%;"><strong>HTTPS / WSS</strong></td>
 <td style="text-align:center;border:none;width:6%;font-size:14pt;">⇄</td>
-<td style="text-align:center;border:1pt solid #0B2239;width:26%;"><strong>Express.js API</strong><br>+ WebSocket server</td>
-<td style="text-align:center;border:none;width:6%;font-size:14pt;">⇄</td>
-<td style="text-align:center;border:1pt solid #0B2239;width:22%;"><strong>PostgreSQL</strong><br>(row-level tenant isolation)</td>
+<td style="text-align:center;border:1pt solid #0B2239;width:24%;"><strong>Express.js API</strong><br>+ WebSocket server</td>
+<td style="text-align:center;border:none;width:5%;font-size:14pt;">⇄</td>
+<td style="text-align:center;border:1pt solid #0B2239;width:21%;"><strong>PostgreSQL</strong><br>(row-level tenant isolation)</td>
 </tr>
 </table>
 <p class="muted">Browser clients communicate with the Express.js API and WebSocket server over HTTPS and secure WebSockets (WSS); the application server is the sole component with direct database access.</p>
@@ -413,7 +413,7 @@ Sultanate of Oman</p>
 <h2>19.2 On-Premises</h2>
 <p>The Express.js backend runs on the client's own internal servers or private cloud — a public cloud environment is not required. The platform's backend has been built to run within a range of internal environments, including:</p>
 <table>
-<tr><th>Supported Environment</th><th></th></tr>
+<tr><th colspan="2">Supported Environment</th></tr>
 <tr><td>Client data center</td><td>Internal servers</td></tr>
 <tr class="alt"><td>Private cloud</td><td>Virtual machines</td></tr>
 <tr><td>Docker containers</td><td>Kubernetes</td></tr>

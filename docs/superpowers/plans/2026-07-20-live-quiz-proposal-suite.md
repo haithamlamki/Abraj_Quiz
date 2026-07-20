@@ -68,7 +68,7 @@ Shared `<style>` block — embed in every document `<head>` (identical EN/AR exc
 
 ```css
 body { font-family:"Segoe UI",Calibri,Arial,sans-serif; font-size:10.5pt; color:#1F2933; line-height:1.45; }
-h1 { font-size:18pt; color:#0B2239; border-bottom:2pt solid #0FA3A3; padding-bottom:4pt; page-break-before:always; }
+h1 { font-size:18pt; color:#0B2239; border-bottom:2pt solid #0FA3A3; padding-bottom:4pt; margin-top:20pt; page-break-inside:avoid; page-break-after:avoid; }
 h2 { font-size:13pt; color:#0B2239; margin-top:14pt; }
 h3 { font-size:11.5pt; color:#155E63; }
 p  { margin:6pt 0; }
@@ -76,7 +76,7 @@ table { border-collapse:collapse; width:100%; margin:8pt 0; }
 th { background:#0B2239; color:#ffffff; padding:5pt 6pt; border:1pt solid #0B2239; text-align:left; font-size:9.5pt; }
 td { padding:5pt 6pt; border:1pt solid #D5DBE1; vertical-align:top; font-size:9.5pt; }
 tr.alt td { background:#F2F4F7; }
-.pb { page-break-after:always; }
+.pb { page-break-before:always; }
 table.cover td, table.divider td { border:none; background:#0B2239; color:#ffffff; padding:36pt; }
 table.cover td { padding:60pt 40pt; }
 .tag { color:#0FA3A3; }
