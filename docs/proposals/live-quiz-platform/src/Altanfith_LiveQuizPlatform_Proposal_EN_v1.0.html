@@ -5,7 +5,7 @@
 <title>Live Quiz Platform — Technical &amp; Commercial Proposal</title>
 <style>
 body { font-family:"Segoe UI",Calibri,Arial,sans-serif; font-size:10.5pt; color:#1F2933; line-height:1.45; }
-h1 { font-size:18pt; color:#0B2239; border-bottom:2pt solid #0FA3A3; padding-bottom:4pt; page-break-before:always; }
+h1 { font-size:18pt; color:#0B2239; border-bottom:2pt solid #0FA3A3; padding-bottom:4pt; margin-top:20pt; page-break-inside:avoid; page-break-after:avoid; }
 h2 { font-size:13pt; color:#0B2239; margin-top:14pt; }
 h3 { font-size:11.5pt; color:#155E63; }
 p  { margin:6pt 0; }
@@ -13,7 +13,7 @@ table { border-collapse:collapse; width:100%; margin:8pt 0; }
 th { background:#0B2239; color:#ffffff; padding:5pt 6pt; border:1pt solid #0B2239; text-align:left; font-size:9.5pt; }
 td { padding:5pt 6pt; border:1pt solid #D5DBE1; vertical-align:top; font-size:9.5pt; }
 tr.alt td { background:#F2F4F7; }
-.pb { page-break-after:always; }
+.pb { page-break-before:always; }
 table.cover td, table.divider td { border:none; background:#0B2239; color:#ffffff; padding:36pt; }
 table.cover td { padding:60pt 40pt; }
 .tag { color:#0FA3A3; }
@@ -41,7 +41,7 @@ table.kv td { border:none; padding:2pt 6pt; }
 </td></tr>
 </table>
 
-<h1>2. Confidentiality Notice</h1>
+<h1 class="pb">2. Confidentiality Notice</h1>
 <div class="notice">
 <p>This document and all information contained within it constitute confidential commercial and technical information of Altanfith Aldwaliah SPC. It is provided exclusively for the use of <strong>[Client Name]</strong> for the purpose of evaluating the Live Quiz Platform solution described herein.</p>
 </div>
@@ -143,7 +143,7 @@ Sultanate of Oman</p>
 </td></tr>
 </table>
 
-<h1>10. Proposed Solution</h1>
+<h1 class="pb">10. Proposed Solution</h1>
 <p>Altanfith Aldwaliah SPC proposes the Live Quiz Platform as a single platform that brings together live engagement, structured assessment, and organizational analytics, so that <strong>[Client Name]</strong> does not need to operate separate tools for running a live session, evaluating knowledge, and reporting on the results.</p>
 <p>The platform is designed to support a broad range of use cases across a large organization, from safety and training activities to recruitment and internal communication. The table below reflects the categories of use the platform is built to support; the specific mix relevant to <strong>[Client Name]</strong> can be confirmed during discovery.</p>
 <table>
@@ -348,7 +348,7 @@ Sultanate of Oman</p>
 </td></tr>
 </table>
 
-<h1>17. Technical Architecture</h1>
+<h1 class="pb">17. Technical Architecture</h1>
 <p>The Live Quiz Platform is built on a modern, well-established web application stack, selected for reliability, security, and the ability to run in cloud, on-premises, or hybrid environments without architectural rework.</p>
 <h2>17.1 Technology Stack</h2>
 <table>
@@ -440,7 +440,7 @@ Sultanate of Oman</p>
 <p>These controls are designed to align with recognized good practice and with awareness of the OWASP Top 10 — not represented as certified or compliant. Final acceptance is confirmed through <strong>[Client Name]</strong>'s own security assessment (Phase 3, Section 25); the security architecture is only finalized once client-approved. Formal penetration testing is available as an <span class="badge-opt">optional service</span>, quoted separately (Section 33); it is not included in the base engagement.</p>
 
 <h1>21. Data Protection</h1>
-<p>Data protection builds on the data lifecycle and resilience controls introduced in Section 20 (Domain 5), and describes, in more detail, how <strong>[Client Name]</strong>'s data is backed up, retained, deleted, and exported. No guarantee of zero downtime or zero data loss is made; the platform is designed to align with sound backup, retention, and recovery practice within the parameters agreed with <strong>[Client Name]</strong>.</p>
+<p>Data protection builds on the data lifecycle and resilience controls introduced in Section 20 (Domain 5), and describes, in more detail, how <strong>[Client Name]</strong>'s data is backed up, retained, deleted, and exported. Availability and data-durability commitments are not presented as absolutes; they are defined in the agreed SLA, and the platform is designed to align with sound backup, retention, and recovery practice within the parameters agreed with <strong>[Client Name]</strong>.</p>
 <table>
 <tr><th>Aspect</th><th>Approach</th></tr>
 <tr><td>Backups</td><td>Operated under a defined backup policy; frequency, encryption, and retention arrangements are confirmed as part of the applicable deployment option (Section 19) and the commercial agreement</td></tr>
@@ -489,7 +489,7 @@ Sultanate of Oman</p>
 <li>Real-time functionality requires proper network and server configuration to perform as designed.</li>
 <li>Performance monitoring may be included as part of the applicable support and maintenance package (see Section 31).</li>
 </ul>
-<p>Altanfith Aldwaliah SPC does not make claims of unlimited scalability. Performance at higher concurrency levels than those referenced above should be validated through load testing scoped to <strong>[Client Name]</strong>'s specific requirements before a large-scale go-live.</p>
+<p>Scaling beyond the levels referenced above is planned and validated against concurrency targets confirmed with <strong>[Client Name]</strong> during discovery, rather than presented as an open-ended capability. Performance at higher concurrency levels than those referenced above should be validated through load testing scoped to <strong>[Client Name]</strong>'s specific requirements before a large-scale go-live.</p>
 
 <table class="divider pb">
 <tr><td>
@@ -499,7 +499,7 @@ Sultanate of Oman</p>
 </td></tr>
 </table>
 
-<h1>25. Implementation Methodology</h1>
+<h1 class="pb">25. Implementation Methodology</h1>
 <p>Altanfith Aldwaliah SPC delivers the Live Quiz Platform through a structured, 17-phase methodology, designed to take <strong>[Client Name]</strong> from initial requirements through to a supported, live production system with clear exit criteria at each stage.</p>
 <table>
 <tr><th>Phase</th><th>Purpose &amp; Key Activities</th><th>Exit Criteria</th></tr>
