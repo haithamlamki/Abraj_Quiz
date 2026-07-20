@@ -265,5 +265,366 @@ Sultanate of Oman</p>
 <tr><td>AI-assisted content generation</td><td>Generate quizzes from a topic, an uploaded PDF or Word document, a URL, or pasted text, with administrator review before use. The full classification of current, optional, and future AI capabilities is set out in Section 14 (AI Capabilities)</td><td>See Section 14</td></tr>
 </table>
 
+<h1>14. AI Capabilities</h1>
+<p>The Live Quiz Platform includes AI-assisted content generation as a core, already-implemented capability, alongside a further set of AI features that are available as optional, separately scoped additions, and a set of AI-driven reporting capabilities that sit on our future roadmap. This section sets out the distinction clearly, so that <strong>[Client Name]</strong> can see exactly what is included today, what can be added, and what is planned for the future.</p>
+
+<h2>14.1 Current Capabilities (Included)</h2>
+<table>
+<tr><th>Capability</th><th>Description</th><th>Status</th></tr>
+<tr><td>Quiz generation from a topic or title</td><td>A complete quiz, including questions and answer choices, is generated from a short topic or title prompt</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Quiz generation from an uploaded PDF</td><td>Questions are generated directly from the content of an uploaded PDF document</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>Quiz generation from an uploaded document</td><td>Questions are generated directly from the content of an uploaded Word document</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Quiz generation from a URL</td><td>Questions are generated from the content of a supplied URL or webpage</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>Quiz generation from pasted text</td><td>Questions are generated directly from text pasted into the platform</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>AI-assigned difficulty levels</td><td>Generated questions are automatically assigned a suggested difficulty level</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>AI-generated answer explanations</td><td>Generated questions include a suggested explanation for the correct answer</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Administrator review before use</td><td>All AI-generated content is presented to an administrator for review and editing before it is used in a live session or published to a question bank</td><td><span class="badge-inc">Included</span></td></tr>
+</table>
+
+<h2>14.2 Optional Capabilities (Scoped per Engagement)</h2>
+<p>The following AI capabilities are not part of the current platform but can be added as a separately scoped engagement.</p>
+<table>
+<tr><th>Capability</th><th>Description</th><th>Status</th></tr>
+<tr><td>AI question suggestions</td><td>AI-suggested questions offered while an administrator authors a quiz manually</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr class="alt"><td>AI answer suggestions</td><td>AI-suggested answer choices for a manually authored question</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr><td>AI question rewriting</td><td>AI-assisted rewriting of existing question text for clarity or tone</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr class="alt"><td>AI-assisted difficulty re-adjustment</td><td>AI-assisted review and re-adjustment of difficulty levels across an existing question bank</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr><td>AI-generated quiz backgrounds</td><td>AI-generated background imagery for quizzes and sessions</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr class="alt"><td>AI-generated themes</td><td>AI-generated visual themes for the platform interface</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr><td>AI-assisted result summaries</td><td>AI-assisted narrative summary of a single session's results</td><td><span class="badge-opt">Optional</span></td></tr>
+</table>
+
+<h2>14.3 Future Roadmap</h2>
+<table>
+<tr><th>Capability</th><th>Description</th><th>Status</th></tr>
+<tr><td>AI-assisted insights over historical results</td><td>AI-generated narrative insights and trend analysis across historical session data</td><td><span class="badge-fut">Future enhancement</span></td></tr>
+<tr class="alt"><td>AI-generated management reports</td><td>AI-generated summary reports intended for management-level review</td><td><span class="badge-fut">Future enhancement</span></td></tr>
+</table>
+
+<p class="notice">AI features are delivered using a commercial large-language-model API; usage allowances, and any associated API costs, are defined in the applicable commercial model (see Section 33). Cloud-based AI generation requires internet connectivity. A private, on-premises AI deployment is a future roadmap option that would depend on separate, dedicated infrastructure and is not part of the current platform. As with any AI-generated content, <strong>[Client Name]</strong> should review AI-generated quizzes, questions, and summaries before they are used in a live or published context.</p>
+
+<h1>15. User Roles</h1>
+<p>The platform's role-based access model is designed to reflect how a large organization actually assigns administrative and operational responsibility, rather than offering a single flat administrator account.</p>
+<table>
+<tr><th>Role</th><th>Purpose</th></tr>
+<tr><td>Super Administrator</td><td>Full platform administration across all organizations and departments</td></tr>
+<tr class="alt"><td>Organization Administrator</td><td>Manages a single organization, including its users, branding, and content</td></tr>
+<tr><td>Department Administrator</td><td>Manages a department's content and users within an organization</td></tr>
+<tr class="alt"><td>Quiz Creator</td><td>Authors quizzes and question banks</td></tr>
+<tr><td>Trainer</td><td>Runs training-oriented sessions</td></tr>
+<tr class="alt"><td>Host</td><td>Runs live sessions</td></tr>
+<tr><td>Viewer</td><td>Views results</td></tr>
+<tr class="alt"><td>Participant</td><td>Joins and answers in a live session — no account required</td></tr>
+<tr><td>Auditor</td><td>Read-only access to audit and activity logs</td></tr>
+<tr class="alt"><td>Read-Only User</td><td>Read-only access to dashboards and reports</td></tr>
+</table>
+<p class="muted">The final role model applied for <strong>[Client Name]</strong> is configured during discovery, and can be mapped to the client's own directory groups where a single sign-on integration is included in scope (see Section 23).</p>
+
+<h1>16. Reporting and Analytics</h1>
+<p>The platform's reporting and analytics capabilities give administrators and management visibility into participation, performance, and engagement, both at the level of a single session and across the organization's session history over time.</p>
+<table>
+<tr><th>Capability</th><th>Description</th><th>Status</th></tr>
+<tr><td>Quiz result summary</td><td>Summary results at quiz and session level</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Participant ranking</td><td>Ranked results per participant</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>Top performers</td><td>Identification of top-performing participants</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Correct/incorrect answer analysis</td><td>Breakdown of correct versus incorrect responses</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>Question difficulty analysis</td><td>Analysis of question-level difficulty based on response patterns</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Participant completion</td><td>Visibility into who completed a session and who did not</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>Department-level reporting</td><td>Reporting rolled up by department or organizational unit</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Historical reports</td><td>Access to results and reports from past sessions</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>Session comparison</td><td>Comparison of results across multiple sessions</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Export to PDF</td><td>Report export in PDF format</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>Export to Excel &amp; CSV</td><td>Report export in Excel and CSV formats</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Management dashboard</td><td>Consolidated dashboard view for management-level oversight</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>AI-generated insights</td><td>AI-generated narrative insights over historical results</td><td><span class="badge-fut">Future enhancement</span></td></tr>
+</table>
+<p>All PDF, Excel, and CSV exports are compliance-ready: report headers are rendered in both Arabic and English, so that reports generated for <strong>[Client Name]</strong> can be shared and archived internally without additional reformatting, regardless of which language the reviewing team works in.</p>
+
+<table class="divider pb">
+<tr><td>
+<p class="tag" style="font-size:11pt;letter-spacing:2pt;">PART THREE</p>
+<p style="color:#ffffff;margin-top:6pt;font-size:22pt;font-weight:bold;">Technical Architecture</p>
+<p style="font-size:12pt;">How the platform is built, deployed, and secured</p>
+</td></tr>
+</table>
+
+<h1>17. Technical Architecture</h1>
+<p>The Live Quiz Platform is built on a modern, well-established web application stack, selected for reliability, security, and the ability to run in cloud, on-premises, or hybrid environments without architectural rework.</p>
+<h2>17.1 Technology Stack</h2>
+<table>
+<tr><th>Layer</th><th>Technology</th><th>Notes</th></tr>
+<tr><td>Frontend</td><td>React (single-page application)</td><td>Also deployable with Next.js where required by the client's environment</td></tr>
+<tr class="alt"><td>Backend</td><td>Node.js with Express.js</td><td>Exposes a REST API consumed by the frontend</td></tr>
+<tr><td>Authentication</td><td>Token/session-based authentication</td><td>JWT or an equivalent secure token-based system</td></tr>
+<tr class="alt"><td>Database</td><td>PostgreSQL (recommended)</td><td>Enterprise database with row-level, per-organization data isolation; MongoDB may be considered depending on the final architecture agreed with <strong>[Client Name]</strong></td></tr>
+<tr><td>Real-time layer</td><td>WebSockets</td><td>Used for participant joining, live answers, and leaderboard updates; timing and scoring are server-authoritative</td></tr>
+<tr class="alt"><td>Hosting</td><td>Cloud, on-premises, or hybrid</td><td>See Section 19 for the full comparison of deployment options</td></tr>
+</table>
+
+<h2>17.2 Architecture Diagram</h2>
+<p>The diagram below shows the platform's core request and real-time data flow, followed by the three supported deployment variants.</p>
+<table>
+<tr>
+<td style="text-align:center;border:1pt solid #0B2239;width:22%;"><strong>Browser</strong><br>(Host &amp; Participants)</td>
+<td style="text-align:center;border:none;width:6%;font-size:14pt;">⇄</td>
+<td style="text-align:center;border:1pt solid #0B2239;width:18%;"><strong>HTTPS / WSS</strong></td>
+<td style="text-align:center;border:none;width:6%;font-size:14pt;">⇄</td>
+<td style="text-align:center;border:1pt solid #0B2239;width:26%;"><strong>Express.js API</strong><br>+ WebSocket server</td>
+<td style="text-align:center;border:none;width:6%;font-size:14pt;">⇄</td>
+<td style="text-align:center;border:1pt solid #0B2239;width:22%;"><strong>PostgreSQL</strong><br>(row-level tenant isolation)</td>
+</tr>
+</table>
+<p class="muted">Browser clients communicate with the Express.js API and WebSocket server over HTTPS and secure WebSockets (WSS); the application server is the sole component with direct database access.</p>
+<table>
+<tr><th>Deployment Variant</th><th>Application Layer (Frontend + Express.js API)</th><th>Database Layer</th></tr>
+<tr><td>Cloud / SaaS</td><td>Altanfith-managed cloud environment</td><td>Altanfith-managed cloud environment</td></tr>
+<tr class="alt"><td>On-Premises</td><td><strong>[Client Infrastructure]</strong></td><td><strong>[Client Infrastructure]</strong></td></tr>
+<tr><td>Hybrid</td><td>Altanfith-managed cloud environment</td><td><strong>[Client Infrastructure]</strong> (sensitive data remains client-side)</td></tr>
+</table>
+
+<h1>18. Real-Time Architecture</h1>
+<p>Live sessions depend on the platform's real-time layer behaving predictably under load, and behaving fairly for every participant regardless of network conditions. This section describes how that is achieved.</p>
+<h2>18.1 Session Flow</h2>
+<p>A live session follows a consistent, server-driven flow from join through to the final leaderboard.</p>
+<table>
+<tr><th>Step</th><th>What happens</th></tr>
+<tr><td>1. Join</td><td>Participants connect over a WebSocket session as they scan a QR code, follow a direct link, or enter a session PIN; the host's lobby view updates in real time as each participant joins</td></tr>
+<tr class="alt"><td>2. Question broadcast</td><td>When the host opens a question, the server broadcasts the question to all connected participants at the same moment</td></tr>
+<tr><td>3. Answer submission</td><td>Participants submit answers over the WebSocket connection while the question is live; the correct answer is never sent to a participant's device before the question closes</td></tr>
+<tr class="alt"><td>4. Server-side scoring</td><td>The server, not the client, determines when the question closes, evaluates each submitted answer, and calculates the resulting score</td></tr>
+<tr><td>5. Leaderboard push</td><td>Updated rankings are pushed to the host and participant devices in real time once scoring is complete</td></tr>
+</table>
+<h2>18.2 Server-Authoritative Timing, Reconnection, and Why It Matters at Scale</h2>
+<p>Question timing, closure, and scoring are controlled by the server, not by any individual device: participant and host devices render a countdown, an open or closed question, and an updated leaderboard, but they never decide when a question opens or closes and are never trusted with the correct answer before it is safe to reveal it. Where a participant's device loses connectivity mid-session — common in venues with variable Wi-Fi or mobile coverage — the platform automatically attempts to reconnect the session rather than dropping the participant. For a session of the scale described in Section 24, this combination is what keeps a large, live audience in a fair, synchronized session rather than a collection of individually drifting client experiences.</p>
+
+<h1>19. Deployment Options</h1>
+<p><strong>[Client Name]</strong> can choose from three deployment options, so that the choice of hosting model reflects data residency, network, and cybersecurity requirements rather than a one-size-fits-all default.</p>
+<table>
+<tr><th></th><th>Option 1 — SaaS / Cloud</th><th>Option 2 — On-Premises</th><th>Option 3 — Hybrid</th></tr>
+<tr><td><strong>Hosted by</strong></td><td>Altanfith</td><td>Client infrastructure</td><td>Split between Altanfith and client infrastructure</td></tr>
+<tr class="alt"><td><strong>Includes</strong></td><td>Cloud hosting, server &amp; database management, backups, security updates, monitoring, maintenance, technical support, version upgrades, AI usage allowance</td><td>Application deployment, backend installation, database configuration, environment setup, initial cybersecurity configuration, documentation, training, knowledge transfer</td><td>Application components hosted by Altanfith; sensitive data/database remain in the client environment</td></tr>
+<tr><td><strong>Commercials</strong></td><td>Annual subscription; lower initial investment; fastest implementation</td><td>Project fee; optional source-code handover; optional annual maintenance contract</td><td>Per final design</td></tr>
+<tr class="alt"><td><strong>Client provides</strong></td><td>Browser access only</td><td>Hardware, OS, internal networking, data-center requirements (unless in scope)</td><td>Per final design</td></tr>
+</table>
+
+<h2>19.1 Cloud / SaaS</h2>
+<p>Altanfith hosts and manages the full application and database layer, so <strong>[Client Name]</strong> requires only browser access. Hosting, backups, monitoring, security updates, and version upgrades are managed by Altanfith as part of the subscription (Section 33, Model A).</p>
+
+<h2>19.2 On-Premises</h2>
+<p>The Express.js backend runs on the client's own internal servers or private cloud — a public cloud environment is not required. The platform's backend has been built to run within a range of internal environments, including:</p>
+<table>
+<tr><th>Supported Environment</th><th></th></tr>
+<tr><td>Client data center</td><td>Internal servers</td></tr>
+<tr class="alt"><td>Private cloud</td><td>Virtual machines</td></tr>
+<tr><td>Docker containers</td><td>Kubernetes</td></tr>
+<tr class="alt"><td>Linux servers</td><td>Windows Server (subject to technical validation)</td></tr>
+<tr><td colspan="2">Hybrid combinations of the above infrastructure types</td></tr>
+</table>
+<p class="notice">On-premises deployment is <strong>subject to infrastructure assessment</strong>. Network policies, database selection, internal DNS, SSL certificates, firewall configuration, backup procedures, and <strong>[Client Name]</strong>'s cybersecurity requirements are all confirmed during this assessment before deployment proceeds. Altanfith does not promise universal compatibility with every client environment in advance of this assessment.</p>
+
+<h2>19.3 Hybrid</h2>
+<p>A hybrid deployment splits the platform between Altanfith-hosted application components and client-hosted, sensitive data storage. The final design of a hybrid deployment depends on <strong>[Client Name]</strong>'s specific security and integration requirements, and is agreed during discovery and infrastructure assessment rather than fixed in advance.</p>
+
+<h1>20. Cybersecurity</h1>
+<p>The Live Quiz Platform is designed with cybersecurity as a foundational concern rather than an add-on, and its controls are developed with awareness of the OWASP Top 10. At the same time, we are deliberate about how we describe our security posture: the statements in this section describe how the platform is designed and configured, not a formal certification, and final acceptance of the security architecture remains subject to <strong>[Client Name]</strong>'s own cybersecurity assessment.</p>
+<table>
+<tr><th>Domain</th><th>Controls</th></tr>
+<tr><td>1. Encryption &amp; transport</td><td>HTTPS/TLS; encryption in transit; encryption at rest where applicable; backup encryption</td></tr>
+<tr class="alt"><td>2. Identity &amp; access</td><td>Secure (bcrypt) password hashing; role-based access control (RBAC); least-privilege access; strong password policy; multi-factor authentication (<span class="badge-opt">Optional</span>); session management; token expiration; secure API authentication; user account deactivation; regular access reviews; role-validated host-only operations</td></tr>
+<tr><td>3. Application security</td><td>API rate limiting; input validation; output encoding; protection against common web vulnerabilities; secure development practices; developed with awareness of the OWASP Top 10; secure API configuration</td></tr>
+<tr class="alt"><td>4. Audit &amp; monitoring</td><td>Audit logs of administrative actions; login logs; failed-login monitoring; data-access logging; monitoring &amp; alerting; log retention (<strong>[Data Retention Period]</strong>)</td></tr>
+<tr><td>5. Data lifecycle &amp; resilience</td><td>Backup policy; backup retention; disaster recovery planning; business continuity planning; data retention rules; data deletion and export procedures — expanded in Section 21</td></tr>
+<tr class="alt"><td>6. Infrastructure &amp; operations</td><td>Secure environment configuration; firewall configuration; network segmentation (on-premises); per-tenant, row-level data isolation in PostgreSQL; database access restrictions; secrets management; environment-variable management; secure source-code repository; separated dev/test/prod environments</td></tr>
+<tr><td>7. Process</td><td>Change management; incident response; security incident notification; data-breach escalation; secure release process; security patching; vulnerability assessment; penetration testing (<span class="badge-opt">Optional service</span>); client-approved security architecture</td></tr>
+</table>
+<p>These controls are designed to align with recognized good practice and with awareness of the OWASP Top 10 — not represented as certified or compliant. Final acceptance is confirmed through <strong>[Client Name]</strong>'s own security assessment (Phase 3, Section 25); the security architecture is only finalized once client-approved. Formal penetration testing is available as an <span class="badge-opt">optional service</span>, quoted separately (Section 33); it is not included in the base engagement.</p>
+
+<h1>21. Data Protection</h1>
+<p>Data protection builds on the data lifecycle and resilience controls introduced in Section 20 (Domain 5), and describes, in more detail, how <strong>[Client Name]</strong>'s data is backed up, retained, deleted, and exported. No guarantee of zero downtime or zero data loss is made; the platform is designed to align with sound backup, retention, and recovery practice within the parameters agreed with <strong>[Client Name]</strong>.</p>
+<table>
+<tr><th>Aspect</th><th>Approach</th></tr>
+<tr><td>Backups</td><td>Operated under a defined backup policy; frequency, encryption, and retention arrangements are confirmed as part of the applicable deployment option (Section 19) and the commercial agreement</td></tr>
+<tr class="alt"><td>Retention</td><td>Session results, audit logs, and participant records are retained for <strong>[Data Retention Period]</strong>, configurable to support <strong>[Client Name]</strong>'s internal data governance or regulatory requirements, subject to confirmation during discovery</td></tr>
+<tr><td>Deletion</td><td>Follows a defined procedure: soft-delete with archive is available at the content level (Section 13.5); permanent deletion procedures, including at contract termination, are defined in the commercial agreement</td></tr>
+<tr class="alt"><td>Export</td><td>Available on request, and provided as a standard step at contract termination, in an agreed format, so <strong>[Client Name]</strong> is not dependent on continued platform access to retain its own data</td></tr>
+<tr><td>Disaster recovery &amp; business continuity</td><td>Addressed as part of the deployment design and configured to support <strong>[Client Name]</strong>'s requirements; specific recovery time/point objectives are confirmed during discovery and infrastructure assessment and depend on the deployment option selected</td></tr>
+</table>
+
+<h1>22. Data Ownership</h1>
+<p>Ownership of data and intellectual property is set out clearly, so that <strong>[Client Name]</strong> understands exactly what it owns, what Altanfith owns, and how this is affected by the commercial model selected.</p>
+<ul>
+<li>Client data remains the property of <strong>[Client Name]</strong> at all times.</li>
+<li>Altanfith Aldwaliah SPC claims no ownership of client operational data.</li>
+<li>Data export is provided at contract termination, in an agreed format.</li>
+<li>Retention and deletion terms are defined in the commercial agreement.</li>
+<li>For on-premises deployments, data may remain entirely within <strong>[Client Infrastructure]</strong>.</li>
+<li>Intellectual property ownership depends on the commercial model selected (see Section 33).</li>
+<li>Standard platform IP remains with Altanfith Aldwaliah SPC unless transferred by separate agreement.</li>
+<li>Client-specific content — including questions, participant data, and reports — remains the property of <strong>[Client Name]</strong>.</li>
+<li>Source-code ownership is not automatically included, and applies only where it is expressly stated in the commercial agreement.</li>
+</ul>
+
+<h1>23. Integration Options</h1>
+<p>The Live Quiz Platform exposes REST APIs that support integration into <strong>[Client Name]</strong>'s existing systems. Integrations are delivered as scoped work under the Enterprise Custom Development Partnership commercial model (Model C, see Section 33), rather than assumed as part of the base platform, and their final scope is always subject to the availability and technical constraints of the relevant third-party API.</p>
+<table>
+<tr><th>Integration</th><th>Description</th><th>Status</th></tr>
+<tr><td>Single sign-on (Microsoft Entra ID / Active Directory)</td><td>Authentication against the client's existing identity provider, with roles mapped to directory groups</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr class="alt"><td>HR systems</td><td>Integration with the client's HR system, for example for user or organizational-unit synchronization</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr><td>Learning Management System (LMS)</td><td>Integration with the client's LMS for training-related workflows</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr class="alt"><td>Microsoft Teams</td><td>Integration supporting session distribution or notification via Microsoft Teams</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr><td>Power BI</td><td>Integration exposing platform data for consumption in Power BI dashboards</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr class="alt"><td><strong>[Integration System]</strong></td><td>Any additional client system identified during discovery</td><td><span class="badge-opt">Optional</span></td></tr>
+</table>
+<p class="muted">All integrations listed above are optional and subject to the availability, documentation, and technical constraints of the relevant third-party API; final integration scope is confirmed during discovery (see Section 25, Phase 1) and delivered under Phase 8 (Integration Development) of the implementation methodology.</p>
+
+<h1>24. Performance and Scalability</h1>
+<p>Performance and scalability claims for the Live Quiz Platform are grounded in what has actually been observed, rather than presented as an unqualified guarantee.</p>
+<p>The platform has supported <strong>more than 100 participants in a single live session in real production use</strong>, as described in Section 12. In addition to this production track record, internal load exercises have separately validated <strong>400 concurrent participant joins</strong> against the production configuration, giving <strong>[Client Name]</strong> a tested reference point beyond day-to-day operational use.</p>
+<p>Beyond these two reference points, the following considerations apply to any deployment for <strong>[Client Name]</strong>:</p>
+<ul>
+<li>Final concurrency targets are confirmed during discovery, based on <strong>[Concurrent Participants]</strong>.</li>
+<li>Load testing is recommended ahead of any enterprise deployment with a large expected audience.</li>
+<li>Cloud scaling and infrastructure sizing are based on the expected usage profile agreed with <strong>[Client Name]</strong>.</li>
+<li>For on-premises deployments, real-time performance depends on the client's own infrastructure and network configuration.</li>
+<li>Real-time functionality requires proper network and server configuration to perform as designed.</li>
+<li>Performance monitoring may be included as part of the applicable support and maintenance package (see Section 31).</li>
+</ul>
+<p>Altanfith Aldwaliah SPC does not make claims of unlimited scalability. Performance at higher concurrency levels than those referenced above should be validated through load testing scoped to <strong>[Client Name]</strong>'s specific requirements before a large-scale go-live.</p>
+
+<table class="divider pb">
+<tr><td>
+<p class="tag" style="font-size:11pt;letter-spacing:2pt;">PART FOUR</p>
+<p style="color:#ffffff;margin-top:6pt;font-size:22pt;font-weight:bold;">Delivery</p>
+<p style="font-size:12pt;">How Altanfith plans, governs, and delivers the engagement</p>
+</td></tr>
+</table>
+
+<h1>25. Implementation Methodology</h1>
+<p>Altanfith Aldwaliah SPC delivers the Live Quiz Platform through a structured, 17-phase methodology, designed to take <strong>[Client Name]</strong> from initial requirements through to a supported, live production system with clear exit criteria at each stage.</p>
+<table>
+<tr><th>Phase</th><th>Purpose &amp; Key Activities</th><th>Exit Criteria</th></tr>
+<tr><td><strong>1. Discovery &amp; Requirements Gathering</strong></td><td>Structured workshops and stakeholder interviews establish functional, branding, and organizational requirements</td><td>Documented and agreed requirements</td></tr>
+<tr class="alt"><td><strong>2. Technical Assessment</strong></td><td>Reviews <strong>[Client Infrastructure]</strong>, network, and hosting environment</td><td>Assessment report; confirmed deployment option</td></tr>
+<tr><td><strong>3. Cybersecurity Review</strong></td><td>Engages the client's security team on the proposed architecture and controls (Section 20)</td><td>Client-approved security architecture</td></tr>
+<tr class="alt"><td><strong>4. Solution Design</strong></td><td>Translates requirements into a detailed solution design, incl. configuration, branding, and custom/integration scope</td><td>Approved solution design document</td></tr>
+<tr><td><strong>5. UI &amp; Branding Customization</strong></td><td>Applies the client's logo, color palette, themes, and UI text</td><td>Branded environment reviewed by client</td></tr>
+<tr class="alt"><td><strong>6. Configuration</strong></td><td>Configures organizations, departments, user roles, and platform settings</td><td>Configured environment ready for build/test</td></tr>
+<tr><td><strong>7. Custom Development</strong></td><td>Builds agreed custom features, workflows, or reports</td><td>Custom development complete and reviewed</td></tr>
+<tr class="alt"><td><strong>8. Integration Development</strong></td><td>Builds and configures agreed integrations (Section 23)</td><td>Integrations functioning against client systems</td></tr>
+<tr><td><strong>9. Internal Testing</strong></td><td>Functional and regression testing across the configured environment</td><td>Test results reviewed; defects triaged</td></tr>
+<tr class="alt"><td><strong>10. Security Testing</strong></td><td>Security-focused testing against the Section 20 controls</td><td>Testing complete; remediation applied</td></tr>
+<tr><td><strong>11. User Acceptance Testing</strong></td><td>Client tests the platform against agreed acceptance criteria (Section 30)</td><td>UAT sign-off (Milestone M5)</td></tr>
+<tr class="alt"><td><strong>12. Data Migration (if required)</strong></td><td>Migrates agreed legacy data into the platform, where in scope</td><td>Migrated data validated against source</td></tr>
+<tr><td><strong>13. Deployment</strong></td><td>Deploys the platform to the production environment</td><td>Production environment live and verified</td></tr>
+<tr class="alt"><td><strong>14. Training</strong></td><td>Administrator, quiz-creator, and support-team training (Section 29)</td><td>Training completed; materials handed over</td></tr>
+<tr><td><strong>15. Go-Live</strong></td><td>Platform goes live for production use, following successful UAT</td><td>Go-live checklist completed (Milestone M6)</td></tr>
+<tr class="alt"><td><strong>16. Hypercare</strong></td><td>Heightened, close-support monitoring immediately following go-live</td><td>Hypercare completed; no unresolved critical issues</td></tr>
+<tr><td><strong>17. Transition to Support</strong></td><td>Hands the platform from the project team to ongoing support (Section 31)</td><td>Support handover complete (Milestone M7)</td></tr>
+</table>
+
+<h1>26. Project Timeline</h1>
+<p>The table below presents a sample timeline of 6–12 weeks, mapped against the phases described in Section 25.</p>
+<table>
+<tr><th>Weeks</th><th>Phases</th></tr>
+<tr><td>W1–2</td><td>Discovery &amp; Requirements Gathering; Technical Assessment; Cybersecurity Review</td></tr>
+<tr class="alt"><td>W2–4</td><td>Solution Design; UI &amp; Branding Customization</td></tr>
+<tr><td>W3–7</td><td>Configuration; Custom Development; Integration Development</td></tr>
+<tr class="alt"><td>W7–9</td><td>Internal Testing; Security Testing; User Acceptance Testing</td></tr>
+<tr><td>W9–10</td><td>Deployment; Training</td></tr>
+<tr class="alt"><td>W10</td><td>Go-Live</td></tr>
+<tr><td>W10–12</td><td>Hypercare; Transition to Support</td></tr>
+</table>
+<h2>26.1 Milestones</h2>
+<table>
+<tr><th>Milestone</th><th>Description</th><th>Indicative Completion</th><th>Sign-off by</th></tr>
+<tr><td>M1</td><td>Requirements sign-off</td><td>W2</td><td>Client Project Manager</td></tr>
+<tr class="alt"><td>M2</td><td>Solution design approval</td><td>W4</td><td>Client Project Manager</td></tr>
+<tr><td>M3</td><td>Configured &amp; branded environment ready</td><td>W7</td><td>Altanfith Project Manager</td></tr>
+<tr class="alt"><td>M4</td><td>Integrations complete</td><td>W7</td><td>Altanfith Technical Lead</td></tr>
+<tr><td>M5</td><td>UAT sign-off</td><td>W9</td><td>Client Project Manager</td></tr>
+<tr class="alt"><td>M6</td><td>Go-live</td><td>W10</td><td>Project Sponsor</td></tr>
+<tr><td>M7</td><td>Hypercare exit / support handover</td><td>W12</td><td>Client Project Manager &amp; Altanfith Project Manager</td></tr>
+</table>
+<p class="notice">This timeline is indicative only. The actual project timeline for <strong>[Client Name]</strong> depends on the final agreed scope, the number and complexity of integrations, and the timeliness of client approvals at each milestone.</p>
+
+<h1>27. Project Governance</h1>
+<p>The engagement is governed through a clearly defined set of roles and a regular reporting cadence, so that progress, issues, and decisions are visible to both parties throughout delivery.</p>
+<table>
+<tr><th>Role</th><th>Responsibility</th></tr>
+<tr><td>Project Sponsor (client)</td><td>Owns the business case and provides executive-level decisions and escalation support</td></tr>
+<tr class="alt"><td>Client Project Manager</td><td>Coordinates client-side stakeholders, approvals, and resourcing</td></tr>
+<tr><td>Altanfith Project Manager</td><td>Coordinates delivery, reporting, and issue/risk management on behalf of Altanfith</td></tr>
+<tr class="alt"><td>Technical Lead (Altanfith)</td><td>Owns technical design, development, and integration decisions</td></tr>
+<tr><td>Cybersecurity Representative (client)</td><td>Reviews and approves the security architecture and controls</td></tr>
+<tr class="alt"><td>Business Owner (client)</td><td>Confirms functional requirements and acceptance criteria on behalf of the business</td></tr>
+</table>
+<p>Governance is supported by a consistent set of cadence and mechanics: weekly status meetings; regular progress reporting; a maintained issue log and risk log; a formal change-request management process for scope changes; an escalation process running from project manager to project sponsors; and a documented sign-off process at each milestone described in Section 26.</p>
+
+<h1>28. Deliverables</h1>
+<p>The table below lists the deliverables produced over the course of the engagement.</p>
+<table>
+<tr><th>Deliverable</th><th>Description</th><th>Included?</th></tr>
+<tr><td>Requirements document</td><td>Documented, agreed functional and non-functional requirements</td><td>✓</td></tr>
+<tr class="alt"><td>Solution design document</td><td>Detailed design of the configured and/or customized solution</td><td>✓</td></tr>
+<tr><td>Configured platform</td><td>The platform configured per the agreed solution design</td><td>✓</td></tr>
+<tr class="alt"><td>Customized UI</td><td>Branding and UI customization applied per Section 25, Phase 5</td><td>✓</td></tr>
+<tr><td>Deployed frontend</td><td>The React frontend deployed to the agreed environment</td><td>✓</td></tr>
+<tr class="alt"><td>Deployed Express backend</td><td>The Express.js API and WebSocket server deployed to the agreed environment</td><td>✓</td></tr>
+<tr><td>Database setup</td><td>Database configured and provisioned per the solution design</td><td>✓</td></tr>
+<tr class="alt"><td>Security configuration</td><td>Security controls configured per the client-approved security architecture</td><td>✓</td></tr>
+<tr><td>User roles configured</td><td>Role-based access configured per the agreed role model</td><td>✓</td></tr>
+<tr class="alt"><td>Administrator account setup</td><td>Initial administrator accounts provisioned</td><td>✓</td></tr>
+<tr><td>Reports</td><td>Reporting and analytics configured per Section 16</td><td>✓</td></tr>
+<tr class="alt"><td>Training material</td><td>Materials used in the training described in Section 29</td><td>✓</td></tr>
+<tr><td>User manual</td><td>End-user reference documentation</td><td>✓</td></tr>
+<tr class="alt"><td>Administrator manual</td><td>Administrator reference documentation</td><td>✓</td></tr>
+<tr><td>Deployment guide</td><td>Documentation of the deployed environment</td><td>✓</td></tr>
+<tr class="alt"><td>Backup guide</td><td>Documentation of backup procedures for the deployed environment</td><td>✓</td></tr>
+<tr><td>Support handover</td><td>Formal handover to the ongoing support team (Phase 17)</td><td>✓</td></tr>
+<tr class="alt"><td>UAT plan</td><td>Agreed User Acceptance Testing plan and criteria (Section 30)</td><td>✓</td></tr>
+<tr><td>Test report</td><td>Summary of internal, security, and acceptance testing outcomes</td><td>✓</td></tr>
+<tr class="alt"><td>Go-live checklist</td><td>Checklist confirming readiness for production go-live</td><td>✓</td></tr>
+<tr><td>Source code</td><td>Provided only where included in the selected commercial model</td><td>Only if included in the commercial model</td></tr>
+<tr class="alt"><td>API documentation</td><td>Provided where included in scope</td><td>If included</td></tr>
+</table>
+
+<h1>29. Training and Knowledge Transfer</h1>
+<p>Training is provided so that <strong>[Client Name]</strong>'s own team can operate, administer, and support the platform confidently after go-live.</p>
+<table>
+<tr><th>Training Item</th><th>Description</th><th>Status</th></tr>
+<tr><td>Administrator training</td><td>Training for administrators on platform configuration and management</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Quiz-creator training</td><td>Training for staff authoring quizzes and question banks</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>Support-team training</td><td>Training for the client's internal support or IT team</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>User manuals</td><td>Reference documentation for end users</td><td><span class="badge-inc">Included</span></td></tr>
+<tr><td>Quick-start guide</td><td>Condensed getting-started reference</td><td><span class="badge-inc">Included</span></td></tr>
+<tr class="alt"><td>Recorded training</td><td>Recorded training sessions for later reference or onboarding new staff</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr><td>Train-the-trainer</td><td>Enables client-side trainers to deliver ongoing internal training</td><td><span class="badge-opt">Optional</span></td></tr>
+<tr class="alt"><td>Arabic and English training material</td><td>Bilingual training material</td><td><span class="badge-opt">Optional</span></td></tr>
+</table>
+
+<h1>30. Testing and Acceptance</h1>
+<p>The platform passes through three layers of testing before it is accepted for production go-live. Altanfith performs internal functional and regression testing (Phase 9) across the configured environment, followed by security-focused testing (Phase 10) against the controls described in Section 20, ahead of client security review and sign-off. User Acceptance Testing (Phase 11) is then carried out against a client-approved UAT plan and agreed acceptance criteria, so that <strong>[Client Name]</strong> — not Altanfith alone — confirms that the configured platform meets its requirements before go-live.</p>
+<p>Any defects identified during internal, security, or acceptance testing are triaged using the same four-level severity model used for support (Section 32): Critical, High, Medium, and Low. UAT sign-off is Milestone M5 in the project timeline (Section 26), and it gates go-live: production rollout depends on successful UAT.</p>
+
+<h1>31. Support and Maintenance</h1>
+<p>Ongoing support is delivered under one of three packages, so that <strong>[Client Name]</strong> can select the level of coverage and responsiveness that matches its operational needs.</p>
+<table>
+<tr><th>Package</th><th>Includes</th></tr>
+<tr><td><strong>Bronze</strong></td><td>Oman business-hours support; email support; bug fixes; standard updates; best-effort response</td></tr>
+<tr class="alt"><td><strong>Silver</strong></td><td>Everything in Bronze, plus: priority support; faster response times; monthly system health review; performance optimization; minor improvements; remote assistance</td></tr>
+<tr><td><strong>Gold</strong></td><td>Everything in Silver, plus: critical incident support; dedicated support contact; priority issue resolution; proactive monitoring; security monitoring; quarterly service review; emergency support; 24/7 support (<span class="badge-opt">Optional</span>); dedicated development allocation (<span class="badge-opt">Optional</span>)</td></tr>
+</table>
+
+<h1>32. SLA</h1>
+<p>Service levels are defined by severity, with response time and target resolution time tracked as two separate measures — response confirms that an issue has been received and is being actioned; resolution is the target time to resolve it, and is not a guarantee.</p>
+<table>
+<tr><th>Severity</th><th>Definition</th><th>Response Time</th><th>Target Resolution Time</th></tr>
+<tr><td>1 — Critical</td><td>Platform down / live session blocked for all users</td><td><strong>[Response Time]</strong></td><td><strong>[TBC]</strong></td></tr>
+<tr class="alt"><td>2 — High</td><td>Major function degraded, no workaround</td><td><strong>[Response Time]</strong></td><td><strong>[TBC]</strong></td></tr>
+<tr><td>3 — Medium</td><td>Limited impact, workaround exists</td><td><strong>[Response Time]</strong></td><td><strong>[TBC]</strong></td></tr>
+<tr class="alt"><td>4 — Low</td><td>Cosmetic / question / minor request</td><td><strong>[Response Time]</strong></td><td><strong>[TBC]</strong></td></tr>
+</table>
+<p class="notice">Response and target resolution times are separate measures: response time confirms an issue has been received and triaged; target resolution time is a goal, dependent on the agreed SLA, and is not a guaranteed outcome. Actual values depend on the support package selected (Section 31) and the SLA agreed with <strong>[Client Name]</strong>; 24/7 coverage applies only where the Gold 24/7 option has been purchased.</p>
+
 </body>
 </html>
