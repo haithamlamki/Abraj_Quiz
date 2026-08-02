@@ -41,8 +41,10 @@ const ws = new WebSocket(`${cfg.wsUrl}?token=${encodeURIComponent(cfg.hostToken)
 });
 let advancing = false;
 let watchdog;
+let currentQ = -1;
+let completed = false;
 
-function armWatchdog(qIndex) {
+function armWatchdog(qIndex = currentQ) {
   clearTimeout(watchdog);
   // timeLimit 15s + reveal + generous slack; if nothing closed, force-advance.
   watchdog = setTimeout(async () => {
@@ -51,26 +53,65 @@ function armWatchdog(qIndex) {
   }, 45_000);
 }
 
+// REST is authoritative that the game completed even if the WS push never
+// arrives (dropped socket, slow broadcast, etc.) — fall back after 10s.
+function armCompletionFallback() {
+  const fallback = setTimeout(() => {
+    if (completed) return;
+    completed = true;
+    log({ evt: "game_completed_rest_fallback" });
+    console.log("[host] game completed (REST fallback; WS push not received)");
+    ws.close();
+    process.exit(0);
+  }, 10_000);
+  fallback.unref?.();
+}
+
 async function advance() {
   if (advancing) return;
   advancing = true;
   try {
     log({ evt: "next_sent" });
-    const r = await api(`/api/games/${game.gamePin}/next-question`, { method: "POST" });
-    if (r.gameComplete) clearTimeout(watchdog);
+    let lastError;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        const r = await api(`/api/games/${game.gamePin}/next-question`, { method: "POST" });
+        if (r.gameComplete) {
+          clearTimeout(watchdog);
+          armCompletionFallback();
+        }
+        return;
+      } catch (e) {
+        lastError = e;
+        if (attempt < 3) await new Promise((r) => setTimeout(r, 1000));
+      }
+    }
+    // All 3 attempts failed: don't let the game stall silently — re-arm the
+    // watchdog so the next fire retries the advance again.
+    log({ evt: "advance_failed", message: lastError?.message });
+    console.error("[host] advance failed after 3 attempts:", lastError?.message);
+    armWatchdog();
   } finally { advancing = false; }
 }
 
 ws.on("open", () => ws.send(JSON.stringify({ type: "join", gamePin: game.gamePin, isHost: true })));
 ws.on("message", (raw) => {
   const m = JSON.parse(raw.toString());
-  if (m.type === "joined") { log({ evt: "ws_joined" }); void waitForPlayersThenStart(); }
-  else if (m.type === "question_started") { log({ evt: "question_started", q: m.questionIndex }); armWatchdog(m.questionIndex); }
+  if (m.type === "joined") {
+    log({ evt: "ws_joined" });
+    waitForPlayersThenStart().catch((e) => {
+      console.error("[host] fatal start failure:", e.message);
+      process.exit(3);
+    });
+  }
+  else if (m.type === "question_started") { currentQ = m.questionIndex; log({ evt: "question_started", q: m.questionIndex }); armWatchdog(m.questionIndex); }
   else if (m.type === "question_closed") {
     log({ evt: "question_closed", q: m.questionIndex, responses: m.distribution?.totalResponses });
     clearTimeout(watchdog);
     setTimeout(() => advance().catch((e) => console.error("[host] advance failed:", e.message)), REVEAL_MS);
   } else if (m.type === "game_completed") {
+    if (completed) return;
+    completed = true;
     log({ evt: "game_completed" });
     console.log("[host] game completed");
     ws.close();
@@ -88,8 +129,16 @@ async function waitForPlayersThenStart() {
   const deadline = Date.now() + GO_TIMEOUT_MS;
   let lastCount = -1, stableSince = Date.now();
   for (;;) {
-    const snap = await api(`/api/games/${game.gamePin}`);
-    const count = Array.isArray(snap.players) ? snap.players.length : 0;
+    let count = lastCount === -1 ? 0 : lastCount;
+    try {
+      const snap = await api(`/api/games/${game.gamePin}`);
+      count = Array.isArray(snap.players) ? snap.players.length : 0;
+    } catch (e) {
+      log({ evt: "poll_error", message: e.message });
+      console.error("[host] poll error:", e.message);
+      await new Promise((r) => setTimeout(r, 2000));
+      continue;
+    }
     if (count !== lastCount) { lastCount = count; stableSince = Date.now(); }
     const stable = Date.now() - stableSince > 10_000;
     if (count >= TARGET || (TARGET > 0 && count >= TARGET * 0.99 && stable) || Date.now() > deadline) {
