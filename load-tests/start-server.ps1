@@ -8,7 +8,10 @@ Get-Content (Join-Path $PSScriptRoot ".env.loadtest") | ForEach-Object {
 }
 $env:NODE_ENV = "production"
 $agent = (Join-Path $PSScriptRoot "monitor\agent.mjs") -replace '\\', '/'
-$env:NODE_OPTIONS = "--import file:///$agent"
+# Quote the file:/// URL inside NODE_OPTIONS: this repo's path contains a
+# space ("PDO Quiz"), and Node tokenizes NODE_OPTIONS on whitespace, so an
+# unquoted value would split into two bogus tokens.
+$env:NODE_OPTIONS = "--import `"file:///$agent`""
 $env:LOADTEST_AGENT_OUT = Join-Path $PSScriptRoot "results\agent.ndjson"
 New-Item -ItemType Directory -Force (Join-Path $PSScriptRoot "results") | Out-Null
 Write-Host "Starting production server on port $env:PORT (agent -> $env:LOADTEST_AGENT_OUT)"
