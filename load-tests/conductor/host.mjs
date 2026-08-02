@@ -127,19 +127,19 @@ let started = false;
 async function waitForPlayersThenStart() {
   if (started) return;
   const deadline = Date.now() + GO_TIMEOUT_MS;
+  let count = 0;
   let lastCount = -1, stableSince = Date.now();
   for (;;) {
-    let count = lastCount === -1 ? 0 : lastCount;
+    // Poll failures land here and fall through to the deadline check below —
+    // the loop must not bypass GO_TIMEOUT_MS just because polling is failing.
     try {
       const snap = await api(`/api/games/${game.gamePin}`);
       count = Array.isArray(snap.players) ? snap.players.length : 0;
+      if (count !== lastCount) { lastCount = count; stableSince = Date.now(); }
     } catch (e) {
       log({ evt: "poll_error", message: e.message });
       console.error("[host] poll error:", e.message);
-      await new Promise((r) => setTimeout(r, 2000));
-      continue;
     }
-    if (count !== lastCount) { lastCount = count; stableSince = Date.now(); }
     const stable = Date.now() - stableSince > 10_000;
     if (count >= TARGET || (TARGET > 0 && count >= TARGET * 0.99 && stable) || Date.now() > deadline) {
       started = true;
