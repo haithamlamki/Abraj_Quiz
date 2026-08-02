@@ -64,3 +64,17 @@ test("evalSlos passes only when all hold", () => {
   const failing = evalSlos({ ...good, joinFailRate: 0.02 }).checks.find((c) => c.name === "join_success");
   assert.equal(failing.pass, false);
 });
+
+test("evalSlos scenario gate: join-only skips ack/broadcast; quiz still requires them", () => {
+  const base = {
+    joinFailRate: 0.001, joinP95: 900, disconnectRate: 0, cpuMaxRollingPct: 10,
+    accepted: 0, persisted: 0, memGrowthPct: null,
+  };
+  // Join-only: no quiz is ever played, so ack/broadcast trends are NaN — must not fail the run.
+  assert.equal(evalSlos({ ...base, scenario: "join", ackP95: NaN, broadcastP95: NaN }).pass, true);
+  // Quiz scenario: the same NaN broadcast (with an otherwise-healthy ack) must still fail — not skipped.
+  assert.equal(
+    evalSlos({ ...base, scenario: "quiz", ackP95: 200, broadcastP95: NaN, accepted: 1000, persisted: 1000 }).pass,
+    false,
+  );
+});

@@ -43,6 +43,7 @@ const agent = existsSync(agentFile) ? ndjson(agentFile).filter((s) => s.t >= sta
 
 const metrics = {
   n: Number(process.env.N || summary.metrics.vus_max?.values?.max || 0),
+  scenario: process.env.SCENARIO || "quiz",
   joinFailRate: rate("join_fail"),
   joinP95: trendP95("join_latency"),
   ackP95: trendP95("answer_ack_latency"),

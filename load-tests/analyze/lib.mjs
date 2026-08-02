@@ -63,11 +63,17 @@ export function nextBisectLevel(lastPass, firstFail, resolution = 50) {
 }
 
 export function evalSlos(m) {
+  // Join-only mode never plays a quiz, so answer-ack and broadcast latency
+  // are structurally meaningless (no questions are ever started/answered) —
+  // omit those two checks rather than let them NaN-fail every join run.
+  const isJoinOnly = m.scenario === "join";
   const checks = [
     { name: "join_success", value: 1 - m.joinFailRate, limit: ">=0.99", pass: m.joinFailRate <= 0.01 },
     { name: "join_p95_ms", value: m.joinP95, limit: "<2000", pass: m.joinP95 < 2000 },
-    { name: "answer_ack_p95_ms", value: m.ackP95, limit: "<500", pass: m.ackP95 < 500 },
-    { name: "broadcast_p95_ms", value: m.broadcastP95, limit: "<1000", pass: m.broadcastP95 < 1000 },
+    ...(isJoinOnly ? [] : [
+      { name: "answer_ack_p95_ms", value: m.ackP95, limit: "<500", pass: m.ackP95 < 500 },
+      { name: "broadcast_p95_ms", value: m.broadcastP95, limit: "<1000", pass: m.broadcastP95 < 1000 },
+    ]),
     { name: "ws_disconnect_rate", value: m.disconnectRate, limit: "<0.01", pass: m.disconnectRate < 0.01 },
     { name: "cpu_sustained_pct", value: m.cpuMaxRollingPct, limit: "<80", pass: m.cpuMaxRollingPct < 80 },
     {

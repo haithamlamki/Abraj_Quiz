@@ -46,12 +46,41 @@ export async function runOnce({ n, scenario = "quiz", runId, soak = false }) {
     },
     stdio: "inherit",
   });
+  // Spawn-time failure (e.g. node itself missing, EACCES) only ever fires 'error',
+  // never 'exit' — track it so the pin.json wait below doesn't spin forever.
+  let conductorSpawnError = null;
+  conductor.on("error", (err) => {
+    conductorSpawnError = err;
+    console.error(`[run] conductor failed to start: ${err.message}`);
+  });
+
   const pinFile = path.join(outDir, "pin.json");
-  while (!existsSync(pinFile)) await new Promise((r) => setTimeout(r, 250));
+  const pinDeadline = Date.now() + 60_000;
+  while (!existsSync(pinFile)) {
+    if (conductorSpawnError) {
+      await admin.end().catch(() => {});
+      throw new Error(`conductor failed to start: ${conductorSpawnError.message}`);
+    }
+    if (conductor.exitCode !== null) {
+      await admin.end().catch(() => {});
+      throw new Error(`conductor exited (code ${conductor.exitCode}) before writing pin.json — it may have died before creating the game; check ${outDir} for its output`);
+    }
+    if (Date.now() > pinDeadline) {
+      conductor.kill();
+      await admin.end().catch(() => {});
+      throw new Error(`conductor did not write pin.json within 60s — it may have died before creating the game; check ${outDir} for its output`);
+    }
+    await new Promise((r) => setTimeout(r, 250));
+  }
   const { gamePin, gameId } = JSON.parse(readFileSync(pinFile, "utf8"));
 
   // 2. Poller.
   const poll = spawn(process.execPath, [path.join(here, "monitor", "poll.mjs"), outDir], { stdio: "ignore" });
+  let pollSpawnError = null;
+  poll.on("error", (err) => {
+    pollSpawnError = err;
+    console.error(`[run] poller failed to start: ${err.message}`);
+  });
 
   // 3. k6 player swarm.
   // k6 is not always on PATH — allow an explicit binary path via K6_BIN
@@ -72,7 +101,29 @@ export async function runOnce({ n, scenario = "quiz", runId, soak = false }) {
     stdio: "inherit",
   });
 
-  const k6Exit = await new Promise((r) => k6.on("exit", r));
+  // A bad K6_BIN (or missing k6 install) only emits 'error'+'close', never 'exit' —
+  // without this, the exit-wait below hangs forever and leaks the conductor/poller.
+  const k6Exit = await new Promise((resolve) => {
+    let settled = false;
+    k6.on("error", (err) => {
+      if (settled) return;
+      settled = true;
+      console.error(`[run] k6 failed to start: ${err.message} (K6_BIN=${k6Bin}) — is k6 installed and K6_BIN set correctly?`);
+      resolve(-1);
+    });
+    k6.on("exit", (code) => {
+      if (settled) return;
+      settled = true;
+      resolve(code);
+    });
+  });
+  if (k6Exit === -1) {
+    conductor.kill();
+    poll.kill();
+    await admin.end().catch(() => {});
+    throw new Error(`k6 failed to launch (K6_BIN=${k6Bin}); aborting run ${id}`);
+  }
+
   const condExit = await new Promise((r) => {
     if (conductor.exitCode !== null) return r(conductor.exitCode);
     conductor.on("exit", r);
@@ -80,6 +131,10 @@ export async function runOnce({ n, scenario = "quiz", runId, soak = false }) {
   });
   poll.kill();
   console.log(`[run] k6 exit=${k6Exit} conductor exit=${condExit}`);
+  if (pollSpawnError) {
+    await admin.end().catch(() => {});
+    throw new Error(`poller failed to start: ${pollSpawnError.message}`);
+  }
 
   // 4. DB verification (zero data loss) + statement stats.
   await admin.query("select set_config('app.role', 'system', false)");
