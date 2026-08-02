@@ -1,0 +1,21 @@
+# Live Quiz Platform — wire protocol for load testing
+
+Discovered from source 2026-08-02 (server/websocket.ts, server/game-room-manager.ts,
+server/routes.ts, shared/ws-protocol.ts, client/src/hooks/use-game-websocket.ts).
+Tool decision: raw `ws` → k6 (Artillery's socket.io engine does not apply).
+
+**Implementation:** raw `ws` (npm `ws` v8), NOT socket.io → per the spec's tool rule, **k6** is the generator. WS server at path **`/game-ws`** on the same HTTP server as Express (port `PORT`, default 5000). Zod protocol in `shared/ws-protocol.ts`. Inbound frames capped at **2048 bytes**, **30 messages/min per socket** rate limit. Server pings every 30 s; sockets idle > 90 s are terminated (`server/websocket.ts:352-362` — the `ws`/gorilla auto-pong keeps real clients alive). `maxClientsPerGame = 250` at `server/websocket.ts:55` is a **dead field** (declared, never enforced).
+
+**Participant lifecycle (player):**
+1. `POST /api/games/:pin/join` body `{"playerName": "..."}` — headers must include `Origin` (tenant resolution keys off Origin hostname, `server/tenant.ts:32`) and `Content-Type: application/json`. 200 `{success, game, playerCount}`; 400 duplicate/not-waiting; 409 `GAME_FULL` (cap = `MAX_PLAYERS_PER_GAME`, default 500, `server/storage.ts:22`); 503 `GAME_BUSY` (retryable); 429 from `joinLimiter` (600/min/IP, `RATE_LIMIT_JOIN_MAX`, 0 disables). Side effect: broadcasts `game_updated` (with FULL player array — O(N²) across a join storm) to all connected room sockets.
+2. Open WS to `ws://host:port/game-ws` with matching `Origin` header (enforced in production against `CLIENT_ORIGIN`).
+3. Send `{"type":"join","gamePin":"123456","playerName":"..."}` (player must already exist in roster or the socket is closed 1008 `PLAYER_NOT_REGISTERED`). Receive `{"type":"joined","gamePin","isHost":false}` plus current question state if mid-game (reconnect support).
+4. Server pushes per question: `question_started {questionIndex, durationSeconds, startedAt, closesAt, timeRemaining}` → `time_remaining` every 1 s (per-room broadcast to ALL sockets — a second fan-out hot spot) → `question_closed {questionIndex, correctAnswer, correctAnswers, distribution, players}` (players = full sorted leaderboard) → `next_question {game}` → … → `game_completed {game}`.
+5. Answer submission is **REST, not WS**: `POST /api/games/:pin/answer` body `{"playerName","questionIndex","selectedAnswer","responseTime"}` (`selectedAnswer` 0–63: index for single-select, bitmask for multi; `responseTime` int ≥ 0, server recomputes its own). 200 `{success:true, streak}`; 409 `QUESTION_CLOSED` / `DUPLICATE_ANSWER`; 403 `PLAYER_NOT_REGISTERED`.
+6. Reconnect: client reopens WS and resends `join` (same name re-binds the socket; old socket is closed by the server with "Replaced by a newer player connection"). Client backoff in `client/src/lib/ws-reconnect.ts`.
+
+**Host lifecycle (conductor):** `POST /api/register` (201, returns cookie) → `POST /api/login` (200, returns **`token`** — `requireAuth` prefers `Authorization: Bearer <token>`, `server/routes.ts:113`) → `POST /api/games {quizId}` → 201 `{gamePin, id}` → WS connect with `?token=<token>` and send `{"type":"join","gamePin","isHost":true}` → `POST /api/games/:pin/start` (opens Q0; timer auto-closes each timed question at `timeLimit`) → on each `question_closed`, `POST /api/games/:pin/next-question` → repeats → last call returns `{gameComplete:true}` and `game_completed` is broadcast.
+
+**Persistence (zero-data-loss checkpoints):** answers accumulate in-memory; ONE bulk insert into `game_responses` at `closeQuestion()` (`server/game-room-manager.ts:517`); final scores bulk-written to `game_players` at completion. So DB truth = `game_responses` row count per game.
+
+**Latency measurement design:** join and answer-ack latencies come from k6 HTTP timings (no clock issues). Broadcast delivery cannot use a server timestamp for `question_closed` (the message carries none), so per-event delivery = each client's local receive time minus the **minimum receive time across all clients for that same event** — skew-free because all measuring clients share the generator's clock. Requires a single generator machine (README documents this constraint). `question_started.startedAt` gives a server-clock cross-check.
