@@ -27,10 +27,15 @@ export async function runOnce({ n, scenario = "quiz", runId, soak = false }) {
   const id = runId || `${scenario}-n${n}-${Date.now()}`;
   const outDir = path.join(here, "results", id);
   mkdirSync(outDir, { recursive: true });
-  // If this run-id directory is being reused, a stale pin.json from a prior
-  // run would make the wait-loop below return instantly, pinning k6 to the
-  // OLD (already-completed) game instead of the fresh conductor's game.
-  rmSync(path.join(outDir, "pin.json"), { force: true });
+  // If this run-id directory is being reused, stale artifacts from a prior
+  // run would corrupt this one: pin.json makes the wait-loop below return
+  // instantly (pinning k6 to the OLD completed game instead of the fresh
+  // conductor's game), host-events.ndjson gets APPENDED to by the conductor
+  // (mixing this run's window with the prior run's), and k6-summary.json /
+  // db-verify.json / raw.json.gz would otherwise be read/left over stale.
+  for (const stale of ["pin.json", "host-events.ndjson", "k6-summary.json", "db-verify.json", "raw.json.gz"]) {
+    rmSync(path.join(outDir, stale), { force: true });
+  }
   console.log(`[run] ${id} (N=${n}, scenario=${scenario})`);
 
   const admin = new pg.Pool({ connectionString: process.env.ADMIN_DATABASE_URL, max: 2 });
