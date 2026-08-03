@@ -1,6 +1,6 @@
 // Orchestrates ONE load-test run at level N against the local test deployment.
 import { spawn } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import pg from "pg";
 import { loadEnv, assertLocal } from "./setup/env.mjs";
@@ -27,6 +27,10 @@ export async function runOnce({ n, scenario = "quiz", runId, soak = false }) {
   const id = runId || `${scenario}-n${n}-${Date.now()}`;
   const outDir = path.join(here, "results", id);
   mkdirSync(outDir, { recursive: true });
+  // If this run-id directory is being reused, a stale pin.json from a prior
+  // run would make the wait-loop below return instantly, pinning k6 to the
+  // OLD (already-completed) game instead of the fresh conductor's game.
+  rmSync(path.join(outDir, "pin.json"), { force: true });
   console.log(`[run] ${id} (N=${n}, scenario=${scenario})`);
 
   const admin = new pg.Pool({ connectionString: process.env.ADMIN_DATABASE_URL, max: 2 });
