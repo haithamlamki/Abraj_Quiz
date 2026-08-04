@@ -1,0 +1,74 @@
+{
+  "runDir": "C:\\projects\\PDO Quiz\\Abraj_Quiz-loadtest\\load-tests\\results\\soak-c6",
+  "scenario": "quiz",
+  "metrics": {
+    "n": 330,
+    "scenario": "quiz",
+    "joinFailRate": 0,
+    "joinP95": 29.98187,
+    "ackP95": 3.7928099999999993,
+    "broadcastP95": 71,
+    "broadcastP99": 164,
+    "broadcastMax": 247,
+    "disconnectRate": 0,
+    "wsJoined": 330,
+    "accepted": 3300,
+    "rejected": 0,
+    "inducedDrops": 0,
+    "reconnectP95": null,
+    "persisted": 3300,
+    "cpuMaxRollingPct": 12.39666666666667,
+    "elDelayP99MaxMs": 101.842943,
+    "gcMaxMs": 4.955800000578165,
+    "memGrowthPct": null
+  },
+  "slo": {
+    "pass": true,
+    "checks": [
+      {
+        "name": "join_success",
+        "value": 1,
+        "limit": ">=0.99",
+        "pass": true
+      },
+      {
+        "name": "join_p95_ms",
+        "value": 29.98187,
+        "limit": "<2000",
+        "pass": true
+      },
+      {
+        "name": "answer_ack_p95_ms",
+        "value": 3.7928099999999993,
+        "limit": "<500",
+        "pass": true
+      },
+      {
+        "name": "broadcast_p95_ms",
+        "value": 71,
+        "limit": "<1000",
+        "pass": true
+      },
+      {
+        "name": "ws_disconnect_rate",
+        "value": 0,
+        "limit": "<0.01",
+        "pass": true
+      },
+      {
+        "name": "cpu_sustained_pct",
+        "value": 12.39666666666667,
+        "limit": "<80",
+        "pass": true
+      },
+      {
+        "name": "zero_data_loss",
+        "value": "3300/3300",
+        "limit": "persisted==accepted",
+        "pass": true
+      }
+    ]
+  },
+  "startT": 1785849896476,
+  "endT": 1785850138363
+}

@@ -1,0 +1,74 @@
+{
+  "runDir": "C:\\projects\\PDO Quiz\\Abraj_Quiz-loadtest\\load-tests\\results\\bisect-n550",
+  "scenario": "quiz",
+  "metrics": {
+    "n": 550,
+    "scenario": "quiz",
+    "joinFailRate": 0,
+    "joinP95": 83.23649999999999,
+    "ackP95": 6.256615,
+    "broadcastP95": 119,
+    "broadcastP99": 129,
+    "broadcastMax": 141,
+    "disconnectRate": 0,
+    "wsJoined": 550,
+    "accepted": 5500,
+    "rejected": 0,
+    "inducedDrops": 0,
+    "reconnectP95": null,
+    "persisted": 5500,
+    "cpuMaxRollingPct": 54.47999999999998,
+    "elDelayP99MaxMs": 277.872639,
+    "gcMaxMs": 6.221299946308136,
+    "memGrowthPct": null
+  },
+  "slo": {
+    "pass": true,
+    "checks": [
+      {
+        "name": "join_success",
+        "value": 1,
+        "limit": ">=0.99",
+        "pass": true
+      },
+      {
+        "name": "join_p95_ms",
+        "value": 83.23649999999999,
+        "limit": "<2000",
+        "pass": true
+      },
+      {
+        "name": "answer_ack_p95_ms",
+        "value": 6.256615,
+        "limit": "<500",
+        "pass": true
+      },
+      {
+        "name": "broadcast_p95_ms",
+        "value": 119,
+        "limit": "<1000",
+        "pass": true
+      },
+      {
+        "name": "ws_disconnect_rate",
+        "value": 0,
+        "limit": "<0.01",
+        "pass": true
+      },
+      {
+        "name": "cpu_sustained_pct",
+        "value": 54.47999999999998,
+        "limit": "<80",
+        "pass": true
+      },
+      {
+        "name": "zero_data_loss",
+        "value": "5500/5500",
+        "limit": "persisted==accepted",
+        "pass": true
+      }
+    ]
+  },
+  "startT": 1785682605946,
+  "endT": 1785682849219
+}

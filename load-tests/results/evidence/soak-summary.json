@@ -1,0 +1,40 @@
+{
+  "n": 330,
+  "minutes": 44.4,
+  "targetMinutes": 60,
+  "cycles": [
+    {
+      "cycle": 1,
+      "pass": true,
+      "runDir": "C:\\projects\\PDO Quiz\\Abraj_Quiz-loadtest\\load-tests\\results\\soak-c1"
+    },
+    {
+      "cycle": 2,
+      "pass": true,
+      "runDir": "C:\\projects\\PDO Quiz\\Abraj_Quiz-loadtest\\load-tests\\results\\soak-c2"
+    },
+    {
+      "cycle": 3,
+      "pass": true,
+      "runDir": "C:\\projects\\PDO Quiz\\Abraj_Quiz-loadtest\\load-tests\\results\\soak-c3"
+    },
+    {
+      "cycle": 4,
+      "pass": true,
+      "runDir": "C:\\projects\\PDO Quiz\\Abraj_Quiz-loadtest\\load-tests\\results\\soak-c4"
+    },
+    {
+      "cycle": 5,
+      "pass": true,
+      "runDir": "C:\\projects\\PDO Quiz\\Abraj_Quiz-loadtest\\load-tests\\results\\soak-c5"
+    },
+    {
+      "cycle": 6,
+      "pass": true,
+      "runDir": "C:\\projects\\PDO Quiz\\Abraj_Quiz-loadtest\\load-tests\\results\\soak-c6"
+    }
+  ],
+  "memGrowthPct": 2.183105804544723,
+  "pass": true,
+  "note": "Run externally interrupted during cycle 7 at ~43 of 60 min; summary computed from the 6 completed cycles and the continuous 43-min agent sample window (>= the 30-min minimum for the 10-min-window memory-trend analysis). A prior-day attempt (8/8 passing cycles, ~57 min) was also interrupted pre-summary; its raw samples are archived as agent-prev-session.ndjson."
+}

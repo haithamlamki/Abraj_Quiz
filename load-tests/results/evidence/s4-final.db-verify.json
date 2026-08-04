@@ -1,0 +1,47 @@
+{
+  "accepted": 5433,
+  "persisted": 5433,
+  "players": 550,
+  "byQuestion": [
+    {
+      "question_index": 0,
+      "c": 550
+    },
+    {
+      "question_index": 1,
+      "c": 550
+    },
+    {
+      "question_index": 2,
+      "c": 550
+    },
+    {
+      "question_index": 3,
+      "c": 550
+    },
+    {
+      "question_index": 4,
+      "c": 550
+    },
+    {
+      "question_index": 5,
+      "c": 484
+    },
+    {
+      "question_index": 6,
+      "c": 549
+    },
+    {
+      "question_index": 7,
+      "c": 550
+    },
+    {
+      "question_index": 8,
+      "c": 550
+    },
+    {
+      "question_index": 9,
+      "c": 550
+    }
+  ]
+}

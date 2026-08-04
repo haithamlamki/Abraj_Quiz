@@ -1,0 +1,74 @@
+{
+  "runDir": "C:\\projects\\PDO Quiz\\Abraj_Quiz-loadtest\\load-tests\\results\\ramp-n200",
+  "scenario": "quiz",
+  "metrics": {
+    "n": 200,
+    "scenario": "quiz",
+    "joinFailRate": 0,
+    "joinP95": 18.368389999999998,
+    "ackP95": 4.551209999999999,
+    "broadcastP95": 20,
+    "broadcastP99": 23,
+    "broadcastMax": 26,
+    "disconnectRate": 0,
+    "wsJoined": 200,
+    "accepted": 2000,
+    "rejected": 0,
+    "inducedDrops": 0,
+    "reconnectP95": null,
+    "persisted": 2000,
+    "cpuMaxRollingPct": 6.98,
+    "elDelayP99MaxMs": 66.060287,
+    "gcMaxMs": 4.269599974155426,
+    "memGrowthPct": null
+  },
+  "slo": {
+    "pass": true,
+    "checks": [
+      {
+        "name": "join_success",
+        "value": 1,
+        "limit": ">=0.99",
+        "pass": true
+      },
+      {
+        "name": "join_p95_ms",
+        "value": 18.368389999999998,
+        "limit": "<2000",
+        "pass": true
+      },
+      {
+        "name": "answer_ack_p95_ms",
+        "value": 4.551209999999999,
+        "limit": "<500",
+        "pass": true
+      },
+      {
+        "name": "broadcast_p95_ms",
+        "value": 20,
+        "limit": "<1000",
+        "pass": true
+      },
+      {
+        "name": "ws_disconnect_rate",
+        "value": 0,
+        "limit": "<0.01",
+        "pass": true
+      },
+      {
+        "name": "cpu_sustained_pct",
+        "value": 6.98,
+        "limit": "<80",
+        "pass": true
+      },
+      {
+        "name": "zero_data_loss",
+        "value": "2000/2000",
+        "limit": "persisted==accepted",
+        "pass": true
+      }
+    ]
+  },
+  "startT": 1785677805759,
+  "endT": 1785678047317
+}

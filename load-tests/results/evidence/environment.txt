@@ -1,0 +1,24 @@
+=== CPU ===
+
+Name                                NumberOfCores NumberOfLogicalProcessors
+----                                ------------- -------------------------
+12th Gen Intel(R) Core(TM) i5-1240P            12                        16
+
+=== RAM ===
+
+TotalPhysicalMemory
+-------------------
+        16364466176
+
+=== node ===
+v24.18.0
+=== k6 ===
+k6.exe v2.0.0-rc1 (commit/fb943a6a80, go1.26.2, windows/amd64)
+=== postgres ===
+postgres (PostgreSQL) 16.9
+=== TCP dynamic port range ===
+
+DynamicPortRangeStartPort DynamicPortRangeNumberOfPorts
+------------------------- -----------------------------
+                    49152                         16384
+
