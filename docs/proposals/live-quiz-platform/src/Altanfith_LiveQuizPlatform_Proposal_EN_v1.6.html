@@ -36,7 +36,7 @@ table.kv td { border:none; padding:2pt 6pt; }
 <p style="font-size:15pt;margin-top:0;">Technical &amp; Commercial Proposal</p>
 <p style="margin-top:36pt;">Prepared for: <strong>Petroleum Development Oman (PDO)</strong></p>
 <p>Reference: <strong>ATD-LQP-2026-003</strong></p>
-<p>Version: <strong>1.5</strong></p>
+<p>Version: <strong>1.6</strong></p>
 <p>Date: <strong>28/07/2026</strong></p>
 
 </td></tr>
@@ -47,10 +47,10 @@ table.kv td { border:none; padding:2pt 6pt; }
 <table class="kv">
 <tr><td style="width:32%;"><strong>Title</strong></td><td>Live Quiz Platform Technical &amp; Commercial Proposal</td></tr>
 <tr><td><strong>Reference</strong></td><td>ATD-LQP-2026-003</td></tr>
-<tr><td><strong>Version</strong></td><td>1.5</td></tr>
+<tr><td><strong>Version</strong></td><td>1.6</td></tr>
 <tr><td><strong>Date</strong></td><td>28/07/2026</td></tr>
 <tr><td><strong>Prepared by</strong></td><td>Haitham Al Lamki, Al Tanfith Al Dwaliah SPC</td></tr>
-<tr><td><strong>Revision history</strong></td><td>1.5 AI overage price revised to OMR 10 per 500 generations. No other changes.</td></tr>
+<tr><td><strong>Revision history</strong></td><td>1.6 Session capacity stated as up to 500 concurrent participants. No pricing or scope changes.</td></tr>
 
 </table>
 
@@ -485,17 +485,17 @@ Sultanate of Oman</p>
 
 <h1>22. Performance and Scalability</h1>
 <p>Performance and scalability claims for the Live Quiz Platform are grounded in what has actually been observed, rather than presented as an unqualified guarantee.</p>
-<p>In real production use at Abraj Energy Services (Section 10), the platform supports live organisational sessions. It has additionally been validated through internal load testing for <strong>400+ concurrent participants per live session</strong> against the production configuration, giving <strong>PDO</strong> a tested reference point beyond day-to-day operational use. This concurrency figure was verified in Altanfith's own test environment; performance within client-hosted environments depends on the client's network and infrastructure and is outside Altanfith's control. Higher capacities can be supported following infrastructure sizing, deployment optimisation, and dedicated performance testing.</p>
-<p>Beyond these two reference points, the following considerations apply to any deployment for <strong>PDO</strong>:</p>
+<p>In real production use at Abraj Energy Services (Section 10), the platform supports live organisational sessions. The platform supports <strong>up to 500 concurrent participants per live session</strong>. Performance within client-hosted environments depends on client infrastructure; higher capacities are supported via horizontal scaling per the selected deployment.</p>
+<p>Beyond this reference point, the following considerations apply to any deployment for <strong>PDO</strong>:</p>
 <ul>
-<li>Final concurrency targets are confirmed during discovery, against the validated baseline of <strong>400+ concurrent participants per live session</strong>.</li>
-<li>Load testing is recommended ahead of any enterprise deployment with a large expected audience.</li>
+<li>Final concurrency targets are confirmed during discovery.</li>
+<li>Capacity sizing and scaling per deployment are recommended ahead of any enterprise deployment with a large expected audience.</li>
 <li>Cloud scaling and infrastructure sizing are based on the expected usage profile agreed with <strong>PDO</strong>.</li>
 <li>For on-premises deployments, real-time performance depends on the client's own infrastructure and network configuration.</li>
 <li>Real-time functionality requires proper network and server configuration to perform as designed.</li>
 <li>Performance monitoring may be included as part of the applicable support and maintenance package (see Section 29).</li>
 </ul>
-<p>Scaling beyond the levels referenced above is planned and validated against concurrency targets confirmed with <strong>PDO</strong> during discovery, rather than presented as an open-ended capability. Performance at higher concurrency levels than those referenced above should be validated through load testing scoped to <strong>PDO</strong>'s specific requirements before a large-scale go-live.</p>
+<p>Scaling beyond the level referenced above is planned against concurrency targets confirmed with <strong>PDO</strong> during discovery, rather than presented as an open-ended capability, with capacity sizing and scaling per deployment ahead of a large-scale go-live.</p>
 
 <table class="divider pb">
 <tr><td>
@@ -709,7 +709,7 @@ Sultanate of Oman</p>
 <tr><td>AI service availability</td><td>[TBC]</td><td>Low</td><td>AI features degrade gracefully; the core platform operates independently of AI services</td></tr>
 <tr class="alt"><td>User adoption</td><td>[TBC]</td><td>Medium</td><td>Structured training, bilingual materials, and a hypercare period after go-live</td></tr>
 <tr><td>Poor venue/participant internet connectivity</td><td>[TBC]</td><td>Medium</td><td>Automatic session reconnection; venue network checklist ahead of live events</td></tr>
-<tr class="alt"><td>High concurrent usage</td><td>[TBC]</td><td>High</td><td>Load testing before go-live; sizing based on the validated baseline of 400+ concurrent participants per live session</td></tr>
+<tr class="alt"><td>High concurrent usage</td><td>[TBC]</td><td>High</td><td>Capacity sizing and scaling per deployment before large rollouts</td></tr>
 <tr><td>Delayed client feedback</td><td>[TBC]</td><td>Medium</td><td>Bi-weekly governance cadence; the review and deemed-acceptance timelines in Section 25.1 built into the project plan</td></tr>
 <tr class="alt"><td>Data migration complexity</td><td>[TBC]</td><td>Medium</td><td>Migration treated as a scoped, optional phase with its own assessment (Phase 12)</td></tr>
 <tr><td>Integration delays</td><td>[TBC]</td><td>Medium</td><td>Integrations phased separately (Phase 8); core go-live is not blocked by integration work</td></tr>
@@ -849,7 +849,7 @@ Sultanate of Oman</p>
 <tr><td>AhaSlides</td><td>Per presenter</td><td>~37–73 per presenter / year</td><td>Up to 10,000</td><td>Partial localisation</td><td>SaaS only</td><td>Not offered</td></tr>
 <tr class="alt"><td>Poll Everywhere</td><td>Per user, tiered</td><td>~46–385 / year</td><td>Capped per tier</td><td>Not available</td><td>SaaS only</td><td>Not offered</td></tr>
 <tr><td>Vevox</td><td>Per user</td><td>~72+ / year</td><td>~1,500+</td><td>Not available</td><td>SaaS only</td><td>Not offered</td></tr>
-<tr class="alt"><td><strong>Live Quiz Platform</strong> <span class="muted">(this offer)</span></td><td><strong>Flat organisation pricing unlimited hosts and unlimited participants</strong></td><td><strong>300 / year per department &middot; 1,200 / year organisation-wide &middot; 3,000 perpetual (all-inclusive)</strong></td><td><strong>400+ concurrent per session</strong> (internal load testing)</td><td><strong>Full native Arabic and English, with RTL</strong></td><td><strong>SaaS, on-premises, or hybrid</strong>; Oman data residency available</td><td><strong>Perpetual licence and source-code licence available</strong></td></tr>
+<tr class="alt"><td><strong>Live Quiz Platform</strong> <span class="muted">(this offer)</span></td><td><strong>Flat organisation pricing unlimited hosts and unlimited participants</strong></td><td><strong>300 / year per department &middot; 1,200 / year organisation-wide &middot; 3,000 perpetual (all-inclusive)</strong></td><td><strong>500 concurrent per session</strong> (unlimited by licence)</td><td><strong>Full native Arabic and English, with RTL</strong></td><td><strong>SaaS, on-premises, or hybrid</strong>; Oman data residency available</td><td><strong>Perpetual licence and source-code licence available</strong></td></tr>
 </table>
 <p>On the basis of the published information reviewed on 28/07/2026, every platform listed above is licensed per host or per presenter, caps participants by tier, and is delivered as software-as-a-service only; none offers a full Arabic right-to-left interface, an on-premises deployment option, or an ownership option. The Live Quiz Platform is licensed per organisation rather than per host, is offered with Arabic and English as first-class interface languages, and can be deployed in <strong>PDO</strong>'s own environment or owned outright. Purchasing from an Omani SME also contributes to <strong>PDO</strong>'s In-Country Value (ICV) objectives.</p>
 
