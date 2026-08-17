@@ -43,4 +43,18 @@ pool.on("error", (err) => {
   captureError(err, { scope: "db.pool.idle-client" });
 });
 
+// The pool only guards IDLE clients. A checked-out client whose connection
+// dies mid-lease (transient DNS failure to the pooler, TCP reset) emits
+// 'error' on the Client itself, and with no listener that is an uncaught
+// exception that kills the process — seen 2026-08-17 as ENOTFOUND on the
+// Supabase pooler during a tenant-cache refresh. The in-flight query still
+// rejects to its caller; this listener only stops the duplicate async emit
+// from being fatal.
+pool.on("connect", (client) => {
+  client.on("error", (err) => {
+    console.error("Postgres pool: client connection error:", err.message);
+    captureError(err, { scope: "db.pool.client" });
+  });
+});
+
 export const db = drizzle({ client: pool, schema });

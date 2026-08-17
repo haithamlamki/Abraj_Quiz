@@ -170,7 +170,14 @@
     "movedDown_two": "تراجعت مركزين",
     "movedDown_few": "تراجعت {{count}} مراكز",
     "movedDown_many": "تراجعت {{count}} مركزًا",
-    "movedDown_other": "تراجعت {{count}} مركز"
+    "movedDown_other": "تراجعت {{count}} مركز",
+    "notJoinedTitle": "لم تنضم إلى هذه اللعبة بعد",
+    "notJoinedDescription": "أدخل اسمك للانضمام إلى اللعبة."
+  },
+  "notFoundPage": {
+    "title": "الصفحة غير موجودة",
+    "description": "الصفحة التي تبحث عنها غير موجودة أو ربما تم نقلها.",
+    "goHome": "العودة إلى الرئيسية"
   },
   "results": {
     "loadingResults": "جارٍ تحميل النتائج...",
