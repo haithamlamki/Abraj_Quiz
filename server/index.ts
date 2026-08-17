@@ -126,11 +126,9 @@ async function assertAppRoleCannotBypassRls() {
 (async () => {
   await assertAppRoleCannotBypassRls();
 
-  try {
-    await tenantCache.refresh();
-  } catch (err) {
-    console.error("Initial tenant cache load failed (will retry on interval):", err);
-  }
+  // safeRefresh never rejects: failures are logged (transient ones retry with
+  // backoff) and the server boots with an empty cache until the DB is back.
+  await tenantCache.safeRefresh();
   tenantCache.start();
 
   const server = await registerRoutes(app);

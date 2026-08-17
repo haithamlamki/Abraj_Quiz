@@ -40,6 +40,11 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
     timeRemaining: null,
   });
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>("connecting");
+  // Last app-level protocol error code (e.g. PLAYER_NOT_REGISTERED). Kept
+  // separate from connectionStatus: the transport may be fine while the join
+  // itself was rejected, and pages need to distinguish that from a network
+  // failure instead of showing a misleading "check your connection" banner.
+  const [protocolErrorCode, setProtocolErrorCode] = useState<string | null>(null);
 
   const connect = useCallback(() => {
     if (!enabled || !gamePin || !isActiveRef.current) return;
@@ -186,6 +191,7 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
 
             case "error":
               console.warn("WebSocket protocol error:", message.code, message.message);
+              setProtocolErrorCode(message.code);
               break;
 
             default:
@@ -276,5 +282,5 @@ export function useGameWebSocket({ gamePin, playerName, isHost = false, enabled 
     };
   }, [connect, disconnect]);
 
-  return { disconnect, runtimeState, connectionStatus };
+  return { disconnect, runtimeState, connectionStatus, protocolErrorCode };
 }

@@ -196,6 +196,8 @@ export default function Home() {
                     <div className="flex flex-col sm:flex-row gap-3">
                       <Input
                         type="text"
+                        id="home-game-pin"
+                        name="gamePin"
                         placeholder={t("home.gamePinPlaceholder")}
                         value={gamePin}
                         onChange={(e) => setGamePin(e.target.value)}
@@ -266,6 +268,8 @@ export default function Home() {
                     <div className="flex flex-col sm:flex-row gap-3">
                       <Input
                         type="text"
+                        id="home-player-name"
+                        name="playerName"
                         placeholder={isAuthenticated && user ? user.username : t("home.playerNamePlaceholder")}
                         value={playerName}
                         onChange={(e) => setPlayerName(e.target.value)}
@@ -419,8 +423,8 @@ export default function Home() {
                   </div>
 
                   <div className="space-y-4">
-                    <Input placeholder={t("home.quizTitlePlaceholder")} className="w-full input-3d" />
-                    <Input placeholder={t("home.descriptionPlaceholder")} className="w-full input-3d" />
+                    <Input id="home-quiz-title" name="quizTitle" placeholder={t("home.quizTitlePlaceholder")} className="w-full input-3d" />
+                    <Input id="home-quiz-description" name="quizDescription" placeholder={t("home.descriptionPlaceholder")} className="w-full input-3d" />
                     
                     <div className="grid grid-cols-2 gap-3">
                       <div className="abraj-red text-white p-4 rounded-lg text-center font-bold">

@@ -69,12 +69,26 @@ export default function PlayGame() {
 
 
   // Use WebSocket for real-time updates
-  const { runtimeState, connectionStatus } = useGameWebSocket({
+  const { runtimeState, connectionStatus, protocolErrorCode } = useGameWebSocket({
     gamePin: pin || "",
     playerName,
     isHost: false,
     enabled: !!pin && !!playerName
   });
+
+  // Deep-linking /play/:pin?player=Name without going through the join flow
+  // means the server has no registration for this player, so the WS join is
+  // rejected with PLAYER_NOT_REGISTERED. That is not a network problem — send
+  // the player to the join page (PIN preserved) instead of letting the
+  // "can't reach the game server" banner mislead them.
+  useEffect(() => {
+    if (protocolErrorCode !== "PLAYER_NOT_REGISTERED") return;
+    toast({
+      title: t("play.notJoinedTitle"),
+      description: t("play.notJoinedDescription"),
+    });
+    setLocation(`/join/${pin}`);
+  }, [protocolErrorCode, pin, setLocation, toast, t]);
 
   const { data: game, isLoading } = useQuery<Game>({
     queryKey: ["/api/games", pin],
