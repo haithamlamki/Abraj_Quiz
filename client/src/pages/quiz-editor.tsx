@@ -49,6 +49,7 @@ import { VersionHistorySheet } from "@/components/quiz/VersionHistorySheet";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { PageLoader } from "@/components/page-loader";
 import { useQuizAutosave, newQuizDraftKey, type AutosaveStatus } from "@/hooks/use-quiz-autosave";
+import { safeLocalStorage } from "@/lib/safe-storage";
 import { useTenant } from "@/lib/tenant";
 
 interface QuizForm {
@@ -219,14 +220,14 @@ export default function QuizEditor() {
   useEffect(() => {
     if (isEditMode || !storageKey) return;
     try {
-      const raw = localStorage.getItem(storageKey);
+      const raw = safeLocalStorage.getItem(storageKey);
       if (raw) {
         setStoredDraft(JSON.parse(raw));
         return; // decision stays "pending" until the dialog is answered
       }
     } catch {
       // Corrupt slot — treat as no draft.
-      localStorage.removeItem(storageKey);
+      safeLocalStorage.removeItem(storageKey);
     }
     setDraftDecision("none");
   }, [isEditMode, storageKey]);
@@ -407,7 +408,7 @@ export default function QuizEditor() {
       queryClient.invalidateQueries({ queryKey: ["/api/quizzes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/my-quizzes"] });
       toast({ title: isEditMode ? t("editor.toasts.quizUpdated") : t("editor.toasts.quizCreated") });
-      if (!isEditMode && storageKey) localStorage.removeItem(storageKey);
+      if (!isEditMode && storageKey) safeLocalStorage.removeItem(storageKey);
       setLocation(isEditMode ? "/my-quizzes" : `/host-quiz/${data.id}`);
     },
     onError: (error: any) => {
@@ -449,7 +450,7 @@ export default function QuizEditor() {
         // remounting the editor within gcTime re-serves the deleted draft and the
         // resume prompt reappears offering content the user explicitly discarded.
         queryClient.setQueryData(["/api/quizzes", quizId, "draft"], null);
-      } else if (storageKey) localStorage.removeItem(storageKey);
+      } else if (storageKey) safeLocalStorage.removeItem(storageKey);
     } catch {
       // Non-blocking: worst case the prompt reappears next visit.
     }

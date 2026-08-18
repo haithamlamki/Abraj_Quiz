@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, type ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import type { PdfBranding } from "@/utils/enhanced-pdf-generator";
 import { applyLanguage, resolveLanguage, LANGUAGE_STORAGE_KEY } from "@/lib/language";
+import { safeLocalStorage } from "@/lib/safe-storage";
 
 export interface TenantConfig {
   slug: string;
@@ -95,7 +96,9 @@ export function TenantProvider({ children }: { children: ReactNode }) {
     root.style.setProperty("--abraj-primary", tenant.branding.colors.primary);
     root.style.setProperty("--abraj-secondary", tenant.branding.colors.secondary);
     document.title = tenant.branding.appName;
-    applyLanguage(resolveLanguage(localStorage.getItem(LANGUAGE_STORAGE_KEY), tenant.branding.defaultLanguage), {
+    // safeLocalStorage: a bare localStorage read here crashed real users whose
+    // browsers block site data (Sentry ABRAJ-QUIZ-CLIENT-B, SecurityError).
+    applyLanguage(resolveLanguage(safeLocalStorage.getItem(LANGUAGE_STORAGE_KEY), tenant.branding.defaultLanguage), {
       persist: false,
     });
     if (tenant.branding.faviconUrl) {

@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { lazy, Suspense, useState } from "react";
 import { Switch, Route } from "wouter";
 import * as Sentry from "@sentry/react";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,7 @@ import { TenantProvider } from "@/lib/tenant";
 import { ThemeProvider } from "@/components/theme-provider";
 import Navigation from "@/components/navigation";
 import { PageLoader } from "@/components/page-loader";
+import { isChunkLoadError, reloadOnceForStaleChunk } from "@/lib/chunk-reload";
 import classroomBg from "@assets/classroom-background.jpg";
 
 const Home = lazy(() => import("@/pages/home"));
@@ -55,6 +56,39 @@ function Router() {
   );
 }
 
+// Fallback strings are deliberately hardcoded English, not run through
+// i18next's t() — if the crash originates in the i18n layer itself, a
+// translated fallback could throw again and leave a blank screen.
+function AppErrorFallback({ error }: { error: unknown }) {
+  // Stale-deploy chunk failures thrown from React.lazy land here instead of
+  // vite:preloadError (Sentry ABRAJ-QUIZ-CLIENT-C/D/E). Self-heal with the
+  // same guarded one-shot reload; the lazy useState initializer runs the
+  // side effect exactly once per fallback mount. When the reload was already
+  // spent (guard window), fall through to the manual Reload button.
+  const [reloading] = useState(
+    () => isChunkLoadError(error) && reloadOnceForStaleChunk(),
+  );
+  if (reloading) {
+    return (
+      <div className="page-fill flex items-center justify-center p-6">
+        <p className="text-lg text-gray-700">Updating…</p>
+      </div>
+    );
+  }
+  return (
+    <div className="page-fill flex flex-col items-center justify-center gap-4 p-6 text-center">
+      <p className="text-lg text-gray-700">Something went wrong.</p>
+      <button
+        onClick={() => window.location.reload()}
+        className="px-4 py-2 rounded bg-primary text-primary-foreground font-medium"
+        data-testid="button-error-reload"
+      >
+        Reload
+      </button>
+    </div>
+  );
+}
+
 function App() {
   const { t } = useTranslation();
   return (
@@ -82,24 +116,11 @@ function App() {
                 Root error boundary: outside Suspense (so a render error inside
                 a lazy-loaded route doesn't unmount the boundary that's meant to
                 catch it) but inside all providers (so it can still use them if
-                needed). The fallback strings are deliberately hardcoded English,
-                not run through i18next's t() -- if the crash originates in the
-                i18n layer itself, a translated fallback could throw again and
-                leave the user with a blank screen instead of a reload button.
+                needed). See AppErrorFallback for the hardcoded-English rule and
+                the stale-chunk self-heal.
               */}
               <Sentry.ErrorBoundary
-                fallback={
-                  <div className="page-fill flex flex-col items-center justify-center gap-4 p-6 text-center">
-                    <p className="text-lg text-gray-700">Something went wrong.</p>
-                    <button
-                      onClick={() => window.location.reload()}
-                      className="px-4 py-2 rounded bg-primary text-primary-foreground font-medium"
-                      data-testid="button-error-reload"
-                    >
-                      Reload
-                    </button>
-                  </div>
-                }
+                fallback={({ error }) => <AppErrorFallback error={error} />}
               >
                 <main id="main-content">
                   <Router />
