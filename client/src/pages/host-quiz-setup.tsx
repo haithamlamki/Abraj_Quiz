@@ -9,6 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Clock, Users, Play, Settings, Share2, Copy, QrCode } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useTenant } from "@/lib/tenant";
+import { joinUrl } from "@/lib/share-url";
 import { useAuth } from "@/hooks/useAuth";
 import QRCode from "qrcode";
 import { PageLoader } from "@/components/page-loader";
@@ -42,6 +44,7 @@ interface Game {
 
 export default function HostQuizSetup() {
   const { t } = useTranslation();
+  const tenant = useTenant();
   const { quizId } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -92,7 +95,7 @@ export default function HostQuizSetup() {
     },
     onSuccess: async (game: Game) => {
       // Generate QR code for the game join URL
-      const gameUrl = `${window.location.origin}/join/${game.gamePin}`;
+      const gameUrl = joinUrl(tenant, game.gamePin);
       try {
         const qrDataUrl = await QRCode.toDataURL(gameUrl, {
           width: 256,
@@ -293,11 +296,11 @@ export default function HostQuizSetup() {
                                 <div className="text-center">
                                   <p className="font-bold text-2xl text-abraj-primary mb-2">{createdGame.gamePin}</p>
                                   <p className="text-sm text-gray-600">{t("host.scanToJoin")}</p>
-                                  <p className="text-xs text-gray-500 mt-2">{t("host.orVisit", { url: `${window.location.origin}/join/${createdGame.gamePin}` })}</p>
+                                  <p className="text-xs text-gray-500 mt-2">{t("host.orVisit", { url: joinUrl(tenant, createdGame.gamePin) })}</p>
                                 </div>
                                 <Button
                                   variant="outline"
-                                  onClick={() => copyToClipboard(`${window.location.origin}/join/${createdGame.gamePin}`, t("host.joinLinkLabel"))}
+                                  onClick={() => copyToClipboard(joinUrl(tenant, createdGame.gamePin), t("host.joinLinkLabel"))}
                                   className="w-full"
                                 >
                                   <Copy className="w-4 h-4 me-2" />
@@ -330,7 +333,7 @@ export default function HostQuizSetup() {
 
                         <Button
                           variant="outline"
-                          onClick={() => copyToClipboard(`${window.location.origin}/join/${createdGame.gamePin}`, t("host.joinLinkLabel"))}
+                          onClick={() => copyToClipboard(joinUrl(tenant, createdGame.gamePin), t("host.joinLinkLabel"))}
                           className="w-full"
                         >
                           <Copy className="w-4 h-4 me-2" />

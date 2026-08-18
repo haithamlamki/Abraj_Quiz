@@ -11,6 +11,7 @@ export interface TenantConfig {
     appName: string;
     logoUrl: string;
     faviconUrl: string;
+    canonicalDomain: string;
     defaultLanguage: "en" | "ar";
     colors: { primary: string; secondary: string };
     pdf: { headerText: string; footerText: string; footerTagline: string; primaryColor: number[] };
@@ -29,6 +30,7 @@ export const DEFAULT_TENANT_CONFIG: TenantConfig = {
     appName: "Quiz",
     logoUrl: "",
     faviconUrl: "",
+    canonicalDomain: "",
     defaultLanguage: "en",
     colors: { primary: "hsl(215, 16%, 47%)", secondary: "hsl(215, 19%, 35%)" },
     pdf: {

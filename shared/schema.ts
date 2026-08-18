@@ -8,6 +8,12 @@ export const brandingSchema = z.object({
   appName: z.string().default("Abraj Quiz"),
   logoUrl: z.string().default(""),      // URL or data: URL; empty = bundled default logo
   faviconUrl: z.string().default(""),
+  // Canonical public hostname for shareable URLs (join links, QR codes).
+  // When set, hosts browsing on a secondary domain (e.g. the *.vercel.app
+  // fallback) still mint QRs/links on the branded domain. Empty = use the
+  // origin the host is currently on. Must be a live, attached domain —
+  // do NOT set it to a domain that is not serving the app yet.
+  canonicalDomain: z.string().default(""),
   // UI chrome language default for this tenant; users can override via the
   // nav toggle (persisted per device). Quiz content is not translated.
   defaultLanguage: z.enum(["en", "ar"]).default("en"),
