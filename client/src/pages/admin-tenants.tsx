@@ -22,6 +22,7 @@ interface TenantFormState {
   slug: string;
   name: string;
   domains: string; // comma-separated in the form
+  canonicalDomain: string;
   appName: string;
   primaryColor: string;
   secondaryColor: string;
@@ -38,6 +39,7 @@ function toFormState(t: AdminTenant): TenantFormState {
     slug: t.slug,
     name: t.name,
     domains: (t.domains ?? []).join(", "),
+    canonicalDomain: t.branding?.canonicalDomain ?? "",
     appName: t.branding?.appName ?? t.name,
     primaryColor: t.branding?.colors?.primary ?? "",
     secondaryColor: t.branding?.colors?.secondary ?? "",
@@ -57,6 +59,8 @@ function toPayload(form: TenantFormState) {
     domains: form.domains.split(",").map((d) => d.trim().toLowerCase()).filter(Boolean),
     branding: {
       ...(form.appName.trim() ? { appName: form.appName.trim() } : {}),
+      // Always sent so clearing the field clears the stored value.
+      canonicalDomain: form.canonicalDomain.trim().toLowerCase(),
       ...(form.primaryColor || form.secondaryColor
         ? { colors: { ...(form.primaryColor ? { primary: form.primaryColor } : {}), ...(form.secondaryColor ? { secondary: form.secondaryColor } : {}) } }
         : {}),
@@ -73,7 +77,7 @@ function toPayload(form: TenantFormState) {
 }
 
 const EMPTY_FORM: TenantFormState = {
-  slug: "", name: "", domains: "", appName: "", primaryColor: "", secondaryColor: "",
+  slug: "", name: "", domains: "", canonicalDomain: "", appName: "", primaryColor: "", secondaryColor: "",
   logoUrl: "", faviconUrl: "", aiGeneration: true, pdfReports: true, publicQuizzes: true,
   status: "active",
 };
@@ -109,6 +113,9 @@ function TenantForm({
       </label>
       <label className="text-sm font-medium" htmlFor={`${idPrefix}-domains`}>Domains (comma-separated hostnames)
         <Input id={`${idPrefix}-domains`} value={form.domains} onChange={(e) => setForm({ ...form, domains: e.target.value })} placeholder="acmequiz.com, www.acmequiz.com" />
+      </label>
+      <label className="text-sm font-medium" htmlFor={`${idPrefix}-canonical-domain`}>Canonical domain for QR / join links (optional; must be live)
+        <Input id={`${idPrefix}-canonical-domain`} value={form.canonicalDomain} onChange={(e) => setForm({ ...form, canonicalDomain: e.target.value })} placeholder="www.acmequiz.com" />
       </label>
       <label className="text-sm font-medium" htmlFor={`${idPrefix}-app-name`}>App name (shown in nav, title, PDFs)
         <Input id={`${idPrefix}-app-name`} value={form.appName} onChange={(e) => setForm({ ...form, appName: e.target.value })} placeholder="Acme Quiz" />

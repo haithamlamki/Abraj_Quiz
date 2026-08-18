@@ -14,12 +14,15 @@ import { getBackgroundStyle } from "@/utils/backgrounds";
 import { QuizQuestionRenderer } from "@/components/quiz/QuizQuestionRenderer";
 import { QUIZ_STAGE_CONTAINER } from "@/components/quiz/layout";
 import { useGameWebSocket } from "@/hooks/use-game-websocket";
+import { useTenant } from "@/lib/tenant";
+import { joinUrl } from "@/lib/share-url";
 import { ConnectionBanner } from "@/components/connection-banner";
 import { resolveQuizTheme } from "@shared/quiz-theme";
 import { PageLoader } from "@/components/page-loader";
 
 export default function HostGame() {
   const { t } = useTranslation();
+  const tenant = useTenant();
   const { pin } = useParams();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -186,10 +189,12 @@ export default function HostGame() {
     }
   }, [runtimeState.questionIndex, runtimeState.timeRemaining, runtimeState.status]);
 
-  // Generate QR code when game loads
+  // Generate the QR whenever the join URL resolves or changes — the tenant
+  // config (canonicalDomain) can arrive after the first render, and the QR
+  // must then be re-minted on the branded domain.
+  const gameUrl = game ? joinUrl(tenant, game.gamePin) : "";
   useEffect(() => {
-    if (game && !qrCodeUrl) {
-      const gameUrl = `${window.location.origin}/join/${game.gamePin}`;
+    if (gameUrl) {
       QRCode.toDataURL(gameUrl, {
         width: 256,
         margin: 2,
@@ -199,7 +204,7 @@ export default function HostGame() {
         }
       }).then(setQrCodeUrl).catch(console.error);
     }
-  }, [game, qrCodeUrl]);
+  }, [gameUrl]);
 
   // Game start countdown effect
   useEffect(() => {
@@ -406,7 +411,7 @@ export default function HostGame() {
 
                   <Button
                     variant="outline"
-                    onClick={() => copyToClipboard(`${window.location.origin}/join/${game.gamePin}`, t("host.joinLinkLabel"))}
+                    onClick={() => copyToClipboard(joinUrl(tenant, game.gamePin), t("host.joinLinkLabel"))}
                     className="w-full py-2"
                   >
                     <Share2 className="w-4 h-4 me-2" />
