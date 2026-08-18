@@ -80,6 +80,24 @@ export default tseslint.config(
     },
   },
 
+  // Load-test tooling (load-tests/**): standalone Node scripts (conductor,
+  // monitor, setup, analyze) that need process/console/fetch etc. CI has been
+  // red on these since the loadtest merge (no-undef) — they were never given
+  // an environment. The k6 VU script additionally runs inside k6's runtime,
+  // which injects __ENV/__VU as globals. No rules are relaxed here.
+  {
+    files: ["load-tests/**/*.{js,mjs}"],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
+  {
+    files: ["load-tests/k6/**/*.js"],
+    languageOptions: {
+      globals: { __ENV: "readonly", __VU: "readonly", __ITER: "readonly" },
+    },
+  },
+
   // Test files: Node test-runner + Vitest globals; relax noise.
   // Includes tests/**/*.mjs (e.g. tests/load/join-storm.mjs) — standalone
   // Node load-test scripts that also need process/console/fetch globals.
